@@ -1,17 +1,18 @@
-import time
-from selenium import webdriver
-import os
+
+
+from behave_manners.site import WebSite
+
 
 def before_all(context):
-    options = webdriver.ChromeOptions()
-    # options.binary_location = '/usr/lib64/chromium-browser/headless_shell'
-    options.add_argument('headless')
-    options.add_argument('window-size=1200x800')
-    caps = {}
-    caps['record_network'] = 'true'
-    caps['take_snapshot'] = 'true'
-    context.browser = webdriver.Chrome(chrome_options=options,
-                                       desired_capabilities=caps)
+    context.site = WebSite()
+
+
+def before_scenario(context, scenario):
+    print "before scenario hook"
+    context.site.launch_browser(context)
 
 def after_all(context):
-    context.browser.quit()
+    pass
+    print "after all hook"
+
+
