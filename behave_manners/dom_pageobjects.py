@@ -19,8 +19,9 @@ class DPageElement(object):
     __metaclass__ = _ServiceMeta
     tag = ''
 
-    def __init__(self):
+    def __init__(self, tag=None, attrs=()):
         self.pos = None
+        self.tag = tag
         self._children = []
 
     def __repr__(self):
@@ -28,13 +29,17 @@ class DPageElement(object):
 
     def consume(self, element):
         assert isinstance(element, DPageElement), repr(element)
-        element.finalize()
-        self._children.append(element)
+        element = element.reduce()
+        if isinstance(element, DataElement) and self._children \
+                and isinstance(self._children[-1], DataElement):
+            self._children[-1].append(element)
+        else:
+            self._children.append(element)
 
-    def finalize(self):
-        """Cleanup internally, before this is consumed in parent element
+    def reduce(self):
+        """Cleanup internally, possibly merging nested elements
         """
-        pass
+        return self
 
     @abstractproperty
     def xpath(self):
@@ -52,12 +57,19 @@ class DPageElement(object):
             for pd in c.pretty_dom():
                 yield pd
 
+    def must_have(self):
+        """Return clauses of must-have elements
+
+            :return: list
+        """
+        return []
+
 
 class AnyElement(DPageElement):
     _name = 'tag.AnyElement'
 
     def __init__(self, tag, attrs):
-        super(AnyElement, self).__init__()
+        super(AnyElement, self).__init__(tag)
         match_attrs = defaultdict(list)
         self.read_attrs = {}
         self._split_attrs(attrs, match_attrs, self.read_attrs)
@@ -80,11 +92,24 @@ class AnyElement(DPageElement):
             else:
                 assert '.' not in k, k
                 # attribute to match as locator
-                match_attrs[k].append(v)
+                match_attrs[k].append(_textescape(v))
 
     @property
     def xpath(self):
         return self._xpath
+
+    def reduce(self):
+        if len(self._children) == 1 \
+                and not self.read_attrs \
+                and isinstance(self._children[0], NamedElement):
+            # Merge Named element with self (its parent)
+            ret = self._children[0]
+            ret._xpath = self._xpath + '/' + ret._xpath
+            return ret
+        for child in self._children:
+            for clause in child.must_have():
+                self._xpath += '[' + clause + ']'
+        return self
 
 
 class GenericElement(DPageElement):
@@ -93,7 +118,6 @@ class GenericElement(DPageElement):
     
     def __init__(self, tag, attrs):
         super(GenericElement, self).__init__(tag, attrs)
-        self.tag = tag
         self._xpath = tag + self._xpath
 
     def finalize(self):
@@ -108,8 +132,18 @@ class _LeafElement(DPageElement):
         raise TypeError('%s cannot consume %r' % (self._name, element))
 
 
+def _textescape(tstr):
+    if "'" not in tstr:
+        return "'%s'" % tstr
+    elif '"' not in tstr:
+        return '"%s"' % tstr
+    else:
+        return "concat('" + "', '\"', '".join(tstr.split('"')) + "')"  # Perl alert!
+
+
 class DataElement(DPageElement):
     _name = 'text'
+
     def __init__(self, data):
         super(DataElement, self).__init__()
         assert isinstance(data, six.string_types)
@@ -118,12 +152,19 @@ class DataElement(DPageElement):
     def consume(self, element):
         raise TypeError('Data cannot consume %r' % element)
 
-    def append(self, data):
-        self.data += data
+    def append(self, other):
+        assert isinstance(other, DataElement)
+        self.data += other.data
 
     @property
     def xpath(self):
         raise NotImplementedError('xpath of text')
+
+    def must_have(self):
+        if self.data.startswith(' ') or self.data.endswith(' '):
+            return ['contains(text(), %s)' % _textescape(self.data.strip())]
+        else:
+            return ['text()=%s' % _textescape(self.data)]
 
 
 class NamedElement(DPageElement):
@@ -150,11 +191,22 @@ class NamedElement(DPageElement):
                 yield i+1, n, './' + x
 
 
+class MustContain(DPageElement):
+    _name = 'tag.mustcontain'
+    
+    @property
+    def xpath(self):
+        return ''
+
+    def must_have(self):
+        return [ './' + ch.xpath for ch in self._children]
+
+
 class DPageObject(DPageElement):
     _name = 'pageObject'
 
-    def __init__(self):
-        super(DPageObject, self).__init__()
+    def __init__(self, tag=None, attrs=()):
+        super(DPageObject, self).__init__(tag, attrs)
 
     def pretty_dom(self):
         """Walk this template, generate (indent, name, xpath) sets of each node
@@ -167,6 +219,26 @@ class DPageObject(DPageElement):
     @property
     def xpath(self):
         return '/'
+
+
+class DeepContainObj(DPageElement):
+    _name = 'tag.deep'
+
+    def __init__(self, tag, attrs):
+        if attrs:
+            raise ValueError('Deep cannot have attributes')
+        super(DeepContainObj, self).__init__(tag)
+
+    @property
+    def xpath(self):
+        return '//'
+
+    def reduce(self):
+        if len(self._children) == 1 and isinstance(self._children[0], AnyElement):
+            ch = self._children.pop()
+            ch._xpath = '/' + ch._xpath
+            return ch
+        return self
 
 
 class SampleParser(parser, object):
@@ -217,8 +289,7 @@ class SampleParser(parser, object):
             prev.consume(closed)
 
     def handle_data(self, data):
-        sdata = data.strip()
-        if not sdata:
+        if not data.strip():
             return
 
         elem = DataElement.new(data)
