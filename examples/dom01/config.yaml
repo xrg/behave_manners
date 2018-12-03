@@ -1,0 +1,22 @@
+---
+# Site configuration
+
+site:
+    # global parameters on the site (assuming single main site)
+    base_url: http://localhost:5000
+    element_timeout: 1000ms
+    
+    main_page: # ??
+      path: index.html
+      root_component: foo
+
+browser:        # Technical conf about the browser
+    engine: chrome
+    launch_on: feature  # or 'scenario' or 'demand'
+    window: 1600x900
+    # more capabilities...
+    # headless: true
+    headless: false
+
+page_objects:
+    index: site/index.html
