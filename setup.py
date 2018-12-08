@@ -20,6 +20,9 @@ setup(
     },
     install_requires=[
         "behave >= 1.2.6",
+        "f3utils",
+        "pyyaml",
+        "selenium",
     ],
     cmdclass = {
     },

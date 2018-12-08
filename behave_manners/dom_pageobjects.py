@@ -252,7 +252,25 @@ class DHtmlObject(DPageElement):
     _name = 'tag.html'
     
     # TODO
+    
+    def reduce(self, site=None):
+        if site is not None:
+            i = 0
+            while i < len(self._children):
+                celem = self._children[i]
+                ncelem = celem.reduce(site)
+                if ncelem is not celem:
+                    self._children.pop(i)
+                    if ncelem is not None:
+                        self._children.insert(i, ncelem)
+                if ncelem is not None:
+                    i += 1
 
+        return super(DHtmlObject, self).reduce()
+
+    @property
+    def xpath(self):
+        return '/'
 
 
 class ISomeObject(DPageElement):
@@ -348,9 +366,11 @@ class DSiteCollection(DPageElement):
     _name = '.siteCollection'
     logger = logging.getLogger('site_collection')
 
-    def __init__(self):
+    def __init__(self, loader):
         super(DSiteCollection, self).__init__()
-        self.cwd = '/'
+        assert isinstance(loader, BaseLoader)
+        self._loader = loader
+        self.cur_file = None
         self.file_dir = {}
         self.urls = set()
         self.page_dir = {}
@@ -359,7 +379,12 @@ class DSiteCollection(DPageElement):
     def consume(self, element):
         if isinstance(element, (IHtmlObject, DHtmlObject)):
             element = element.reduce(self)
-            if element is not None:
+            if element is None:
+                pass
+            elif self.cur_file:
+                assert not self.file_dir.get(self.cur_file, None), self.cur_file
+                self.file_dir[self.cur_file] = element
+            else:
                 super(DSiteCollection, self).consume(element)
         else:
             raise TypeError("Cannot consume %s in a site collection" % type(element))
@@ -369,7 +394,10 @@ class DSiteCollection(DPageElement):
         
         if not link.href:
             raise ValueError("Invalid <link>, without href=")
-        target = pp.normpath(pp.join(self.cwd, link.href))
+        cwd = ''
+        if self.cur_file:
+            cwd = pp.dirname(self.cur_file)
+        target = pp.normpath(pp.join(cwd, link.href))
         content = self.file_dir.setdefault(target, None)
         if link.url:
             self.urls.add((link.url, target))
@@ -388,12 +416,15 @@ class DSiteCollection(DPageElement):
         return len(self.children)
 
     def load_index(self, pname):
-        oldcwd = self.cwd
+        old_file = self.cur_file
         try:
-            self.cwd = pp.normpath(pp.join(self.cwd, pp.dirname(pname)))
-            self.logger.debug("cwd: %s", self.cwd)
+            if self.cur_file:
+                pname = pp.join(pp.dirname(self.cur_file), pname)
+            pname = pp.normpath(pname)
+            self.cur_file = pname
+            self.logger.debug("Trying to read index: %s", pname)
             parser = IndexHTMLParser(self)
-            with open(pname, 'rb') as fp:
+            with self._loader.open(pname) as fp:
                 while True:
                     chunk = fp.read(65536)
                     if not chunk:
@@ -403,13 +434,38 @@ class DSiteCollection(DPageElement):
             # TODO: reduce
             self.logger.info("Read index from '%s'", pname)
         finally:
-            self.cwd = oldcwd
+            self.cur_file = old_file
+
     def load_preloads(self):
         """Load pending specified preloads
         """
-        raise NotImplementedError
-    def load_pagefile(self, pname, **kwargs):
-        pass
+        while self.pending_load:
+            pname = self.pending_load.pop()
+            self.load_pagefile(pname)
+
+    def load_pagefile(self, pname):
+        old_file = self.cur_file
+        try:
+            if self.cur_file:
+                pname = pp.join(pp.dirname(self.cur_file), pname)
+            pname = pp.normpath(pname)
+            if self.file_dir.get(pname, False):
+                self.logger.warning("Attempted to load page twice: %s", pname)
+                return
+            self.cur_file = pname
+            self.logger.debug("Trying to read page: %s", pname)
+            parser = PageParser(self)
+            with self._loader.open(pname) as fp:
+                while True:
+                    chunk = fp.read(65536)
+                    if not chunk:
+                        break
+                    parser.feed(chunk)
+                    
+            # TODO: reduce
+            self.logger.info("Read page from '%s'", pname)
+        finally:
+            self.cur_file = old_file
 
 
 class BaseDPOParser(parser, object):
@@ -565,6 +621,34 @@ class IndexHTMLParser(BaseDPOParser):
         self._dom_stack.append(elem)
 
 
+class BaseLoader(object):
+    """Abstract base for loading DPO html files off some storage
+    """
+    def __init__(self):
+        pass
+    
+    @abstractmethod
+    def open(self, fname):
+        """Open file at `fname` path for reading.
+        
+            Return a context manager file object
+        """
+
+class FSLoader(BaseLoader):
+
+    def __init__(self, root_dir):
+        super(FSLoader, self).__init__()
+        if not os.path.exists(root_dir):
+            raise IOError(errno.ENOENT, "No such directory: %s" % root_dir)
+        self.root_dir = root_dir
+
+    def open(self, fname):
+        if '..' in fname.split('/'):
+            raise IOError(errno.EACCESS, "Parent directory not allowed")
+        pathname = os.path.normpath(os.path.join(self.root_dir, fname))
+        return open(pathname, 'rb')
+
+
 def cmdline_main():
     """when sun as a script, this behaves like a syntax checker for DPO files
     """
@@ -582,7 +666,7 @@ def cmdline_main():
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG)
-    site = DSiteCollection()
+    site = DSiteCollection(FSLoader('.'))
     log = logging.getLogger('main')
     if args.index:
         log.debug("Loading index from %s", args.index)
@@ -591,7 +675,7 @@ def cmdline_main():
             site.load_preloads()
 
     for pfile in args.inputs:
-        site.load_pagefile(pfile, preloads=not args.no_preloads)
+        site.load_pagefile(pfile)
 
     if not args.no_preloads:
         site.load_preloads()
@@ -600,8 +684,8 @@ def cmdline_main():
              len(site.page_dir), len(site.file_dir))
     
     print "Site files:"
-    for trg in site.file_dir:
-        print "    ", trg
+    for trg, content in site.file_dir.items():
+        print "    ", trg, content and '*' or ''
     
     print "\nSite pages:"
     for page, trg in site.page_dir.items():
