@@ -1,9 +1,16 @@
 # -*- coding: UTF-8 -*-
 """
+    These classes represent a *map* of the site/page to be scanned/tested
+
+    They are the /definition/ describing interesting parts of the target
+    page, not the elements of that page.
 """
 
 import logging
 import six
+import fnmatch
+import re
+import errno
 from f3utils.service_meta import abstractmethod, _ServiceMeta
 from abc import abstractproperty
 from collections import defaultdict
@@ -400,7 +407,8 @@ class DSiteCollection(DPageElement):
         target = pp.normpath(pp.join(cwd, link.href))
         content = self.file_dir.setdefault(target, None)
         if link.url:
-            self.urls.add((link.url, target))
+            link_re = fnmatch.translate(link.url)   # TODO nio-style matching
+            self.urls.add((re.compile(link_re), target))
         if link.title:
             self.page_dir[link.title] = target
         if link.rel == 'preload' and not content:
@@ -466,6 +474,43 @@ class DSiteCollection(DPageElement):
             self.logger.info("Read page from '%s'", pname)
         finally:
             self.cur_file = old_file
+
+    def get_by_url(self, url, fragment=None):
+        """Find the page template that matches url (path) of browser
+        
+            returns (page, params)
+        """
+        if not url.startswith('/'):
+            raise NotImplementedError("Only absolute URL paths supported")
+
+        # TODO: decode fragments
+
+        for expr, target in self.urls:
+            m = expr.match(url)
+            if m:
+                page = self.get_by_file(target)
+                return page, m.groups()[1:]
+        else:
+            raise KeyError("No match for url")
+
+    def get_by_file(self, fname):
+        """Get page by template filename
+        """
+        if fname not in self.file_dir:
+            raise KeyError("Template not found: %s" % fname)
+        if self.file_dir[fname] is None:
+            # must load it
+            self.load_pagefile(fname)
+
+        return self.file_dir[fname]
+
+    def get_by_title(self, title):
+        """Get page by set title
+        
+           Titles are arbitrary, pretty names assigned to page templates
+        """
+        fname = self.page_dir[title]
+        return self.get_by_file(fname)
 
 
 class BaseDPOParser(parser, object):
@@ -653,9 +698,7 @@ def cmdline_main():
     """when sun as a script, this behaves like a syntax checker for DPO files
     """
     import argparse
-    parser = argparse.ArgumentParser(description='Render text file into PDF')
-    parser.add_argument('-f', '--output', action='store_true', default=False,
-                        help='Check all site, not just index')
+    parser = argparse.ArgumentParser(description='check validity of DPO template files')
     parser.add_argument('-N', '--no-preloads', action='store_true',
                         help='check only the index file')
     parser.add_argument('index', metavar='index.html',
