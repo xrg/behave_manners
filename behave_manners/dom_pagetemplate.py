@@ -170,6 +170,7 @@ class _LeafElement(DPageElement):
     # TODO
     _name = '.leaf'
     _inherit = 'any'
+    
     def consume(self, element):
         raise TypeError('%s cannot consume %r' % (self._name, element))
 
@@ -223,6 +224,7 @@ class NamedElement(DPageElement):
 
     def analyze(self, webelem, parent=None, max_depth=1000):
         assert parent is not None
+        print "searching for ", self.xpath
         elem = webelem.find_element_by_xpath(self.xpath)
         proxy = dom_elemproxy.ElementProxy(self, elem)
         parent.set(self.this_name, proxy)
@@ -246,6 +248,7 @@ class MustContain(DPageElement):
         return ''
 
     def must_have(self):
+        print "must have of ", self
         return [ './' + ch.xpath for ch in self._children]
 
 
@@ -262,12 +265,14 @@ class DeepContainObj(DPageElement):
         return '//'
 
     def reduce(self):
+        print "Reduce deep ", self._children # *-*
         if len(self._children) == 1 and isinstance(self._children[0], AnyElement):
             ch = self._children.pop()
             ch._xpath = '/' + ch._xpath
             return ch
         return self
 
+    
 class DHtmlObject(DPageElement):
     """Consume the <html> element as top-level site page
     
@@ -281,6 +286,9 @@ class DHtmlObject(DPageElement):
             i = 0
             while i < len(self._children):
                 celem = self._children[i]
+                if not isinstance(celem, DHtmlObject): # *-*
+                    i += 1  # *-*  or pop it?
+                    continue
                 ncelem = celem.reduce(site)
                 if ncelem is not celem:
                     self._children.pop(i)
@@ -342,11 +350,18 @@ class IHtmlObject(DPageElement):
     _name = 'index.html'
     _inherit = '.index.base'
 
+    @property
+    def xpath(self):
+        return '/'
+
 
 class IHeadObject(DPageElement):
     _name = 'index.head'
     _inherit = '.index.base'
 
+    @property
+    def xpath(self):
+        return '/'
 
 
 class ILinkObject(DPageElement):
@@ -371,6 +386,9 @@ class ILinkObject(DPageElement):
             if not hasattr(self, k):
                 raise ValueError("Tag <%s> missing '%s=' attribute" % (tag, k))
 
+    @property
+    def xpath(self):
+        return '/'
 
     def reduce(self, site=None):
         if site is not None and site.register_link(self):
@@ -480,6 +498,20 @@ class DSiteCollection(DPageElement):
             pname = self.pending_load.pop()
             self.load_pagefile(pname)
 
+    def load_all(self):
+        """Load all referenced pages
+
+            Used for forced scan of their content
+        """
+        raise NotImplementedError
+        pending = 1
+        while True:
+            pending = [ pname for pname, cnt in self.file_dir.items() if cnt is None]
+            if not pending:
+                break
+            for pname in pending:
+                self.load_pagefile(pname)
+
     def load_pagefile(self, pname):
         old_file = self.cur_file
         try:
@@ -558,6 +590,7 @@ class BaseDPOParser(parser, object):
         while self._dom_stack:
             closed = self._dom_stack.pop()
             prev = self._dom_stack[-1]
+            # print "consume %s in %r" % (closed.tag, prev.tag)  # *-*
             prev.consume(closed)
             if closed.tag == tag:
                 break
@@ -607,6 +640,7 @@ class BaseDPOParser(parser, object):
     def handle_pi(self, data):
         raise HTMLParseError("Processing instruction not allowed at this level",
                              position=self.getpos())
+        # TODO: include statement
         raise NotImplementedError
 
     def unknown_decl(self, data):

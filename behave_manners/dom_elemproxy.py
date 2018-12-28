@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
-"""
+""" Proxies of selenium WebElements into abstract structure of page's information
+
 """
 
 import logging
