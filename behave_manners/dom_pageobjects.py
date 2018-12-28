@@ -39,6 +39,7 @@ else:
             return result
 
 from selenium.webdriver.common.by import By
+from behave_manners import dom_elemproxy
 
 
 class DPageElement(object):
@@ -79,6 +80,11 @@ class DPageElement(object):
         """
         raise NotImplementedError
 
+    def prepend_xpath(self, xpath):
+        """Prepend parent's xpath into this one
+        """
+        pass
+
     def pretty_dom(self):
         """Walk this template, generate (indent, name, xpath) sets of each node
         
@@ -95,6 +101,10 @@ class DPageElement(object):
             :return: list
         """
         return []
+
+    def analyze(self, webdriver, parent=None, max_depth=1000):
+        assert parent is not None, "Parent must be provided"
+        return
 
 
 class AnyElement(DPageElement):
@@ -129,6 +139,10 @@ class AnyElement(DPageElement):
     def xpath(self):
         return self._xpath
 
+    def prepend_xpath(self, xpath):
+        if not self._xpath.startswith(xpath):
+            self._xpath = xpath + self._xpath
+
     def reduce(self):
         if len(self._children) == 1 \
                 and not self.read_attrs \
@@ -150,9 +164,6 @@ class GenericElement(DPageElement):
     def __init__(self, tag, attrs):
         super(GenericElement, self).__init__(tag, attrs)
         self._xpath = tag + self._xpath
-
-    def finalize(self):
-        pass  # TODO
 
 
 class _LeafElement(DPageElement):
@@ -210,8 +221,13 @@ class NamedElement(DPageElement):
                 nattrs.append(kv)
         super(NamedElement, self).__init__(tag, nattrs)
 
-    def finalize(self):
-        pass  # TODO
+    def analyze(self, webelem, parent=None, max_depth=1000):
+        assert parent is not None
+        elem = webelem.find_element_by_xpath(self.xpath)
+        proxy = dom_elemproxy.ElementProxy(self, elem)
+        parent.set(self.this_name, proxy)
+        if max_depth > 0:
+            super(NamedElement, self).analyze(elem, proxy, max_depth=max_depth-1)
 
     def pretty_dom(self):
         """Walk this template, generate (indent, name, xpath) sets of each node
@@ -273,11 +289,24 @@ class DHtmlObject(DPageElement):
                 if ncelem is not None:
                     i += 1
 
+        for c in self._children:
+            c.prepend_xpath(self.xpath)
+
         return super(DHtmlObject, self).reduce()
 
     @property
     def xpath(self):
-        return '/'
+        return '//'
+    
+    def analyze(self, webdriver, parent=None, max_depth=1000):
+        """Discover all interesting elements within webdriver current page+context
+        """
+        assert parent is None
+        page = dom_elemproxy.PageProxy(self, webdriver)
+        if max_depth > 0:
+            for ch in self._children:
+                ch.analyze(webdriver, page, max_depth=max_depth-1)
+        return page
 
 
 class ISomeObject(DPageElement):

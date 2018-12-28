@@ -5,6 +5,7 @@
     loaded Selenium WebDriver instance.
     
 """
+from __future__ import print_function
 import logging
 import json
 import time
@@ -32,6 +33,7 @@ class ExistingRemote(webdriver.Remote):
                 if session['id'] == self.__session_id:
                     self.session_id = self.__session_id
                     self.capabilities = session['capabilities']
+                    self.w3c = "specificationLevel" in self.capabilities
                     break
             else:
                 raise RuntimeError("Remote webdriver does not contain saved session")
@@ -53,7 +55,7 @@ def cmdline_main():
 
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     site = DSiteCollection(FSLoader('.'))
     log = logging.getLogger('main')
     log.debug("Loading index from %s", args.index[0])
@@ -84,15 +86,17 @@ def cmdline_main():
                 try:
                     page, page_args = site.get_by_url(up.path, fragment=up.fragment)
                     log.info("Got page %s %r", page, page_args)
-                    # page.resolve(doms)
+                    result = page.analyze(driver)
+                    
+                    for level, key, value in result.pretty_dom():
+                        print('  ' * level, key, value)
                 
                     break
                 except KeyError as e:
                     log.warning("URL path not templated. %s: %s", e, up.path)
                 except Exception as e:
                     log.warning("Could not resolve elements:", exc_info=True)
-                    # time.sleep()
-                    # continue
+                    break
 
             # no useful result here, sleeping
             time.sleep(5)
