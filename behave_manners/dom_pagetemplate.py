@@ -104,7 +104,26 @@ class DPageElement(object):
 
     def analyze(self, webdriver, parent=None, max_depth=1000):
         assert parent is not None, "Parent must be provided"
-        return
+        if max_depth < 1:
+            return
+        for ch in self._children:
+            ch.analyze(webdriver, parent, max_depth=max_depth-1)
+
+    def get_attr(self, name, webelem):
+        """Obtain named attribute from remote web element
+        """
+        raise AttributeError(name)
+
+    def list_attrs(self, webelem):
+        """Full list of attributes that `get_attr()` could obtain
+        """
+        return []
+
+    def set_attr(self, name, value, webelem):
+        """Write `value` to some attribute of remote web element
+        """
+        raise AttributeError(name)
+
 
 
 class AnyElement(DPageElement):
@@ -145,6 +164,7 @@ class AnyElement(DPageElement):
 
     def reduce(self):
         if len(self._children) == 1 \
+                and not isinstance(self, NamedElement) \
                 and not self.read_attrs \
                 and isinstance(self._children[0], NamedElement):
             # Merge Named element with self (its parent)
@@ -156,6 +176,19 @@ class AnyElement(DPageElement):
                 self._xpath += '[' + clause + ']'
         return self
 
+    def get_attr(self, name, webelem):
+        """Obtain named attribute from remote web element
+        """
+        fn = self.read_attrs.get(name, None)
+        if fn is not None:
+            return fn(webelem)
+        else:
+            raise AttributeError(name)
+
+    def list_attrs(self, webelem):
+        """Full list of attributes that `get_attr()` could obtain
+        """
+        return self.read_attrs.keys()
 
 class GenericElement(DPageElement):
     _name = 'any'
@@ -228,8 +261,7 @@ class NamedElement(DPageElement):
         elem = webelem.find_element_by_xpath(self.xpath)
         proxy = dom_elemproxy.ElementProxy(self, elem)
         parent.set(self.this_name, proxy)
-        if max_depth > 0:
-            super(NamedElement, self).analyze(elem, proxy, max_depth=max_depth-1)
+        super(NamedElement, self).analyze(elem, proxy, max_depth=max_depth-1)
 
     def pretty_dom(self):
         """Walk this template, generate (indent, name, xpath) sets of each node

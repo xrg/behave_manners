@@ -19,6 +19,10 @@ class _SomeProxy(object):
             for i,n,d in e.pretty_dom(key=k):
                 yield i+1, n, d
 
+    def set(self, key, elem):
+        self._elements[key] = elem
+
+
 class PageProxy(_SomeProxy):
     """DPO live page, connected to some selenium webdriver DOM
     """
@@ -32,11 +36,8 @@ class PageProxy(_SomeProxy):
             yield r
 
     def add(self, elem):
-        n = len(self._elements)
+        n = len(self._elements)  # FIXME
         self._elements[n] = elem
-    
-    def set(self, key, elem):
-        self._elements[key] = elem
 
 
 class ElementProxy(_SomeProxy):
@@ -50,6 +51,8 @@ class ElementProxy(_SomeProxy):
 
     def pretty_dom(self, key=None):
         yield (0, key or 'Element', '<%s>' % self._webelem.tag_name)
+        for d in dir(self):
+            yield (1, '', '%s=%s' % (d, getattr(self, d)))
         for r in super(ElementProxy, self).pretty_dom():
             yield r
 
