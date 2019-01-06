@@ -18,6 +18,12 @@ def _save_browser_session(context, session_fname):
         json.dump({'url': context.browser.command_executor._url,
                    'session': context.browser.session_id }, fp)
 
+
+@when("I navigate to the site main page")
+def _navigate_site_main(context):
+    context.browser.get(context.site.base_url)
+
+
 @then("I wait for the browser to close itself")
 def _wait_browser_forever(context):
     try:

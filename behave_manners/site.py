@@ -99,6 +99,9 @@ class SiteContext(object):
         if 'before_feature' in self.__orig_hooks:
             self.__orig_hooks['before_feature'](context, feature)
 
+    @property
+    def base_url(self):
+        return self._config['site']['base_url']
 
 
 class WebContext(SiteContext):
