@@ -1,60 +1,128 @@
 # -*- coding: UTF-8 -*-
 """ Proxies of selenium WebElements into abstract structure of page's information
 
+    Goal of the PageTemplates/Component is to reduce the multi-level DOM 
+    structure of a web-page to a compact structure of /Components/ , which
+    then convey the semantic information of that DOM and are easy to assert
+    in testing.
+    Components may be trivial, corresponding to single DOM elements, or not,
+    being abstractions over complex DOM structures. They /should/ have their
+    entry point mapped to a particular DOM element.
+    
+    Components must have a well-defined /path/ to be addressed with. This
+    cannot be guaranteed by this framework, but rather should be achieved
+    through careful design of the page templates. Heavily dependant on the
+    web-page's structure and technology. A good path is one that would map
+    the "same" DOM element to a specific path, through subsequent readings
+    of the webpage. Even if the webpage's DOM has been re-built by the JS
+    framework of the page (React, Angular, etc.) .
+    
+    Example: a table. Using a `<Repeat>` template element, the rows of that
+    table could be mapped to components. For static tables, path could just
+    be the row number of those rows. But this becomes non-deterministic for
+    tables that are, say, grids with dynamic sorting or infinite scroll. On
+    those, key to the rows should be some primary key of the row data, like
+    the remote database ID or unique name of that row-data.
+    
+    Components should be considered volatile. By design, this framewor does
+    NOT hold a reference of children components to one, but rather re-maps
+    children on demand. Likewise, values of attributes shall always be fetched
+    from the remote, each time the Component attribute is read. No caching.
+    It is the caller's responsibility to copy the Component attributes to
+    some other variable, if caching (rather than multiple WebDriver requests)
+    is desired.
+    
+    Unreachable components should be handled graciously. They would still
+    raise an exception all the way up, but plugins may help in debugging,
+    like by highlighting the visual position in the webpage where something
+    is missing.
+    
 """
 
 import logging
-import six
-from collections import OrderedDict
+from abc import abstractmethod
 
 from selenium.webdriver.common.by import By
 
 
 class _SomeProxy(object):
-    def __init__(self):
-        self._elements = OrderedDict()
+    """Baseclass for Component proxies
+    
+        Inherited by both `PageProxy` and `Component`, links "remote" WebDriver
+        entities to this abstract structure.
+        
+        Proxies have a dict-like interface, "containing" other proxies. They can
+        be iterated like dicts.
+        
+    """
+    def __init__(self, pagetmpl, remote):
+        self._pagetmpl = pagetmpl
+        self._remote = remote
 
-    def pretty_dom(self, key=None):
-        for k, e in self._elements.items():
-            for i,n,d in e.pretty_dom(key=k):
-                yield i+1, n, d
+    @property
+    def path(self):
+        raise NotImplementedError()
 
-    def set(self, key, elem):
-        self._elements[key] = elem
+    def __getitem__(self, name):
+        for iname, ielem, ptmpl in self._pagetmpl.iter_items(self._remote):
+            if name == iname:
+                return ComponentProxy(iname, self, ptmpl, ielem)
+        raise KeyError(name)  # no such element
+
+    def keys(self):
+        return self.__iter__()
+
+    def __iter__(self):
+        for name, welem, ptmpl in self._pagetmpl.iter_items(self._remote):
+            yield name
+
+    def iteritems(self):
+        for iname, ielem, ptmpl in self._pagetmpl.iter_items(self._remote):
+            yield iname, ComponentProxy(iname, self, ptmpl, ielem)
 
 
 class PageProxy(_SomeProxy):
-    """DPO live page, connected to some selenium webdriver DOM
+    """Root of Components, the webpage
+    
+        Holds reference to remote WebDriver, has no parent
     """
-    def __init__(self, dtmpl, webdriver):
-        super(PageProxy, self).__init__()
-        self._elements = OrderedDict()
+    def __init__(self, pagetmpl, webdriver):
+        super(PageProxy, self).__init__(pagetmpl, webdriver)
 
-    def pretty_dom(self, key=None):
-        yield (0,key or '(Page)', '')
-        for r in super(PageProxy, self).pretty_dom():
-            yield r
-
-    def add(self, elem):
-        n = len(self._elements)  # FIXME
-        self._elements[n] = elem
+    @property
+    def path(self):
+        return ()
 
 
-class ElementProxy(_SomeProxy):
+
+class ComponentProxy(_SomeProxy):
     """Cross-breed of a Selenium element and DPO page object
     
     """
-    def __init__(self, dtmpl, webelem):
-        super(ElementProxy, self).__init__()
-        self._dtmpl = dtmpl
-        self._webelem = webelem
+    def __init__(self, name, parent, pagetmpl, webelem):
+        super(ComponentProxy, self).__init__(pagetmpl, webelem)
+        assert isinstance(parent, _SomeProxy)
+        self._name = name
+        self._parent = parent
 
-    def pretty_dom(self, key=None):
-        yield (0, key or 'Element', '<%s>' % self._webelem.tag_name)
-        for d in dir(self):
-            yield (1, '', '%s=%s' % (d, getattr(self, d)))
-        for r in super(ElementProxy, self).pretty_dom():
-            yield r
+    def __getattr__(self, name):
+        if name.startswith('_'):
+            raise AttributeError(name)
+        return self._dtmpl.get_attr(name, self._webelem)
+
+    def __dir__(self):
+        return self._dtmpl.list_attrs(self._webelem)
+
+    def __setattr__(self, name, value):
+        if name.startswith('_'):
+            super(ComponentProxy, self).__setattr__(name, value)
+        else:
+            return self._dtmpl.set_attr(name, value, self._webelem)
+
+    @property
+    def path(self):
+        return self._parent.path + (self._name,)
+
 
 
 # eof

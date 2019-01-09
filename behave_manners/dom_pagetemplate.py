@@ -42,6 +42,9 @@ from selenium.webdriver.common.by import By
 from behave_manners import dom_elemproxy
 
 
+word_re = re.compile(r'\w+$')
+
+
 class DPageElement(object):
     __metaclass__ = _ServiceMeta
     tag = ''
@@ -54,6 +57,26 @@ class DPageElement(object):
 
     def __repr__(self):
         return "<%s %s>" % (self.__class__.__name__, self.tag)
+
+    def _parse_attrs(self, attrs):
+        """Parse html attributes according to fixed class mapping
+
+            This method is intended for `__init__()`, when a fixed set
+            of attributes is expected.
+            It assumes that class contains an `_attrs_map` entry, a dict,
+            mapping `html_attr` to `(py_attr, type, default)`
+        """
+        expected = self.__class__._attrs_map.copy()
+        for (k, v) in attrs:
+            if k not in expected:
+                raise ValueError('Unexpected attribute "%s" in <%s>' % (k, self.tag))
+            py, typ, d = expected.pop(k)
+            if typ:
+                v = typ(v)
+            setattr(self, py, v)
+
+        for py, typ, d in expected.values():
+            setattr(self, py, d)
 
     def consume(self, element):
         assert isinstance(element, DPageElement), repr(element)
@@ -74,16 +97,6 @@ class DPageElement(object):
         """
         return self
 
-    @property
-    def xpath(self):
-        """Obtain selenium locator for this element
-        """
-        raise NotImplementedError
-
-    def prepend_xpath(self, xpath):
-        """Prepend parent's xpath into this one
-        """
-        pass
 
     def pretty_dom(self):
         """Walk this template, generate (indent, name, xpath) sets of each node
@@ -102,12 +115,32 @@ class DPageElement(object):
         """
         return []
 
-    def analyze(self, webdriver, parent=None, max_depth=1000):
-        assert parent is not None, "Parent must be provided"
-        if max_depth < 1:
-            return
+    # Methods for Component Proxies
+    def iter_items(self, remote, xpath_prefix=''):
+        """Iterate possible children components
+        
+            :return: tuple (name, welem, ptmpl)
+        """
+        return
+    
+    def _iter_items_cont(self, remote, xpath_prefix=''):
+        """Standard `iter_items()` implementation for containing components
+        """
+        seen_names = set()
         for ch in self._children:
-            ch.analyze(webdriver, parent, max_depth=max_depth-1)
+            for n, w, p in ch._locate_in(remote, xpath_prefix):
+                # Suppress duplicate names, only return first match
+                if n not in seen_names:
+                    yield n, w, p
+                    seen_names.add(n)
+
+    def _locate_in(self, remote, xpath_prefix):
+        """Locate (possibly) this component under 'remote' webelem
+        
+            Called by the parent component, to resolve this.
+            Returns tuple (name, welem, ptmpl)
+        """
+        return ()
 
     def get_attr(self, name, webelem):
         """Obtain named attribute from remote web element
@@ -149,18 +182,12 @@ class AnyElement(DPageElement):
                 # attribute to read value from
                 if k in read_attrs:
                     raise ValueError('Attribute defined more than once: %s' % k)
+                v = v[1:-1].strip()
+                read_attrs[v or k] = lambda w: w.get_attribute(k)
             else:
                 assert '.' not in k, k
                 # attribute to match as locator
                 match_attrs[k].append(_textescape(v))
-
-    @property
-    def xpath(self):
-        return self._xpath
-
-    def prepend_xpath(self, xpath):
-        if not self._xpath.startswith(xpath):
-            self._xpath = xpath + self._xpath
 
     def reduce(self):
         if len(self._children) == 1 \
@@ -175,6 +202,23 @@ class AnyElement(DPageElement):
             for clause in child.must_have():
                 self._xpath += '[' + clause + ']'
         return self
+    
+    @property
+    def xpath(self):
+        return self._xpath
+
+    def _locate_in(self, remote, xpath_prefix):
+        found = False
+        for welem in remote.find_elements_by_xpath(xpath_prefix + self._xpath):
+            for y3 in self.iter_items(welem, xpath_prefix):
+                yield y3
+                found = True
+            # Stop at first 'welem' that yields any children results
+            if found:
+                break
+
+    def iter_items(self, remote, xpath_prefix=''):
+        return self._iter_items_cont(remote, xpath_prefix)
 
     def get_attr(self, name, webelem):
         """Obtain named attribute from remote web element
@@ -189,6 +233,16 @@ class AnyElement(DPageElement):
         """Full list of attributes that `get_attr()` could obtain
         """
         return self.read_attrs.keys()
+
+    def consume(self, element):
+        if isinstance(element, Text2AttrElement):
+            if element._attr_name in self.read_attrs:
+                raise ValueError("Attribute for text already defined: %s" % element._attr_name)
+            self.read_attrs[element._attr_name] = lambda w: w.text
+            return
+
+        return super(AnyElement, self).consume(element)
+
 
 class GenericElement(DPageElement):
     _name = 'any'
@@ -232,16 +286,22 @@ class DataElement(DPageElement):
         assert isinstance(other, DataElement)
         self.data += other.data
 
-    @property
-    def xpath(self):
-        raise NotImplementedError('xpath of text')
-
     def must_have(self):
         if self.data.startswith(' ') or self.data.endswith(' '):
             return ['contains(text(), %s)' % _textescape(self.data.strip())]
         else:
             return ['text()=%s' % _textescape(self.data)]
 
+
+class Text2AttrElement(DPageElement):
+    _name = 'text2attr'
+    
+    def __init__(self, name):
+        super(Text2AttrElement, self).__init__()
+        self._attr_name = name
+
+    def consume(self, element):
+        raise TypeError('Data cannot consume %r' % element)
 
 class NamedElement(DPageElement):
     _name = 'named'
@@ -255,14 +315,6 @@ class NamedElement(DPageElement):
                 nattrs.append(kv)
         super(NamedElement, self).__init__(tag, nattrs)
 
-    def analyze(self, webelem, parent=None, max_depth=1000):
-        assert parent is not None
-        print "searching for ", self.xpath
-        elem = webelem.find_element_by_xpath(self.xpath)
-        proxy = dom_elemproxy.ElementProxy(self, elem)
-        parent.set(self.this_name, proxy)
-        super(NamedElement, self).analyze(elem, proxy, max_depth=max_depth-1)
-
     def pretty_dom(self):
         """Walk this template, generate (indent, name, xpath) sets of each node
         """
@@ -270,6 +322,10 @@ class NamedElement(DPageElement):
         for c in self._children:
             for i, n, x in c.pretty_dom():
                 yield i+1, n, './' + x
+
+    def _locate_in(self, remote, xpath_prefix):
+        for welem in remote.find_elements_by_xpath(xpath_prefix + self._xpath):
+            yield self.this_name, welem, self
 
 
 class MustContain(DPageElement):
@@ -297,14 +353,84 @@ class DeepContainObj(DPageElement):
         return '//'
 
     def reduce(self):
-        print "Reduce deep ", self._children # *-*
         if len(self._children) == 1 and isinstance(self._children[0], AnyElement):
             ch = self._children.pop()
             ch._xpath = '/' + ch._xpath
             return ch
         return self
 
+
+class RepeatObj(DPageElement):
+    _name = 'tag.repeat'
     
+    _attrs_map = {'min': ('min_elems', int, 0),
+                  'max': ('max_elems', int, 1000000),
+                  'this': ('this_name', str, '')
+                  }
+
+    def __init__(self, tag, attrs):
+        super(RepeatObj, self).__init__(tag)
+        try:
+            self._parse_attrs(attrs)
+        except Exception, e:
+            print(e)
+
+    def reduce(self):
+        if not self._children:
+            raise ValueError("<Repeat> must have contained elements")
+        
+        if len(self._children) > 1:
+            raise NotImplementedError("Cannot handle siblings in <Repeat>")  # yet
+
+        # Check top child
+        ch = self._children[0]
+        if isinstance(ch, NamedElement):
+            pass
+        elif isinstance(ch, AnyElement):
+            # convert to NamedElement
+            name = ''
+            if 'id' in ch.read_attrs:
+                name = '[id]'
+            nch = NamedElement.new(ch.tag, [])
+            nch.this_name = name
+            nch._xpath = ch._xpath
+            nch.read_attrs = ch.read_attrs
+            self._children[0] = nch
+        else:
+            raise ValueError("<Repeat> cannot contain %s" % ch._name)
+        return self
+        
+    def iter_items(self, remote, xpath_prefix=''):
+        pattern = self._children[0].this_name   # assuming NamedElement, so far
+        if not pattern:
+            pfun = lambda n, x: n
+        elif pattern.startswith('[') and pattern.endswith(']'):
+            pattern = pattern[1:-1].strip()
+            if not word_re.match(pattern):
+                raise NotImplementedError("Cannot parse expression '%s'" % pattern)
+            pfun = lambda n, x: self._children[0].get_attr(pattern, x) or str(n)
+        elif '%s' in pattern or '%d' in pattern:
+            pfun = lambda n, x: pattern % n
+        else:
+            # suffix
+            pfun = lambda n, x: pattern + str(n)
+
+        ni = 0
+        for name, welem, ptmpl in self._children[0]._locate_in(remote, xpath_prefix):
+            yield pfun(ni, welem), welem, ptmpl
+            ni += 1
+
+    def _locate_in(self, remote, xpath_prefix=''):
+        # If this has a name, return new container Component,
+        # else just iterate contents
+        if self.this_name:
+            yield self.this_name, remote, self
+        else:
+            for y3 in self.iter_items(remote, xpath_prefix):
+                yield y3
+            
+
+
 class DHtmlObject(DPageElement):
     """Consume the <html> element as top-level site page
     
@@ -329,24 +455,26 @@ class DHtmlObject(DPageElement):
                 if ncelem is not None:
                     i += 1
 
-        for c in self._children:
-            c.prepend_xpath(self.xpath)
-
         return super(DHtmlObject, self).reduce()
 
-    @property
-    def xpath(self):
-        return '//'
-    
-    def analyze(self, webdriver, parent=None, max_depth=1000):
+    def iter_items(self, remote, xpath_prefix=''):
+        return self._iter_items_cont(remote, xpath_prefix='//')
+
+    def walk(self, webdriver, max_depth=1000):
         """Discover all interesting elements within webdriver current page+context
+        
+            Iterator, yielding (path, Component) pairs, traversing depth first
         """
-        assert parent is None
         page = dom_elemproxy.PageProxy(self, webdriver)
-        if max_depth > 0:
-            for ch in self._children:
-                ch.analyze(webdriver, page, max_depth=max_depth-1)
-        return page
+        stack = [((), page)]
+        while stack:
+            path, comp = stack.pop()
+            yield path, comp
+            if len(path) < max_depth:
+                celems = [(path + (n,), c) for n, c in comp.iteritems()]
+                celems.reverse()
+                stack += celems
+
 
 
 class ISomeObject(DPageElement):
@@ -703,19 +831,14 @@ class PageParser(BaseDPOParser):
                 break
 
         if attr_this is not None:
-            try:
-                elem = DPageElement['named.' + tag](tag, attrs)
-            except TypeError:
-                elem = DPageElement['named'](tag, attrs)
-            except ValueError, e:
-                raise HTMLParseError(unicode(e), position=self.getpos())
+            order = ['named.' + tag, 'tag.' + tag, 'named']
         else:
-            try:
-                elem = DPageElement['tag.' + tag](tag, attrs)
-            except TypeError, e:
-                elem = DPageElement['any'](tag, attrs)
-            except ValueError, e:
-                raise HTMLParseError(unicode(e), position=self.getpos())
+            order = ['tag.' + tag, 'any']
+        try:
+            elem = DPageElement.get_class(order)(tag, attrs)
+        except ValueError, e:
+            raise HTMLParseError(unicode(e), position=self.getpos())
+
         elem.pos = self.getpos()
         self._dom_stack.append(elem)
 
@@ -724,7 +847,22 @@ class PageParser(BaseDPOParser):
             return
 
         self._pop_empty()
-        elem = DataElement.new(data)
+        if data.startswith('[') and data.endswith(']'):
+            data = data[1:-1].strip()
+            if data.startswith('[') and data.endswith(']'):
+                # Quoting for [] expressions
+                elem = DataElement.new(data)
+            else:
+                if not data:
+                    data = 'text'   # hard code "[ ]" to "[ text ]"
+                
+                if not word_re.match(data):
+                    raise ValueError("Invalid expression: %s" % data)
+                
+                elem = Text2AttrElement.new(data)
+        else:
+            elem = DataElement.new(data)
+
         elem.pos = self.getpos()
         self._dom_stack.append(elem)
 

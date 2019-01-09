@@ -86,10 +86,9 @@ def cmdline_main():
                 try:
                     page, page_args = site.get_by_url(up.path, fragment=up.fragment)
                     log.info("Got page %s %r", page, page_args)
-                    result = page.analyze(driver)
                     
-                    for level, key, value in result.pretty_dom():
-                        print('  ' * level, key, value)
+                    for path, elem in page.walk(driver):
+                        print('  ' * len(path), path, elem)
                 
                     break
                 except KeyError as e:
