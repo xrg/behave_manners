@@ -41,6 +41,15 @@ class ExistingRemote(webdriver.Remote):
             raise RuntimeError("Cannot get remote webdriver sessions")
 
 
+def shorten_txt(txt, maxlen):
+    if not txt:
+        return txt
+    txt = txt.split('\n', 1)[0]
+    if len(txt) > maxlen:
+        txt = txt[:maxlen] + '...'
+    return txt
+
+
 def cmdline_main():
     """when sun as a script, this behaves like a syntax checker for DPO files
     """
@@ -88,8 +97,14 @@ def cmdline_main():
                     log.info("Got page %s %r", page, page_args)
                     
                     for path, elem in page.walk(driver):
-                        print('  ' * len(path), path, elem)
-                
+                        print('  ' * len(path), '/'.join(path), elem)
+                        for a in dir(elem):
+                            try:
+                                print('  '* len(path), ' ' * 20, a, 
+                                      '= %s' % shorten_txt(getattr(elem, a), 40))
+                            except Exception, e:
+                                print('  '* len(path), ' ' * 20, a, '= %s' % type(e))
+
                     break
                 except KeyError as e:
                     log.warning("URL path not templated. %s: %s", e, up.path)

@@ -41,6 +41,7 @@
 
 import logging
 from abc import abstractmethod
+from collections import namedtuple
 
 from selenium.webdriver.common.by import By
 
@@ -93,31 +94,68 @@ class PageProxy(_SomeProxy):
     def path(self):
         return ()
 
+    def __dir__(self):
+        return []
 
+    def __repr__(self):
+        try:
+            return '<Page "%s">' % self._remote.current_url
+        except Exception:
+            return '<Page >'
+
+
+attrs_fn = namedtuple('attrs_fn', ('xpath', 'getter', 'setter'))
 
 class ComponentProxy(_SomeProxy):
     """Cross-breed of a Selenium element and DPO page object
     
     """
+    _pagetmpl = None
+    __attrs = {}
+    
     def __init__(self, name, parent, pagetmpl, webelem):
         super(ComponentProxy, self).__init__(pagetmpl, webelem)
         assert isinstance(parent, _SomeProxy)
         self._name = name
         self._parent = parent
+        # Keep list of attributes
+        self.__attrs = { n: attrs_fn(x, g, s)
+                        for n,x,g,s in self._pagetmpl.iter_attrs() }
+
+    def __repr__(self):
+        try:
+            return '<%s class="%s">' % (self._remote.tag_name, self._remote.get_attribute('class'))
+        except Exception:
+            return '<Component>'
 
     def __getattr__(self, name):
         if name.startswith('_'):
             raise AttributeError(name)
-        return self._dtmpl.get_attr(name, self._webelem)
+        attr = self.__attrs.get(name, None)
+        if attr is None:
+            raise AttributeError(name)
+        if attr.getter is None:
+            raise AttributeError('%s is write-only' % name)
+        welem = self._remote
+        if attr.xpath:
+            welem = welem.find_element_by_xpath(attr.xpath)
+        return attr.getter(welem)
 
     def __dir__(self):
-        return self._dtmpl.list_attrs(self._webelem)
+        return self.__attrs.keys()
 
     def __setattr__(self, name, value):
         if name.startswith('_'):
-            super(ComponentProxy, self).__setattr__(name, value)
-        else:
-            return self._dtmpl.set_attr(name, value, self._webelem)
+            return super(ComponentProxy, self).__setattr__(name, value)
+        attr = self.__attrs.get(name, None)
+        if attr is None:
+            raise AttributeError(name)
+        if attr.setter is None:
+            raise AttributeError('%s is read-only' % name)
+        welem = self._remote
+        if attr.xpath:
+            welem = welem.find_element_by_xpath(attr.xpath)
+        return attr.setter(welem, value)
 
     @property
     def path(self):

@@ -142,21 +142,20 @@ class DPageElement(object):
         """
         return ()
 
-    def get_attr(self, name, webelem):
-        """Obtain named attribute from remote web element
-        """
-        raise AttributeError(name)
+    def iter_attrs(self, xpath_prefix=''):
+        """Iterate names of possible attributes
 
-    def list_attrs(self, webelem):
-        """Full list of attributes that `get_attr()` could obtain
+            returns iterator of (name, xpath, getter, setter)
         """
-        return []
+        return ()
 
-    def set_attr(self, name, value, webelem):
-        """Write `value` to some attribute of remote web element
+    def _locate_attrs(self, xpath_prefix=''):
+        """Locate self and return our possible attributes
+
+            To be called by parent to return possible attributes
+            return: same as `iter_attrs()`
         """
-        raise AttributeError(name)
-
+        return ()
 
 
 class AnyElement(DPageElement):
@@ -220,28 +219,19 @@ class AnyElement(DPageElement):
     def iter_items(self, remote, xpath_prefix=''):
         return self._iter_items_cont(remote, xpath_prefix)
 
-    def get_attr(self, name, webelem):
-        """Obtain named attribute from remote web element
+    def iter_attrs(self, xpath_prefix=''):
+        """Iterate names of possible attributes
+
+            returns iterator of (name, getter, setter)
         """
-        fn = self.read_attrs.get(name, None)
-        if fn is not None:
-            return fn(webelem)
-        else:
-            raise AttributeError(name)
+        for k, fn in self.read_attrs.items():
+            yield k, xpath_prefix, fn, None
+        for ch in self._children:
+            for y4 in ch._locate_attrs(xpath_prefix):
+                yield y4
 
-    def list_attrs(self, webelem):
-        """Full list of attributes that `get_attr()` could obtain
-        """
-        return self.read_attrs.keys()
-
-    def consume(self, element):
-        if isinstance(element, Text2AttrElement):
-            if element._attr_name in self.read_attrs:
-                raise ValueError("Attribute for text already defined: %s" % element._attr_name)
-            self.read_attrs[element._attr_name] = lambda w: w.text
-            return
-
-        return super(AnyElement, self).consume(element)
+    def _locate_attrs(self, xpath_prefix=''):
+        return self.iter_attrs(xpath_prefix + self.xpath)
 
 
 class GenericElement(DPageElement):
@@ -303,6 +293,11 @@ class Text2AttrElement(DPageElement):
     def consume(self, element):
         raise TypeError('Data cannot consume %r' % element)
 
+    
+    def _locate_attrs(self, xpath_prefix=''):
+        yield self._attr_name, xpath_prefix, lambda w: w.text, None
+
+
 class NamedElement(DPageElement):
     _name = 'named'
     _inherit = 'any'
@@ -326,6 +321,10 @@ class NamedElement(DPageElement):
     def _locate_in(self, remote, xpath_prefix):
         for welem in remote.find_elements_by_xpath(xpath_prefix + self._xpath):
             yield self.this_name, welem, self
+
+    def _locate_attrs(self, xpath_prefix=''):
+        # Stop traversing, no attributes exposed from this to parent
+        return ()
 
 
 class MustContain(DPageElement):
@@ -395,6 +394,7 @@ class RepeatObj(DPageElement):
             nch.this_name = name
             nch._xpath = ch._xpath
             nch.read_attrs = ch.read_attrs
+            nch._children = ch._children[:]
             self._children[0] = nch
         else:
             raise ValueError("<Repeat> cannot contain %s" % ch._name)
@@ -419,6 +419,8 @@ class RepeatObj(DPageElement):
         for name, welem, ptmpl in self._children[0]._locate_in(remote, xpath_prefix):
             yield pfun(ni, welem), welem, ptmpl
             ni += 1
+            if ni > self.max_elems:
+                break
 
     def _locate_in(self, remote, xpath_prefix=''):
         # If this has a name, return new container Component,
