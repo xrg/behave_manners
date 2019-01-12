@@ -45,6 +45,24 @@ from behave_manners import dom_elemproxy
 word_re = re.compile(r'\w+$')
 
 
+def prepend_xpath(pre, xpath):
+    """Prepend some xpath to another, properly joining the slashes
+    
+    """
+
+    if pre.endswith('./'):
+        if xpath.startswith('./'):
+            return pre[:-2] + xpath
+        elif xpath.startswith('/'):  # including '//'
+            return pre[:-1] + xpath
+    elif pre.endswith('//'):
+        return pre + xpath.lstrip('/')
+    elif pre.endswith('/') and xpath.startswith('/'):
+        return pre[:-1] + xpath
+
+    return pre + xpath
+
+
 class DPageElement(object):
     __metaclass__ = _ServiceMeta
     tag = ''
@@ -195,7 +213,7 @@ class AnyElement(DPageElement):
                 and isinstance(self._children[0], NamedElement):
             # Merge Named element with self (its parent)
             ret = self._children[0]
-            ret._xpath = self._xpath + '/' + ret._xpath
+            ret._xpath = prepend_xpath(self._xpath + '/', ret._xpath)
             return ret
         for child in self._children:
             for clause in child.must_have():
@@ -208,7 +226,7 @@ class AnyElement(DPageElement):
 
     def _locate_in(self, remote, xpath_prefix):
         found = False
-        for welem in remote.find_elements_by_xpath(xpath_prefix + self._xpath):
+        for welem in remote.find_elements_by_xpath(prepend_xpath(xpath_prefix, self._xpath)):
             for y3 in self.iter_items(welem, xpath_prefix):
                 yield y3
                 found = True
@@ -231,7 +249,7 @@ class AnyElement(DPageElement):
                 yield y4
 
     def _locate_attrs(self, xpath_prefix=''):
-        return self.iter_attrs(xpath_prefix + self.xpath)
+        return self.iter_attrs(prepend_xpath(xpath_prefix, self.xpath))
 
 
 class GenericElement(DPageElement):
@@ -240,7 +258,7 @@ class GenericElement(DPageElement):
     
     def __init__(self, tag, attrs):
         super(GenericElement, self).__init__(tag, attrs)
-        self._xpath = tag + self._xpath
+        self._xpath = tag + self._xpath  # no '/', _xpath is clauses on same element
 
 
 class _LeafElement(DPageElement):
@@ -316,10 +334,10 @@ class NamedElement(DPageElement):
         yield (0, self.this_name, self.xpath)
         for c in self._children:
             for i, n, x in c.pretty_dom():
-                yield i+1, n, './' + x
+                yield i+1, n, prepend_xpath('./',  x)
 
     def _locate_in(self, remote, xpath_prefix):
-        for welem in remote.find_elements_by_xpath(xpath_prefix + self._xpath):
+        for welem in remote.find_elements_by_xpath(prepend_xpath(xpath_prefix, self._xpath)):
             yield self.this_name, welem, self
 
     def _locate_attrs(self, xpath_prefix=''):
@@ -336,7 +354,7 @@ class MustContain(DPageElement):
 
     def must_have(self):
         print "must have of ", self
-        return [ './' + ch.xpath for ch in self._children]
+        return [ prepend_xpath('./', ch.xpath) for ch in self._children]
 
 
 class DeepContainObj(DPageElement):
@@ -349,14 +367,17 @@ class DeepContainObj(DPageElement):
 
     @property
     def xpath(self):
-        return '//'
+        return './/'
 
     def reduce(self):
         if len(self._children) == 1 and isinstance(self._children[0], AnyElement):
             ch = self._children.pop()
-            ch._xpath = '/' + ch._xpath
+            ch._xpath = prepend_xpath('.//', ch._xpath)
             return ch
         return self
+
+    def iter_items(self, remote, xpath_prefix=''):
+        return self._iter_items_cont(remote, xpath_prefix='.//')
 
 
 class RepeatObj(DPageElement):
