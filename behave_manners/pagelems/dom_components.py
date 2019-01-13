@@ -40,10 +40,7 @@
 """
 
 import logging
-from abc import abstractmethod
 from collections import namedtuple
-
-from selenium.webdriver.common.by import By
 
 
 class _SomeProxy(object):
@@ -162,5 +159,6 @@ class ComponentProxy(_SomeProxy):
         return self._parent.path + (self._name,)
 
 
+#  class EmptyComponent(_SomeProxy): ??
 
 # eof

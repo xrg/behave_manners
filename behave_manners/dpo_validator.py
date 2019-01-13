@@ -11,7 +11,7 @@ import json
 import time
 from selenium import webdriver
 from selenium.webdriver.remote.command import Command
-from behave_manners.dom_pagetemplate import DSiteCollection, FSLoader
+from behave_manners.pagelems.main import DSiteCollection, FSLoader
 from six.moves.urllib import parse as urlparse
 
 
