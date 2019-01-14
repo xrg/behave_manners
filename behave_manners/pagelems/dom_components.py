@@ -117,7 +117,7 @@ class ComponentProxy(_SomeProxy):
         self._parent = parent
         # Keep list of attributes
         self.__attrs = { n: attrs_fn(x, g, s)
-                        for n,x,g,s in self._pagetmpl.iter_attrs() }
+                        for n,x,g,s in self._pagetmpl.iter_attrs(webelem) }
 
     def __repr__(self):
         try:

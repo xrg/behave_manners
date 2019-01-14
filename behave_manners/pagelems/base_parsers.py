@@ -203,14 +203,14 @@ class DPageElement(object):
         """
         return ()
 
-    def iter_attrs(self, xpath_prefix=''):
+    def iter_attrs(self, webelem=None, xpath_prefix=''):
         """Iterate names of possible attributes
 
             returns iterator of (name, xpath, getter, setter)
         """
         return ()
 
-    def _locate_attrs(self, xpath_prefix=''):
+    def _locate_attrs(self, webelem=None, xpath_prefix=''):
         """Locate self and return our possible attributes
 
             To be called by parent to return possible attributes
@@ -239,5 +239,6 @@ class DataElement(DPageElement):
             return ['contains(text(), %s)' % textescape(self.data.strip())]
         else:
             return ['text()=%s' % textescape(self.data)]
+
 
 #eof

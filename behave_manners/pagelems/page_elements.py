@@ -16,15 +16,21 @@ class AnyElement(DPageElement):
         self.read_attrs = {}
         self._split_attrs(attrs, match_attrs, self.read_attrs)
         self._xpath = ''
+        self._set_match_attrs(match_attrs)
+
+    def _set_match_attrs(self, match_attrs):
         for k, vs in match_attrs.items():
             if len(vs) > 1:
                 raise NotImplementedError('Dup arg: %s' % k)
             self._xpath += '[@%s=%s]' % (k, vs[0])
 
+    def _split_this(self, value, sub=None):
+        raise RuntimeError('%s passed \'this\'' % self.__class__.__name__)
+    
     def _split_attrs(self, attrs, match_attrs, read_attrs):
         for k, v in attrs:
             if k == 'this':
-                raise RuntimeError('%s passed \'this\'' % self.__class__.__name__)
+                self._split_this(v)
             elif v.startswith('[') and v.endswith(']'):
                 assert '.' not in k, k   # TODO
                 # attribute to read value from
@@ -68,7 +74,7 @@ class AnyElement(DPageElement):
     def iter_items(self, remote, xpath_prefix=''):
         return self._iter_items_cont(remote, xpath_prefix)
 
-    def iter_attrs(self, xpath_prefix=''):
+    def iter_attrs(self, webelem=None, xpath_prefix=''):
         """Iterate names of possible attributes
 
             returns iterator of (name, getter, setter)
@@ -76,11 +82,11 @@ class AnyElement(DPageElement):
         for k, fn in self.read_attrs.items():
             yield k, xpath_prefix, fn, None
         for ch in self._children:
-            for y4 in ch._locate_attrs(xpath_prefix):
+            for y4 in ch._locate_attrs(webelem, xpath_prefix):
                 yield y4
 
-    def _locate_attrs(self, xpath_prefix=''):
-        return self.iter_attrs(prepend_xpath(xpath_prefix, self.xpath))
+    def _locate_attrs(self, webelem=None, xpath_prefix=''):
+        return self.iter_attrs(webelem, prepend_xpath(xpath_prefix, self.xpath))
 
 
 class GenericElement(DPageElement):
@@ -112,21 +118,18 @@ class Text2AttrElement(DPageElement):
     def consume(self, element):
         raise TypeError('Data cannot consume %r' % element)
 
-    def _locate_attrs(self, xpath_prefix=''):
+    def _locate_attrs(self, webelem=None, xpath_prefix=''):
         yield self._attr_name, xpath_prefix, lambda w: w.text, None
 
 
 class NamedElement(DPageElement):
     _name = 'named'
     _inherit = 'any'
-    def __init__(self, tag, attrs):
-        nattrs = []
-        for kv in attrs:
-            if kv[0] == 'this':
-                self.this_name = kv[1]
-            else:
-                nattrs.append(kv)
-        super(NamedElement, self).__init__(tag, nattrs)
+
+    def _split_this(self, value, sub=None):
+        if sub:
+            raise NotImplementedError()
+        self.this_name = value
 
     def pretty_dom(self):
         """Walk this template, generate (indent, name, xpath) sets of each node
@@ -140,7 +143,7 @@ class NamedElement(DPageElement):
         for welem in remote.find_elements_by_xpath(prepend_xpath(xpath_prefix, self._xpath)):
             yield self.this_name, welem, self
 
-    def _locate_attrs(self, xpath_prefix=''):
+    def _locate_attrs(self, webelem=None, xpath_prefix=''):
         # Stop traversing, no attributes exposed from this to parent
         return ()
 
