@@ -22,7 +22,7 @@ class AnyElement(DPageElement):
         for k, vs in match_attrs.items():
             if len(vs) > 1:
                 raise NotImplementedError('Dup arg: %s' % k)
-            self._xpath += '[@%s=%s]' % (k, vs[0])
+            self._xpath += '[@%s=%s]' % (k, textescape(vs[0]))
 
     def _split_this(self, value, sub=None):
         raise RuntimeError('%s passed \'this\'' % self.__class__.__name__)
@@ -41,7 +41,7 @@ class AnyElement(DPageElement):
             else:
                 assert '.' not in k, k
                 # attribute to match as locator
-                match_attrs[k].append(textescape(v))
+                match_attrs[k].append(v)
 
     def reduce(self):
         if len(self._children) == 1 \
@@ -146,6 +146,101 @@ class NamedElement(DPageElement):
     def _locate_attrs(self, webelem=None, xpath_prefix=''):
         # Stop traversing, no attributes exposed from this to parent
         return ()
+
+
+class InputElement(DPageElement):
+    _name = 'tag.input'
+    _inherit = 'any'
+    is_empty = True
+    
+    class _InputValueActor(object):
+        def __init__(self, xpath):
+            self._xpath = xpath
+        
+        def _elem(self, welem):
+            if self._xpath:
+                ielem = welem.find_element_by_xpath(self._xpath)
+            else:
+                ielem = welem
+            return ielem
+
+    class InputValueGetter(_InputValueActor):
+
+        def __call__(self, welem):
+            return self._elem(welem).get_attribute('value')
+
+    class InputValueSetter(_InputValueActor):
+        def __init__(self, xpath):
+            self._xpath = xpath
+
+        def __call__(self, welem, value):
+            driver = welem.parent
+            driver.execute_script("arguments[0].setAttribute('value', arguments[1]);",
+                                  self._elem(welem), value)
+
+    def __init__(self, tag, attrs):
+        self.this_name = None
+        self.name_attr = None
+        super(InputElement, self).__init__(tag, attrs)
+
+    def _split_this(self, value, sub=None):
+        if sub:
+            raise NotImplementedError()
+        self.this_name = value
+
+    def _set_match_attrs(self, match_attrs):
+        vs = match_attrs.get('name', None)
+        if vs is None:
+            self.name_attr = '*'
+            if ('id' not in match_attrs) and not self.this_name:
+                raise ValueError("An input element must be identified by 'id' or 'name'")
+        elif vs == ['*']:
+            del match_attrs['name']
+            self.name_attr = '*'
+        else:
+            self.name_attr = vs[0]
+
+        # TODO: per type
+
+        for k, vs in match_attrs.items():
+            if len(vs) > 1:
+                raise NotImplementedError('Dup arg: %s' % k)
+            self._xpath += '[@%s=%s]' % (k, textescape(vs[0]))
+
+    def consume(self, element):
+        raise TypeError('Input cannot consume %r' % element)
+    
+    def iter_items(self, remote, xpath_prefix=''):
+        # no children, nothing to return
+        return []
+
+    def iter_attrs(self, webelem=None, xpath_prefix=''):
+        return []
+
+    def _locate_in(self, remote, xpath_prefix):
+        if self.this_name:
+            for welem in remote.find_elements_by_xpath(prepend_xpath(xpath_prefix, self._xpath)):
+                yield self.this_name, welem, self
+        else:
+            return
+    
+    def _locate_attrs(self, webelem=None, xpath_prefix=''):
+        if not self.this_name:
+            # expose self as attribute
+            if self.name_attr == '*':
+                # Active remote iteration here, must discover all <input> elements
+                # and yield as many attributes
+                for relem in webelem.find_elements_by_xpath(prepend_xpath(xpath_prefix, self._xpath)):
+                    rname = relem.get_attribute('name')
+                    xpath = self._xpath + "[@name=%s]" % textescape(rname)
+                    yield (rname, xpath_prefix,
+                           self.InputValueGetter(xpath),
+                           self.InputValueGetter(xpath))
+            else:
+                # Avoid iteration, yield attribute immediately
+                yield (self.name_attr, xpath_prefix,
+                       self.InputValueGetter(self._xpath),
+                       self.InputValueSetter(self._xpath))
 
 
 class MustContain(DPageElement):
