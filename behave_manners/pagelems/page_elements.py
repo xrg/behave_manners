@@ -390,9 +390,7 @@ class DHtmlObject(DPageElement):
         
             Iterator, yielding (path, Component) pairs, traversing depth first
         """
-        from .dom_components import PageProxy
-        page = PageProxy(self, webdriver)
-        stack = [((), page)]
+        stack = [((), self.get_root(webdriver))]
         while stack:
             path, comp = stack.pop()
             yield path, comp
@@ -401,6 +399,11 @@ class DHtmlObject(DPageElement):
                 celems.reverse()
                 stack += celems
 
+    def get_root(self, webdriver):
+        """Obtain a proxy to the root DOM of remote WebDriver, bound to this template
+        """
+        from .dom_components import PageProxy
+        return PageProxy(self, webdriver)
 
 
 class DPageObject(DPageElement):

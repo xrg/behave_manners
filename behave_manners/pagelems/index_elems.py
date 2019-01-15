@@ -92,9 +92,10 @@ class DSiteCollection(DPageElement):
         assert isinstance(loader, BaseLoader)
         self._loader = loader
         self.cur_file = None
-        self.file_dir = {}
+        self.file_dir = {}  # filename-to-pageelem main mapping
         self.urls = set()
-        self.page_dir = {}
+        self.page_dir = {}  # title-to-filename mapping
+        self.url_dir = {}  # title-to-url mapping
         self.pending_load = set()
 
     def consume(self, element):
@@ -126,6 +127,8 @@ class DSiteCollection(DPageElement):
             self.urls.add((re.compile(link_re), target))
         if link.title:
             self.page_dir[link.title] = target
+            if link.url is not None:
+                self.url_dir[link.title] = link.url
         if link.rel == 'preload' and not content:
             self.pending_load.add(target)
         elif link.rel in ('next', 'prev', 'page'):
@@ -208,10 +211,8 @@ class DSiteCollection(DPageElement):
     def get_by_url(self, url, fragment=None):
         """Find the page template that matches url (path) of browser
         
-            returns (page, params)
+            returns (page, title, params)
         """
-        if not url.startswith('/'):
-            raise NotImplementedError("Only absolute URL paths supported")
 
         # TODO: decode fragments
 
@@ -219,12 +220,19 @@ class DSiteCollection(DPageElement):
             m = expr.match(url)
             if m:
                 page = self.get_by_file(target)
-                return page, m.groups()[1:]
+                title = None
+                for t, u in self.url_dir.items():
+                    if u == url:
+                        title = t
+                        break
+                return page, title, m.groups()[1:]
         else:
             raise KeyError("No match for url")
 
     def get_by_file(self, fname):
         """Get page by template filename
+        
+            :return: pageelem
         """
         if fname not in self.file_dir:
             raise KeyError("Template not found: %s" % fname)
@@ -238,9 +246,11 @@ class DSiteCollection(DPageElement):
         """Get page by set title
         
            Titles are arbitrary, pretty names assigned to page templates
+           :return: (pageelem, url)
         """
         fname = self.page_dir[title]
-        return self.get_by_file(fname)
+        url = self.url_dir.get(title, None)
+        return self.get_by_file(fname), url
 
 
 class IndexHTMLParser(BaseDPOParser):

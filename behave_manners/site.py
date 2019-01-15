@@ -28,6 +28,7 @@ class SiteContext(object):
         self._log.debug("site setup at %s" % getattr(context, '@layer', '?'))
 
         context.add_cleanup(self.__cleanup_site, context)
+        self._collection = None
 
     def _setup_hook(self, hook_key, context):
         assert hook_key not in self.__orig_hooks, "Already installed: %s" % hook_key
@@ -102,6 +103,17 @@ class SiteContext(object):
     @property
     def base_url(self):
         return self._config['site']['base_url']
+
+    def init_collection(self):
+        if self._collection is not None:
+            return
+        from .pagelems import FSLoader, DSiteCollection
+
+        self._collection = DSiteCollection(FSLoader('.'))
+        index = self._config['page_objects'].get('index', 'index.html')
+        log.debug("Loading index from %s", index)
+        self._collection.load_index(index)
+        self._collection.load_preloads()
 
 
 class WebContext(SiteContext):
@@ -219,6 +231,37 @@ class WebContext(SiteContext):
             rec.msecs = (ct - long(ct)) * 1000
             log.handle(rec)
 
+    def navigate_by_title(self, context, title, force=False):
+        """Open a URL, by pretty title
+        """
+        url = self.base_url
+        page, purl = self._collection.get_by_title(title)
+        if purl is None:
+            raise KeyError("No url for %s" % title)
+        if url.endswith('/') and purl.startswith('/'):
+            url = url[:-1]
+        url = url + purl
+        self._log.debug("Navigating to %s", url)
+        # TODO: up = urlparse.urlparse(driver.current_url)
+        if force or context.browser.current_url != url:
+            context.browser.get(url)
+        context.cur_page = page.get_root(context.browser)
+    
+    def get_cur_title(self, context):
+        #up = urlparse.urlparse()
+        cur_url = context.browser.current_url
+        if cur_url.startswith(self.base_url):
+            cur_url = cur_url[len(self.base_url):].split('?', 1)[0]
+        else:
+            self._log.warning("Browser at %s, not under base url", cur_url)
+            return None
+
+        try:
+            page, title, params = self._collection.get_by_url(cur_url)
+            return title
+        except KeyError:
+            self._log.warning("No match for url: %s", cur_url)
+            return None
 
 _wd_loglevels = {'INFO': logging.INFO, 'WARN': logging.WARNING,
                  'SEVERE': logging.ERROR, 'CRITICAL': logging.CRITICAL

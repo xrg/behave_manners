@@ -12,14 +12,18 @@ def site_setup(context, config=None):
     assert isinstance(context, Context)
     if hasattr(context, 'site'):
         raise RuntimeError("Site cannot be setup twice in same context")
-    if config and isinstance(config, six.string_types):
+    if not config:
+        return
+    if isinstance(config, six.string_types):
         config = SiteContext._load_config(config)
 
-    if config and config.get('browser'):
+    if config.get('browser'):
         context.site = WebContext(context, config)
     else:
         context.site = SiteContext(context, config)
 
+    if config.get('page_objects'):
+        context.site.init_collection()
     return
 
 

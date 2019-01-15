@@ -7,3 +7,8 @@
     page, not the elements of that page.
 """
 
+from .loaders import FSLoader
+from .index_elems import DSiteCollection
+
+
+# eof

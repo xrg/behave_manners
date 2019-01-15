@@ -93,8 +93,8 @@ def cmdline_main():
             else:
                 
                 try:
-                    page, page_args = site.get_by_url(up.path, fragment=up.fragment)
-                    log.info("Got page %s %r", page, page_args)
+                    page, title, page_args = site.get_by_url(up.path, fragment=up.fragment)
+                    log.info("Got page %s %r", title, page_args)
                     
                     for path, elem in page.walk(driver):
                         print('  ' * len(path), '/'.join(path), elem)
