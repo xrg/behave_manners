@@ -1,0 +1,18 @@
+---
+# Site configuration
+
+site:
+    # global parameters on the site (assuming single main site)
+    base_url: https://angular.io/
+    element_timeout: 1000ms
+
+browser:        # Technical conf about the browser
+    engine: chrome
+    launch_on: feature  # or 'scenario' or 'demand'
+    window: 1200x900
+    # more capabilities...
+    # headless: true
+    headless: false
+
+page_objects:
+    index: site/index.html
