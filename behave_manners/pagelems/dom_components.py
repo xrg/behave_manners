@@ -53,6 +53,9 @@ class _SomeProxy(object):
         be iterated like dicts.
         
     """
+    _pagetmpl = None
+    _remote = None
+
     def __init__(self, pagetmpl, remote):
         self._pagetmpl = pagetmpl
         self._remote = remote
@@ -107,7 +110,6 @@ class ComponentProxy(_SomeProxy):
     """Cross-breed of a Selenium element and DPO page object
     
     """
-    _pagetmpl = None
     __attrs = {}
     
     def __init__(self, name, parent, pagetmpl, webelem):
