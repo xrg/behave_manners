@@ -151,6 +151,7 @@ class ComponentProxy(_SomeProxy):
             raise AttributeError(name)
         if attr.setter is None:
             raise AttributeError('%s is read-only' % name)
+
         welem = self._remote
         if attr.xpath:
             welem = welem.find_element_by_xpath(attr.xpath)
@@ -159,6 +160,9 @@ class ComponentProxy(_SomeProxy):
     @property
     def path(self):
         return self._parent.path + (self._name,)
+
+    def click(self):
+        self._remote.click()
 
 
 #  class EmptyComponent(_SomeProxy): ??
