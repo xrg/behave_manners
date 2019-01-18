@@ -15,7 +15,7 @@ class AnyElement(DPageElement):
         match_attrs = defaultdict(list)
         self.read_attrs = {}
         self._split_attrs(attrs, match_attrs, self.read_attrs)
-        self._xpath = ''
+        self._xpath = '*'
         self._set_match_attrs(match_attrs)
 
     def _set_match_attrs(self, match_attrs):
@@ -95,7 +95,7 @@ class GenericElement(DPageElement):
     
     def __init__(self, tag, attrs):
         super(GenericElement, self).__init__(tag, attrs)
-        self._xpath = tag + self._xpath  # no '/', _xpath is clauses on same element
+        self._xpath = tag + self._xpath[1:]  # no '/', _xpath is clauses on same element
 
 
 class _LeafElement(DPageElement):
