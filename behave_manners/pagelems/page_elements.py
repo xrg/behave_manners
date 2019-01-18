@@ -5,6 +5,7 @@ from collections import defaultdict
 
 from .helpers import textescape, prepend_xpath, word_re
 from .base_parsers import DPageElement, DataElement, BaseDPOParser, HTMLParseError
+from .exceptions import ElementNotFound
 
 
 class AnyElement(DPageElement):
@@ -70,6 +71,8 @@ class AnyElement(DPageElement):
             # Stop at first 'welem' that yields any children results
             if found:
                 break
+        else:
+            raise ElementNotFound(selector=self._xpath, parent=remote)
 
     def iter_items(self, remote, xpath_prefix=''):
         return self._iter_items_cont(remote, xpath_prefix)
@@ -140,8 +143,12 @@ class NamedElement(DPageElement):
                 yield i+1, n, prepend_xpath('./',  x)
 
     def _locate_in(self, remote, xpath_prefix):
-        for welem in remote.find_elements_by_xpath(prepend_xpath(xpath_prefix, self._xpath)):
+        xpath = prepend_xpath(xpath_prefix, self._xpath)
+        for welem in remote.find_elements_by_xpath(xpath):
             yield self.this_name, welem, self
+            break
+        else:
+            raise ElementNotFound(parent=remote, selector=xpath)
 
     def _locate_attrs(self, webelem=None, xpath_prefix=''):
         # Stop traversing, no attributes exposed from this to parent
@@ -344,7 +351,7 @@ class RepeatObj(DPageElement):
             if ni > self.max_elems:
                 break
         if ni < self.min_elems:
-            raise Exception('Not enough children')
+            raise ElementNotFound(parent=remote, selector=xpath_prefix)
 
     def _locate_in(self, remote, xpath_prefix=''):
         # If this has a name, return new container Component,
