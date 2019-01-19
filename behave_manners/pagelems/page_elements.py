@@ -101,7 +101,7 @@ class GenericElement(DPageElement):
         self._xpath = tag + self._xpath[1:]  # no '/', _xpath is clauses on same element
 
 
-class _LeafElement(DPageElement):
+class LeafElement(DPageElement):
     # TODO
     _name = '.leaf'
     _inherit = 'any'
