@@ -177,25 +177,25 @@ class DPageElement(object):
         return []
 
     # Methods for Component Proxies
-    def iter_items(self, remote, xpath_prefix=''):
+    def iter_items(self, remote, context, xpath_prefix=''):
         """Iterate possible children components
         
             :return: tuple (name, welem, ptmpl)
         """
         return
     
-    def _iter_items_cont(self, remote, xpath_prefix=''):
+    def _iter_items_cont(self, remote, context, xpath_prefix=''):
         """Standard `iter_items()` implementation for containing components
         """
         seen_names = set()
         for ch in self._children:
-            for n, w, p in ch._locate_in(remote, xpath_prefix):
+            for n, w, p in ch._locate_in(remote, context, xpath_prefix):
                 # Suppress duplicate names, only return first match
                 if n not in seen_names:
                     yield n, w, p
                     seen_names.add(n)
 
-    def _locate_in(self, remote, xpath_prefix):
+    def _locate_in(self, remote, context, xpath_prefix):
         """Locate (possibly) this component under 'remote' webelem
         
             Called by the parent component, to resolve this.
@@ -203,14 +203,14 @@ class DPageElement(object):
         """
         return ()
 
-    def iter_attrs(self, webelem=None, xpath_prefix=''):
+    def iter_attrs(self, webelem=None, context=None, xpath_prefix=''):
         """Iterate names of possible attributes
 
             returns iterator of (name, xpath, getter, setter)
         """
         return ()
 
-    def _locate_attrs(self, webelem=None, xpath_prefix=''):
+    def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
         """Locate self and return our possible attributes
 
             To be called by parent to return possible attributes

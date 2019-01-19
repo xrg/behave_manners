@@ -62,10 +62,10 @@ class AnyElement(DPageElement):
     def xpath(self):
         return self._xpath
 
-    def _locate_in(self, remote, xpath_prefix):
+    def _locate_in(self, remote, context, xpath_prefix):
         found = False
         for welem in remote.find_elements_by_xpath(prepend_xpath(xpath_prefix, self._xpath)):
-            for y3 in self.iter_items(welem, xpath_prefix):
+            for y3 in self.iter_items(welem, context, xpath_prefix):
                 yield y3
                 found = True
             # Stop at first 'welem' that yields any children results
@@ -74,10 +74,10 @@ class AnyElement(DPageElement):
         else:
             raise ElementNotFound(selector=self._xpath, parent=remote)
 
-    def iter_items(self, remote, xpath_prefix=''):
-        return self._iter_items_cont(remote, xpath_prefix)
+    def iter_items(self, remote, context, xpath_prefix=''):
+        return self._iter_items_cont(remote, context, xpath_prefix)
 
-    def iter_attrs(self, webelem=None, xpath_prefix=''):
+    def iter_attrs(self, webelem=None, context=None, xpath_prefix=''):
         """Iterate names of possible attributes
 
             returns iterator of (name, getter, setter)
@@ -85,11 +85,11 @@ class AnyElement(DPageElement):
         for k, fn in self.read_attrs.items():
             yield k, xpath_prefix, fn, None
         for ch in self._children:
-            for y4 in ch._locate_attrs(webelem, xpath_prefix):
+            for y4 in ch._locate_attrs(webelem, context, xpath_prefix):
                 yield y4
 
-    def _locate_attrs(self, webelem=None, xpath_prefix=''):
-        return self.iter_attrs(webelem, prepend_xpath(xpath_prefix, self.xpath))
+    def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
+        return self.iter_attrs(webelem, context, prepend_xpath(xpath_prefix, self.xpath))
 
 
 class GenericElement(DPageElement):
@@ -121,7 +121,7 @@ class Text2AttrElement(DPageElement):
     def consume(self, element):
         raise TypeError('Data cannot consume %r' % element)
 
-    def _locate_attrs(self, webelem=None, xpath_prefix=''):
+    def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
         yield self._attr_name, xpath_prefix, lambda w: w.text, None
 
 
@@ -142,7 +142,7 @@ class NamedElement(DPageElement):
             for i, n, x in c.pretty_dom():
                 yield i+1, n, prepend_xpath('./',  x)
 
-    def _locate_in(self, remote, xpath_prefix):
+    def _locate_in(self, remote, context, xpath_prefix):
         xpath = prepend_xpath(xpath_prefix, self._xpath)
         for welem in remote.find_elements_by_xpath(xpath):
             yield self.this_name, welem, self
@@ -150,7 +150,7 @@ class NamedElement(DPageElement):
         else:
             raise ElementNotFound(parent=remote, selector=xpath)
 
-    def _locate_attrs(self, webelem=None, xpath_prefix=''):
+    def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
         # Stop traversing, no attributes exposed from this to parent
         return ()
 
@@ -221,17 +221,17 @@ class InputElement(DPageElement):
         # no children, nothing to return
         return []
 
-    def iter_attrs(self, webelem=None, xpath_prefix=''):
+    def iter_attrs(self, webelem=None, context=None, xpath_prefix=''):
         return []
 
-    def _locate_in(self, remote, xpath_prefix):
+    def _locate_in(self, remote, context, xpath_prefix):
         if self.this_name:
             for welem in remote.find_elements_by_xpath(prepend_xpath(xpath_prefix, self._xpath)):
                 yield self.this_name, welem, self
         else:
             return
     
-    def _locate_attrs(self, webelem=None, xpath_prefix=''):
+    def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
         if not self.this_name:
             # expose self as attribute
             if self.name_attr == '*':
@@ -282,8 +282,8 @@ class DeepContainObj(DPageElement):
             return ch
         return self
 
-    def iter_items(self, remote, xpath_prefix=''):
-        return self._iter_items_cont(remote, xpath_prefix='.//')
+    def iter_items(self, remote, context, xpath_prefix=''):
+        return self._iter_items_cont(remote, context, xpath_prefix='.//')
 
 
 class RepeatObj(DPageElement):
@@ -328,7 +328,7 @@ class RepeatObj(DPageElement):
         print "must have of ", self
         return [ './' + ch.xpath for ch in self._children]
 
-    def iter_items(self, remote, xpath_prefix=''):
+    def iter_items(self, remote, context, xpath_prefix=''):
         pattern = self._children[0].this_name   # assuming NamedElement, so far
         if not pattern:
             pfun = lambda n, x: n
@@ -345,7 +345,7 @@ class RepeatObj(DPageElement):
             pfun = lambda n, x: pattern + str(n)
 
         ni = 0
-        for name, welem, ptmpl in self._children[0]._locate_in(remote, xpath_prefix):
+        for name, welem, ptmpl in self._children[0]._locate_in(remote, context, xpath_prefix):
             yield pfun(ni, welem), welem, ptmpl
             ni += 1
             if ni > self.max_elems:
@@ -353,13 +353,13 @@ class RepeatObj(DPageElement):
         if ni < self.min_elems:
             raise ElementNotFound(parent=remote, selector=xpath_prefix)
 
-    def _locate_in(self, remote, xpath_prefix=''):
+    def _locate_in(self, remote, context, xpath_prefix=''):
         # If this has a name, return new container Component,
         # else just iterate contents
         if self.this_name:
             yield self.this_name, remote, self
         else:
-            for y3 in self.iter_items(remote, xpath_prefix):
+            for y3 in self.iter_items(remote, context, xpath_prefix):
                 yield y3
 
 
@@ -389,8 +389,8 @@ class DHtmlObject(DPageElement):
 
         return super(DHtmlObject, self).reduce()
 
-    def iter_items(self, remote, xpath_prefix=''):
-        return self._iter_items_cont(remote, xpath_prefix='//')
+    def iter_items(self, remote, context, xpath_prefix=''):
+        return self._iter_items_cont(remote, context, xpath_prefix='//')
 
     def walk(self, webdriver, max_depth=1000):
         """Discover all interesting elements within webdriver current page+context

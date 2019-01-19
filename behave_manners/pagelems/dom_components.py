@@ -56,16 +56,17 @@ class _SomeProxy(object):
     _pagetmpl = None
     _remote = None
 
-    def __init__(self, pagetmpl, remote):
+    def __init__(self, pagetmpl, remote, context=None):
         self._pagetmpl = pagetmpl
         self._remote = remote
+        self._context = context
 
     @property
     def path(self):
         raise NotImplementedError()
 
     def __getitem__(self, name):
-        for iname, ielem, ptmpl in self._pagetmpl.iter_items(self._remote):
+        for iname, ielem, ptmpl in self._pagetmpl.iter_items(self._remote, self._context):
             if name == iname:
                 return ComponentProxy(iname, self, ptmpl, ielem)
         raise KeyError(name)  # no such element
