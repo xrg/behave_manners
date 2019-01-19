@@ -28,6 +28,8 @@ def prepend_xpath(pre, xpath):
         return pre + xpath.lstrip('/')
     elif pre.endswith('/') and xpath.startswith('/'):
         return pre[:-1] + xpath
+    elif pre.endswith('/') and xpath.startswith('./'):
+        return pre + xpath[2:]
 
     return pre + xpath
 
