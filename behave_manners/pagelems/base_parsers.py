@@ -108,6 +108,11 @@ class BaseDPOParser(parser, object):
 
 @six.add_metaclass(_ServiceMeta)
 class DPageElement(object):
+    """Base class for elements scanned in pagetemplate html
+
+        This is an abstract class, only subclasses shall be instantiated.
+
+    """
     tag = ''
     is_empty = False   # for elements that need no end tag
 
