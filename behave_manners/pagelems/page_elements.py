@@ -5,11 +5,19 @@ from collections import defaultdict
 
 from .helpers import textescape, prepend_xpath, word_re
 from .base_parsers import DPageElement, DataElement, BaseDPOParser, HTMLParseError
+from .site_collection import DSiteCollection
 from .exceptions import ElementNotFound
+
+
+class DomContainerElement(DPageElement):
+    """Base class for 'regular' DOM elements that can contain others
+    """
+    _name = '.domContainer'
 
 
 class AnyElement(DPageElement):
     _name = 'tag.anyelement'
+    _inherit = '.domContainer'
 
     def __init__(self, tag, attrs):
         super(AnyElement, self).__init__(tag)
@@ -110,9 +118,9 @@ class LeafElement(DPageElement):
         raise TypeError('%s cannot consume %r' % (self._name, element))
 
 
-
 class Text2AttrElement(DPageElement):
     _name = 'text2attr'
+    _consume_in = (DomContainerElement,)
     
     def __init__(self, name):
         super(Text2AttrElement, self).__init__()
@@ -252,6 +260,7 @@ class InputElement(DPageElement):
 
 class MustContain(DPageElement):
     _name = 'tag.mustcontain'
+    _consume_in = ()
     
     @property
     def xpath(self):
@@ -265,6 +274,7 @@ class MustContain(DPageElement):
 
 class DeepContainObj(DPageElement):
     _name = 'tag.deep'
+    _inherit = '.domContainer'
 
     def __init__(self, tag, attrs):
         if attrs:
@@ -288,6 +298,7 @@ class DeepContainObj(DPageElement):
 
 class RepeatObj(DPageElement):
     _name = 'tag.repeat'
+    _inherit = '.domContainer'
     
     _attrs_map = {'min': ('min_elems', int, 0),
                   'max': ('max_elems', int, 1000000),
@@ -368,6 +379,7 @@ class DHtmlObject(DPageElement):
     
     """
     _name = 'tag.html'
+    _consume_in = (DSiteCollection,)
     
     # TODO
     
@@ -421,10 +433,13 @@ class DPageObject(DPageElement):
     """
     _name = 'tag.htmlpage'
     _inherit = 'tag.html'
+    _consume_in = ()  # TODO
 
     def __init__(self, tag=None, attrs=()):
         super(DPageObject, self).__init__(tag, attrs)
 
+
+DomContainerElement._consume_in = (DomContainerElement, DHtmlObject)
 
 
 class PageParser(BaseDPOParser):

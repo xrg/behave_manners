@@ -43,6 +43,9 @@ class BaseDPOParser(parser, object):
         while self._dom_stack:
             closed = self._dom_stack.pop()
             prev = self._dom_stack[-1]
+            if not isinstance(prev, closed._consume_in):
+                raise HTMLParseError("A <%s> element cannot be consumed in a <%s>" % \
+                                     (closed.tag, prev.tag or prev._name))
             prev.consume(closed)
             if closed.tag == tag:
                 break
@@ -50,7 +53,11 @@ class BaseDPOParser(parser, object):
     def _pop_empty(self):
         if len(self._dom_stack) > 1 and self._dom_stack[-1].is_empty:
             closed = self._dom_stack.pop()
-            self._dom_stack[-1].consume(closed)
+            prev = self._dom_stack[-1]
+            if not isinstance(prev, closed._consume_in):
+                raise HTMLParseError("A <%s> element cannot be consumed in a <%s>" % \
+                                     (closed.tag, prev.tag))
+            prev.consume(closed)
 
     def close(self):
         super(BaseDPOParser, self).close()
@@ -58,6 +65,9 @@ class BaseDPOParser(parser, object):
         while len(self._dom_stack) > 1:
             closed = self._dom_stack.pop()
             prev = self._dom_stack[-1]
+            if not isinstance(prev, closed._consume_in):
+                raise HTMLParseError("A <%s> element cannot be consumed in a <%s>" % \
+                                     (closed.tag, prev.tag))
             self.logger.warning("Missing </%s> tag at end of stream %d:%d ",
                                 closed.tag, *self.getpos())
             prev.consume(closed)

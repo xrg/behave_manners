@@ -37,16 +37,19 @@ class IHtmlObject(DPageElement):
     """
     _name = 'index.html'
     _inherit = '.index.base'
+    _consume_in = (DSiteCollection,)
 
 
 class IHeadObject(DPageElement):
     _name = 'index.head'
     _inherit = '.index.base'
+    _consume_in = (IHtmlObject,)
 
 
 class ILinkObject(DPageElement):
     _name = 'index.link'
     is_empty = True
+    _consume_in = (IHeadObject,)
     SUPPORTED_ATTRS = ('rel', 'href', 'title', 'url')
     
     def __init__(self, tag, attrs=()):
