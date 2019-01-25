@@ -195,7 +195,7 @@ class DPageElement(object):
     def iter_items(self, remote, context, xpath_prefix=''):
         """Iterate possible children components
         
-            :return: tuple (name, welem, ptmpl)
+            :return: tuple (name, welem, ptmpl, context)
         """
         return
     
@@ -204,17 +204,17 @@ class DPageElement(object):
         """
         seen_names = set()
         for ch in self._children:
-            for n, w, p in ch._locate_in(remote, context, xpath_prefix):
+            for n, w, p, ctx in ch._locate_in(remote, context, xpath_prefix):
                 # Suppress duplicate names, only return first match
                 if n not in seen_names:
-                    yield n, w, p
+                    yield n, w, p, ctx
                     seen_names.add(n)
 
     def _locate_in(self, remote, context, xpath_prefix):
         """Locate (possibly) this component under 'remote' webelem
         
             Called by the parent component, to resolve this.
-            Returns tuple (name, welem, ptmpl)
+            Returns tuple (name, welem, ptmpl, context)
         """
         return ()
 

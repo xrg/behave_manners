@@ -66,21 +66,21 @@ class _SomeProxy(object):
         raise NotImplementedError()
 
     def __getitem__(self, name):
-        for iname, ielem, ptmpl in self._pagetmpl.iter_items(self._remote, self._context):
+        for iname, ielem, ptmpl, ctx in self._pagetmpl.iter_items(self._remote, self._context):
             if name == iname:
-                return ComponentProxy(iname, self, ptmpl, ielem)
+                return ComponentProxy(iname, self, ptmpl, ielem, ctx)
         raise KeyError(name)  # no such element
 
     def keys(self):
         return self.__iter__()
 
     def __iter__(self):
-        for name, welem, ptmpl in self._pagetmpl.iter_items(self._remote):
+        for name, welem, ptmpl in self._pagetmpl.iter_items(self._remote, self._context):
             yield name
 
     def iteritems(self):
-        for iname, ielem, ptmpl in self._pagetmpl.iter_items(self._remote):
-            yield iname, ComponentProxy(iname, self, ptmpl, ielem)
+        for iname, ielem, ptmpl, ctx in self._pagetmpl.iter_items(self._remote, self._context):
+            yield iname, ComponentProxy(iname, self, ptmpl, ielem, ctx)
 
 
 class PageProxy(_SomeProxy):
@@ -88,8 +88,8 @@ class PageProxy(_SomeProxy):
     
         Holds reference to remote WebDriver, has no parent
     """
-    def __init__(self, pagetmpl, webdriver):
-        super(PageProxy, self).__init__(pagetmpl, webdriver)
+    def __init__(self, pagetmpl, webdriver, context):
+        super(PageProxy, self).__init__(pagetmpl, webdriver, context)
 
     @property
     def path(self):
@@ -113,8 +113,8 @@ class ComponentProxy(_SomeProxy):
     """
     __attrs = {}
     
-    def __init__(self, name, parent, pagetmpl, webelem):
-        super(ComponentProxy, self).__init__(pagetmpl, webelem)
+    def __init__(self, name, parent, pagetmpl, webelem, context):
+        super(ComponentProxy, self).__init__(pagetmpl, webelem, context)
         assert isinstance(parent, _SomeProxy)
         self._name = name
         self._parent = parent

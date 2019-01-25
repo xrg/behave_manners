@@ -73,8 +73,9 @@ class AnyElement(DPageElement):
     def _locate_in(self, remote, context, xpath_prefix):
         found = False
         for welem in remote.find_elements_by_xpath(prepend_xpath(xpath_prefix, self._xpath)):
-            for y3 in self.iter_items(welem, context, xpath_prefix):
-                yield y3
+            print("iter_items under", welem.tag_name)
+            for y4 in self.iter_items(welem, context, xpath_prefix):
+                yield y4
                 found = True
             # Stop at first 'welem' that yields any children results
             if found:
@@ -153,7 +154,7 @@ class NamedElement(DPageElement):
     def _locate_in(self, remote, context, xpath_prefix):
         xpath = prepend_xpath(xpath_prefix, self._xpath)
         for welem in remote.find_elements_by_xpath(xpath):
-            yield self.this_name, welem, self
+            yield self.this_name, welem, self, context
             break
         else:
             raise ElementNotFound(parent=remote, selector=xpath)
@@ -235,7 +236,7 @@ class InputElement(DPageElement):
     def _locate_in(self, remote, context, xpath_prefix):
         if self.this_name:
             for welem in remote.find_elements_by_xpath(prepend_xpath(xpath_prefix, self._xpath)):
-                yield self.this_name, welem, self
+                yield self.this_name, welem, self, context
         else:
             return
     
@@ -356,8 +357,9 @@ class RepeatObj(DPageElement):
             pfun = lambda n, x: pattern + str(n)
 
         ni = 0
-        for name, welem, ptmpl in self._children[0]._locate_in(remote, context, xpath_prefix):
-            yield pfun(ni, welem), welem, ptmpl
+        for name, welem, ptmpl, ctx in self._children[0] \
+                ._locate_in(remote, context, xpath_prefix):
+            yield pfun(ni, welem), welem, ptmpl, ctx
             ni += 1
             if ni > self.max_elems:
                 break
@@ -368,10 +370,10 @@ class RepeatObj(DPageElement):
         # If this has a name, return new container Component,
         # else just iterate contents
         if self.this_name:
-            yield self.this_name, remote, self
+            yield self.this_name, remote, self, context
         else:
-            for y3 in self.iter_items(remote, context, xpath_prefix):
-                yield y3
+            for y4 in self.iter_items(remote, context, xpath_prefix):
+                yield y4
 
 
 class DHtmlObject(DPageElement):
