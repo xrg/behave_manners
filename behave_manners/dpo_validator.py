@@ -93,10 +93,11 @@ def cmdline_main():
             else:
                 
                 try:
+                    site_ctx = site.get_context()
                     page, title, page_args = site.get_by_url(up.path, fragment=up.fragment)
                     log.info("Got page %s %r", title, page_args)
-                    
-                    for path, elem in page.walk(driver):
+
+                    for path, elem in page.walk(driver, parent_ctx=site_ctx):
                         print('  ' * len(path), '/'.join(path), elem)
                         for a in dir(elem):
                             try:

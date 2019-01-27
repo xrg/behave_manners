@@ -4,7 +4,8 @@ import logging
 from collections import defaultdict
 
 from .helpers import textescape, prepend_xpath, word_re
-from .base_parsers import DPageElement, DataElement, BaseDPOParser, HTMLParseError
+from .base_parsers import DPageElement, DataElement, BaseDPOParser, \
+                          HTMLParseError, DOMContext
 from .site_collection import DSiteCollection
 from .exceptions import ElementNotFound
 
@@ -406,12 +407,12 @@ class DHtmlObject(DPageElement):
     def iter_items(self, remote, context, xpath_prefix=''):
         return self._iter_items_cont(remote, context, xpath_prefix='//')
 
-    def walk(self, webdriver, max_depth=1000):
+    def walk(self, webdriver, parent_ctx=None, max_depth=1000):
         """Discover all interesting elements within webdriver current page+context
         
             Iterator, yielding (path, Component) pairs, traversing depth first
         """
-        stack = [((), self.get_root(webdriver))]
+        stack = [((), self.get_root(webdriver, parent_ctx))]
         while stack:
             path, comp = stack.pop()
             yield path, comp
@@ -420,11 +421,12 @@ class DHtmlObject(DPageElement):
                 celems.reverse()
                 stack += celems
 
-    def get_root(self, webdriver):
+    def get_root(self, webdriver, parent_ctx=None):
         """Obtain a proxy to the root DOM of remote WebDriver, bound to this template
         """
         from .dom_components import PageProxy
-        return PageProxy(self, webdriver)
+        new_context = DOMContext(parent=parent_ctx, templates=self._templates)
+        return PageProxy(self, webdriver, context=new_context)
 
 
 class DPageObject(DPageElement):

@@ -257,4 +257,27 @@ class DataElement(DPageElement):
             return ['text()=%s' % textescape(self.data)]
 
 
+class DOMContext(object):
+    """A simple holder of shared components or variables across DOM levels
+    """
+    
+    def __init__(self, parent=None, templates=None):
+        self._parent = parent
+        self._templates = templates or {}
+
+    def child(self):
+        """Return a child context linked to this one
+        """
+        return self.__class__(self)
+
+    def get_template(self, key):
+        try:
+            return self._templates[key]
+        except KeyError:
+            if self._parent is not None:
+                return self._parent.get_template(key)
+            else:
+                raise KeyError("Template id='%s' not found" % key)
+
+
 #eof

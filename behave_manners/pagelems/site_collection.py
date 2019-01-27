@@ -4,7 +4,7 @@ import posixpath as pp
 import fnmatch
 import logging
 import re
-from .base_parsers import DPageElement
+from .base_parsers import DPageElement, DOMContext
 from .loaders import BaseLoader
 
 
@@ -186,6 +186,17 @@ class DSiteCollection(DPageElement):
         fname = self.page_dir[title]
         url = self.url_dir.get(title, None)
         return self.get_by_file(fname), url
+
+    def get_context(self):
+        """Return new DOMContext bound to self
+        
+            A `DSiteCollection` can be reused across runs, but ideally
+            each run should start with a new context, as returned by
+            this method.
+            Then, this context should be passed to pages under this site,
+            as those returned by `get_by_title()` , `get_by_url()` etc.
+        """
+        return DOMContext(templates=None)
 
 
 # eof
