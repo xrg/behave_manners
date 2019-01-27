@@ -152,8 +152,13 @@ class DPageElement(object):
                 v = typ(v)
             setattr(self, py, v)
 
-        for py, typ, d in expected.values():
-            setattr(self, py, d)
+        for k, vals in expected.items():
+            py, typ, d = vals
+            if d is AttributeError:
+                raise ValueError('Missing mandatory attribute in <%s %s=??>'
+                                 % (self.tag, k))
+            else:
+                setattr(self, py, d)
 
     def consume(self, element):
         assert isinstance(element, DPageElement), repr(element)
