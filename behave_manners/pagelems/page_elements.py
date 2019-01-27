@@ -381,15 +381,77 @@ class RepeatObj(DPageElement):
                 yield y4
 
 
+class ConsumeTmplMixin(object):
+    """Common between Head and Body elements, temporarily hold templates
+    """
+    _tmp_templates = ()  # start with immutable iterable
+
+    def consume(self, element):
+        if isinstance(element, DTemplateElement):
+            if isinstance(self._tmp_templates, tuple):
+                # copy class-wide to instance-specific list
+                self._tmp_templates = list(self._tmp_templates)
+            self._tmp_templates.append(element)
+        else:
+            super(ConsumeTmplMixin, self).consume(element)
+
+
+class DHeadElement(DPageElement, ConsumeTmplMixin):
+    _name = 'tag.head'
+
+
+class DBodyElement(DPageElement, ConsumeTmplMixin):
+    _name = 'tag.body'
+    _inherit = 'any'
+
+
+class DTemplateElement(DPageElement):
+    """A template defines reusable DOM that is not normally rendered/scanned
+    
+        See: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template
+        
+        Likewise, the template will be re-used in this parser, match remote
+        DOM and generate same proxy elements, under their caller.
+    """
+    
+    _name = 'tag.template'
+    _inherit = '.domContainer'
+    _consume_in = (DHeadElement, DBodyElement, )
+    _attrs_map = { 'id': ('this_id', str, AttributeError),
+                 }
+
+
+    def __init__(self, tag, attrs):
+        super(DTemplateElement, self).__init__(tag)
+        self._parse_attrs(attrs)
+
+    def _locate_in(self, remote, context, xpath_prefix):
+        """A template is never parsed at its original DOM location
+        """
+        return ()
+
+
 class DHtmlObject(DPageElement):
     """Consume the <html> element as top-level site page
     
     """
     _name = 'tag.html'
     _consume_in = (DSiteCollection,)
-    
-    # TODO
-    
+
+    def __init__(self, tag, attrs):
+        super(DHtmlObject, self).__init__(tag, attrs)
+        self._templates = {}
+
+    def consume(self, element):
+        if isinstance(element, ConsumeTmplMixin):
+            for tmpl in element._tmp_templates:
+                if tmpl.this_id in self._templates:
+                    raise HTMLParseError("Template id='%s' already registered" % tmpl.this_id,
+                                         position=tmpl.pos)
+                self._templates[tmpl.this_id] = tmpl
+            element._tmp_templates = []
+        super(DHtmlObject, self).consume(element)
+
     def reduce(self, site=None):
         if site is not None:
             i = 0
