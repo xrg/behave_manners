@@ -242,6 +242,7 @@ class DPageElement(object):
 
 class DataElement(DPageElement):
     _name = 'text'
+    _consume_in = ()
 
     def __init__(self, data):
         super(DataElement, self).__init__()

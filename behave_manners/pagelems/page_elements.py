@@ -16,6 +16,10 @@ class DomContainerElement(DPageElement):
     _name = '.domContainer'
 
 
+DomContainerElement._consume_in = (DomContainerElement, )
+DataElement._consume_in += (DomContainerElement,)
+
+
 class AnyElement(DPageElement):
     _name = 'tag.anyelement'
     _inherit = '.domContainer'
@@ -443,7 +447,6 @@ class DPageObject(DPageElement):
         super(DPageObject, self).__init__(tag, attrs)
 
 
-DomContainerElement._consume_in = (DomContainerElement, DHtmlObject)
 
 
 class PageParser(BaseDPOParser):
