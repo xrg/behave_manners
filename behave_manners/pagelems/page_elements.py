@@ -478,6 +478,34 @@ class DTemplateElement(DPageElement):
         """
         return ()
 
+    def iter_items(self, remote, context, xpath_prefix=''):
+        return self._iter_items_cont(remote, context, xpath_prefix)
+
+
+class DUseTemplateElem(DPageElement):
+    _name = 'tag.use-template'
+    _inherit = '.domContainer'
+
+    _attrs_map = { 'id': ('template_id', str, AttributeError),
+                 }
+
+    def __init__(self, tag, attrs):
+        super(DUseTemplateElem, self).__init__(tag)
+        self._parse_attrs(attrs)
+    def iter_items(self, remote, xpath_prefix=''):
+        raise RuntimeError('should not be referenced by DOM component')
+
+    def iter_attrs(self, webelem=None, context=None, xpath_prefix=''):
+        raise RuntimeError('should not be referenced by DOM component')
+
+    def _locate_in(self, remote, context, xpath_prefix):
+        # Proxy to actual template. Locate that one and iterate that
+        tmpl = context.get_template(self.template_id)
+        ctx2 = context.child()
+        return tmpl.iter_items(remote, ctx2, xpath_prefix)
+    def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
+        raise NotImplementedError
+
 
 class DHtmlObject(DPageElement):
     """Consume the <html> element as top-level site page
