@@ -328,6 +328,9 @@ class DeepContainObj(DPageElement):
     def iter_items(self, remote, context, xpath_prefix=''):
         return self._iter_items_cont(remote, context, xpath_prefix='.//')
 
+    def _locate_in(self, remote, context, xpath_prefix):
+        return self._iter_items_cont(remote, context, xpath_prefix='.//')
+
     def xpath_locator(self, score, top=False):
         if score <= -100:
             return ''
