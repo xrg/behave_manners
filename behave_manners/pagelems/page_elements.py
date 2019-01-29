@@ -531,18 +531,16 @@ class DHtmlObject(DPageElement):
     def reduce(self, site=None):
         if site is not None:
             i = 0
-            while i < len(self._children):
-                celem = self._children[i]
-                if not isinstance(celem, DHtmlObject):
-                    i += 1
-                    continue
-                ncelem = celem.reduce(site)
-                if ncelem is not celem:
-                    self._children.pop(i)
+            nchildren = []
+            for celem in self._children:
+                try:
+                    ncelem = celem.reduce(site)
                     if ncelem is not None:
-                        self._children.insert(i, ncelem)
-                if ncelem is not None:
-                    i += 1
+                        nchildren.append(ncelem)
+                except TypeError:
+                    nchildren.append(celem)
+
+            self._children[:] = nchildren     # inplace
 
         return super(DHtmlObject, self).reduce()
 
