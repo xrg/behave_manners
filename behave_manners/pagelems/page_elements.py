@@ -444,11 +444,11 @@ class ConsumeTmplMixin(object):
             super(ConsumeTmplMixin, self).consume(element)
 
 
-class DHeadElement(DPageElement, ConsumeTmplMixin):
+class DHeadElement(ConsumeTmplMixin, DPageElement):
     _name = 'tag.head'
 
 
-class DBodyElement(DPageElement, ConsumeTmplMixin):
+class DBodyElement(ConsumeTmplMixin, DPageElement):
     _name = 'tag.body'
     _inherit = 'any'
 
