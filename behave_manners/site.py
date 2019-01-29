@@ -262,6 +262,22 @@ class WebContext(SiteContext):
         except KeyError:
             self._log.warning("No match for url: %s", cur_url)
             return None
+    def navigate_by_url(self, context, url, force=False):
+        # TODO: up = urlparse.urlparse(driver.current_url)
+        curl = url.split('?', 1)[0]
+        page, title, params = self._collection.get_by_url(curl)
+        if self.base_url.endswith('/') and url.startswith('/'):
+            url = self.base_url[:-1] + url
+        else:
+            url = self.base_url + url
+        self._log.debug("Navigating to %s", url)
+        if force or context.browser.current_url != url:
+            context.browser.get(url)
+        if not hasattr(context, 'pagelems_ctx'):
+            context.pagelems_ctx = self._collection.get_context()
+        context.cur_page = page.get_root(context.browser,
+                                         parent_ctx=context.pagelems_ctx)
+
 
 _wd_loglevels = {'INFO': logging.INFO, 'WARN': logging.WARNING,
                  'SEVERE': logging.ERROR, 'CRITICAL': logging.CRITICAL
