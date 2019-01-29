@@ -104,16 +104,21 @@ class AnyElement(DPageElement):
 
     def _locate_in(self, remote, context, xpath_prefix):
         found = False
-        for welem in remote.find_elements_by_xpath(prepend_xpath(xpath_prefix, self._xpath)):
-            print("iter_items under", welem.tag_name)
-            for y4 in self.iter_items(welem, context, xpath_prefix):
-                yield y4
-                found = True
+        xpath2 = prepend_xpath(xpath_prefix, self.xpath)
+        for welem in remote.find_elements_by_xpath(xpath2):
             # Stop at first 'welem' that yields any children results
-            if found:
-                break
+            try:
+                ret = list(self.iter_items(welem, context))
+                # all children elements have been resolved here
+                # List may be empty, but no children would have
+                # raised exception by this point.
+                for y4 in ret:
+                    yield y4
+            except ElementNotFound:
+                continue
+            break
         else:
-            raise ElementNotFound(selector=self._xpath, parent=remote)
+            raise ElementNotFound(selector=xpath2, parent=remote)
 
     def iter_items(self, remote, context, xpath_prefix=''):
         return self._iter_items_cont(remote, context, xpath_prefix)
