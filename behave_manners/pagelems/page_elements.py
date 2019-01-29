@@ -557,6 +557,8 @@ class DPageObject(DPageElement):
         super(DPageObject, self).__init__(tag, attrs)
 
 
+DHeadElement._consume_in = (DHtmlObject,)
+DBodyElement._consume_in = (DHtmlObject,)
 
 
 class PageParser(BaseDPOParser):
