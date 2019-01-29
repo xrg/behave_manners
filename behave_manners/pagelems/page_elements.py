@@ -43,6 +43,7 @@ class AnyElement(DPageElement):
         self._xpath = '*'
         self._xpath_score = 0
         self._set_match_attrs(match_attrs)
+        self._dom_slot = None
 
     def _set_match_attrs(self, match_attrs):
         for k, vs in match_attrs.items():
@@ -58,6 +59,8 @@ class AnyElement(DPageElement):
         for k, v in attrs:
             if k == 'this':
                 self._split_this(v)
+            elif k == 'slot':
+                self._dom_slot = v
             elif v.startswith('[') and v.endswith(']'):
                 assert '.' not in k, k   # TODO
                 # attribute to read value from
@@ -74,6 +77,7 @@ class AnyElement(DPageElement):
         if len(self._children) == 1 \
                 and self._name in ('any', 'tag.anyelement') \
                 and not self.read_attrs \
+                and self._dom_slot is None \
                 and isinstance(self._children[0], NamedElement):
             # Merge Named element with self (its parent)
             ret = self._children[0]
@@ -495,6 +499,18 @@ class DTemplateElement(DPageElement):
         return self._iter_items_cont(remote, context, xpath_prefix)
 
 
+class DSlotElement(DPageElement):
+    _name = 'tag.slot'
+    _inherit = '.domContainer'
+    # _consume_in = anywhere
+    _attrs_map = { 'name': ('this_name', str, AttributeError),
+                 }
+
+    def __init__(self, tag, attrs):
+        super(DSlotElement, self).__init__(tag)
+        self._parse_attrs(attrs)
+
+
 class DUseTemplateElem(DPageElement):
     _name = 'tag.use-template'
     _inherit = '.domContainer'
@@ -505,6 +521,18 @@ class DUseTemplateElem(DPageElement):
     def __init__(self, tag, attrs):
         super(DUseTemplateElem, self).__init__(tag)
         self._parse_attrs(attrs)
+        self._by_slot = {}
+
+    def consume(self, element):
+        if not isinstance(element, AnyElement):
+            raise ValueError('Use-template cannot consume %s' % (element._name))
+        if not element._dom_slot:
+            raise ValueError('Use-template can only have sub-elements with slot= defined')
+
+        if element._dom_slot in self._by_slot:
+            raise ValueError('Slot "%s" already defined' % element._dom_slot)
+        self._by_slot[element._dom_slot] = element
+
     def iter_items(self, remote, xpath_prefix=''):
         raise RuntimeError('should not be referenced by DOM component')
 
