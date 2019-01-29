@@ -15,6 +15,17 @@ class DomContainerElement(DPageElement):
     """
     _name = '.domContainer'
 
+    xpath_score_attrs = {'id': 100, 'name': 80, 'class': 50,  # global attributes
+                         'type': 50, 'action': 60,    # for forms
+                         }
+
+    @classmethod
+    def calc_xpath_score(cls, keys):
+        ret = 0
+        for k in keys:
+            ret += cls.xpath_score_attrs.get(k, 5)
+        return ret
+
 
 DomContainerElement._consume_in = (DomContainerElement, )
 DataElement._consume_in += (DomContainerElement,)
@@ -30,6 +41,7 @@ class AnyElement(DPageElement):
         self.read_attrs = {}
         self._split_attrs(attrs, match_attrs, self.read_attrs)
         self._xpath = '*'
+        self._xpath_score = 0
         self._set_match_attrs(match_attrs)
 
     def _set_match_attrs(self, match_attrs):
@@ -37,6 +49,7 @@ class AnyElement(DPageElement):
             if len(vs) > 1:
                 raise NotImplementedError('Dup arg: %s' % k)
             self._xpath += '[@%s=%s]' % (k, textescape(vs[0]))
+        self._xpath_score += self.calc_xpath_score(match_attrs.keys())
 
     def _split_this(self, value, sub=None):
         raise RuntimeError('%s passed \'this\'' % self.__class__.__name__)
@@ -65,15 +78,29 @@ class AnyElement(DPageElement):
             # Merge Named element with self (its parent)
             ret = self._children[0]
             ret._xpath = prepend_xpath(self._xpath + '/', ret._xpath)
+            ret._reset_xpath_locator()
             return ret
-        for child in self._children:
-            for clause in child.must_have():
-                self._xpath += '[' + clause + ']'
         return self
     
-    @property
-    def xpath(self):
-        return self._xpath
+
+    def xpath_locator(self, score, top=False):
+        if score and score > 0:
+            locator = self._xpath
+            score -= self._xpath_score
+
+        if score > -100:
+            child_locs = []
+            for c in self._children:
+                cloc = c.xpath_locator(score)
+                if cloc:
+                    child_locs.append(cloc)
+
+            if top or (len(child_locs) > 1):
+                for cloc in child_locs:
+                    locator += '[%s]' % cloc
+            elif child_locs:
+                locator += prepend_xpath('/', child_locs[0])
+        return locator
 
     def _locate_in(self, remote, context, xpath_prefix):
         found = False
@@ -113,6 +140,7 @@ class GenericElement(DPageElement):
     def __init__(self, tag, attrs):
         super(GenericElement, self).__init__(tag, attrs)
         self._xpath = tag + self._xpath[1:]  # no '/', _xpath is clauses on same element
+        self._xpath_score += 10
 
 
 class LeafElement(DPageElement):
@@ -157,7 +185,7 @@ class NamedElement(DPageElement):
                 yield i+1, n, prepend_xpath('./',  x)
 
     def _locate_in(self, remote, context, xpath_prefix):
-        xpath = prepend_xpath(xpath_prefix, self._xpath)
+        xpath = prepend_xpath(xpath_prefix, self.xpath)
         for welem in remote.find_elements_by_xpath(xpath):
             yield self.this_name, welem, self, context
             break
@@ -223,10 +251,7 @@ class InputElement(DPageElement):
 
         # TODO: per type
 
-        for k, vs in match_attrs.items():
-            if len(vs) > 1:
-                raise NotImplementedError('Dup arg: %s' % k)
-            self._xpath += '[@%s=%s]' % (k, textescape(vs[0]))
+        super(InputElement, self)._set_match_attrs(match_attrs)
 
     def consume(self, element):
         raise TypeError('Input cannot consume %r' % element)
@@ -240,7 +265,7 @@ class InputElement(DPageElement):
 
     def _locate_in(self, remote, context, xpath_prefix):
         if self.this_name:
-            for welem in remote.find_elements_by_xpath(prepend_xpath(xpath_prefix, self._xpath)):
+            for welem in remote.find_elements_by_xpath(prepend_xpath(xpath_prefix, self.xpath)):
                 yield self.this_name, welem, self, context
         else:
             return
@@ -251,7 +276,7 @@ class InputElement(DPageElement):
             if self.name_attr == '*':
                 # Active remote iteration here, must discover all <input> elements
                 # and yield as many attributes
-                for relem in webelem.find_elements_by_xpath(prepend_xpath(xpath_prefix, self._xpath)):
+                for relem in webelem.find_elements_by_xpath(prepend_xpath(xpath_prefix, self.xpath)):
                     rname = relem.get_attribute('name')
                     xpath = self._xpath + "[@name=%s]" % textescape(rname)
                     yield (rname, xpath_prefix,
@@ -287,19 +312,41 @@ class DeepContainObj(DPageElement):
             raise ValueError('Deep cannot have attributes')
         super(DeepContainObj, self).__init__(tag)
 
-    @property
-    def xpath(self):
-        return './/'
-
     def reduce(self):
         if len(self._children) == 1 and isinstance(self._children[0], AnyElement):
             ch = self._children.pop()
             ch._xpath = prepend_xpath('.//', ch._xpath)
+            ch._reset_xpath_locator()
             return ch
         return self
 
     def iter_items(self, remote, context, xpath_prefix=''):
         return self._iter_items_cont(remote, context, xpath_prefix='.//')
+
+    def xpath_locator(self, score, top=False):
+        if score <= -100:
+            return ''
+
+        score *= 2   # operating in half-score 
+        try:
+            child_locs = []
+            for c in self._children:
+                cloc = c.xpath_locator(score)
+                if cloc:
+                    child_locs.append(cloc)
+            
+            if top or (len(child_locs) > 1):
+                locator = './/'
+                for cloc in child_locs:
+                    locator += '[%s]' % cloc
+                return locator
+            elif child_locs:
+                return prepend_xpath('.//', child_locs[0])
+            else:
+                score -= 2
+                return '*'  # any stray element satisfies a 'Deep' match
+        finally:
+            score //= 2
 
 
 class RepeatObj(DPageElement):
@@ -322,6 +369,7 @@ class RepeatObj(DPageElement):
         if len(self._children) > 1:
             raise NotImplementedError("Cannot handle siblings in <Repeat>")  # yet
 
+        self._reset_xpath_locator()
         # Check top child
         ch = self._children[0]
         if isinstance(ch, NamedElement):

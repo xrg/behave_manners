@@ -2,7 +2,7 @@
 
 import six
 from f3utils.service_meta import abstractmethod, _ServiceMeta
-from .helpers import textescape
+from .helpers import textescape, Integer
 
 if six.PY2:
     from HTMLParser import HTMLParser as parser, HTMLParseError
@@ -128,6 +128,7 @@ class DPageElement(object):
     is_empty = False   # for elements that need no end tag
 
     def __init__(self, tag=None, attrs=()):
+        self.__xpath = None
         self.pos = None
         self.tag = tag
         self._children = []
@@ -177,6 +178,8 @@ class DPageElement(object):
             None can be returned, in case this element is no longer
             useful.
         """
+        # reset cached xpath, let it compute again
+        self.__xpath = None
         return self
 
 
@@ -190,12 +193,24 @@ class DPageElement(object):
             for pd in c.pretty_dom():
                 yield pd
 
-    def must_have(self):
-        """Return clauses of must-have elements
+    def xpath_locator(self, score, top=False):
+        """Return xpath locator of this and any child elements
+        
+            :param score: mutable Integer, decrement depending on precision of locators
+            :param top: locate exactly this (the top) element, or else any of its children
 
-            :return: list
+            :return: str
         """
-        return []
+        return ''
+
+    @property
+    def xpath(self):
+        if self.__xpath is None:
+            self.__xpath = self.xpath_locator(Integer(100), top=True)
+        return self.__xpath
+    
+    def _reset_xpath_locator(self):
+        self.__xpath = None
 
     # Methods for Component Proxies
     def iter_items(self, remote, context, xpath_prefix=''):
