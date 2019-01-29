@@ -72,7 +72,7 @@ class AnyElement(DPageElement):
 
     def reduce(self):
         if len(self._children) == 1 \
-                and not isinstance(self, NamedElement) \
+                and self._name in ('any', 'tag.anyelement') \
                 and not self.read_attrs \
                 and isinstance(self._children[0], NamedElement):
             # Merge Named element with self (its parent)
@@ -313,7 +313,7 @@ class DeepContainObj(DPageElement):
         super(DeepContainObj, self).__init__(tag)
 
     def reduce(self):
-        if len(self._children) == 1 and isinstance(self._children[0], AnyElement):
+        if len(self._children) == 1 and self._children[0]._name in ('any', 'tag.anyelement', 'named'):
             ch = self._children.pop()
             ch._xpath = prepend_xpath('.//', ch._xpath)
             ch._reset_xpath_locator()
