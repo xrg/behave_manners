@@ -12,5 +12,20 @@ class ElementNotFound(NoSuchElementException):
         self.parent = parent
         self.selector = selector
 
+    @property
+    def pretty_parent(self):
+        """String of parent element, in pretty format
+        """
+        if self.parent is None:
+            return '<unknown>'
+        try:
+            parent_id = self.parent.get_attribute('id')
+            if parent_id:
+                return '<%s id="%s">' % (self.parent.tag_name, parent_id)
+            else:
+                return '<%s>' % self.parent.tag_name
+        except Exception:
+            return repr(self.parent)
+
 
 #eof
