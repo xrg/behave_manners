@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
-
+from __future__ import print_function
 import logging
 from behave_manners.pagelems.loaders import FSLoader
 from behave_manners.pagelems.index_elems import DSiteCollection
@@ -38,18 +38,18 @@ def cmdline_main():
     log.info("Site collection contains %d pages, %d files",
              len(site.page_dir), len(site.file_dir))
     
-    print "Site files:"
+    print("Site files:")
     for trg, content in site.file_dir.items():
-        print "    ", trg, content and '*' or ''
+        print("    ", trg, content and '*' or '')
     
-    print "\nSite pages:"
+    print("\nSite pages:")
     for page, trg in site.page_dir.items():
-        print "    %s: %s" % (page, trg)
+        print("    %s: %s" % (page, trg))
 
         if True:  # TODO
             pagetmpl = site.get_by_file(trg)
             for lvl, name, details in pagetmpl.pretty_dom():
-                print '  '* lvl, name, details
+                print('  '* lvl, name, details)
 
 
 if __name__ == '__main__':
