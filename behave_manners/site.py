@@ -278,6 +278,71 @@ class WebContext(SiteContext):
         context.cur_page = page.get_root(context.browser,
                                          parent_ctx=context.pagelems_ctx)
 
+    def validate_cur_page(self, context, max_depth=10000):
+        """Validates current browser page against pagelem template
+        
+            Current page will be checked by url and the page template
+            will be traversed all the way down.
+    
+        """
+        from .pagelems.dom_components import PageProxy
+        from .pagelems.exceptions import ElementNotFound
+        cur_url = context.browser.current_url
+        if not cur_url.startswith(self.base_url):
+            raise AssertionError("Browser at %s, not under base url" % cur_url)
+        cur_url = cur_url[len(self.base_url):].split('?', 1)[0]
+
+        try:
+            page, title, params = self._collection.get_by_url(cur_url)
+            self._log.info("Resolved browser url to \"%s\" page", title)
+        except KeyError:
+            page = None
+        
+        errors = 0
+        cur_page = getattr(context, 'cur_page', None)
+        if cur_page is not None and not isinstance(cur_page, PageProxy):
+            raise RuntimeError("context.cur_page is a %s object" % type(cur_page))
+        if cur_page is not None and page is not None:
+            if page is cur_page._pagetmpl:
+                self._log.info('Perceived current page matches resolved one')
+            else:
+                self._log.warning("Resolved page does not match one set")
+                errors += 1
+        elif cur_page is None and page is not None:
+            # create new Proxy
+            ctx = getattr(context, 'pagelems_ctx', None)
+            if ctx is None:
+                ctx = self._collection.get_context()
+            cur_page = page.get_root(context.browser, parent_ctx=ctx)
+        elif cur_page is None and page is None:
+            raise AssertionError("No current page found, no resolution from URL either")
+        
+        num_elems = 0
+        stack = [((), cur_page)]
+        while stack:
+            path, comp = stack.pop()
+            self._log.debug("Located %r under %s", comp, '/'.join(path))
+            num_elems += 1
+            if len(path) >= max_depth:
+                break
+            try:
+                celems = [(path + (n,), c) for n, c in comp.iteritems()]
+                celems.reverse()
+                stack += celems
+            except ElementNotFound as e:
+                # TODO
+                self._log.error("Cannot locate element: %s under %s",
+                                e.selector, e.pretty_parent)
+                errors += 1
+
+        if not errors:
+            self._log.info("Validated page with %d discovered components", num_elems)
+            return True
+        else:
+            self._log.warning("Validation disovered %d components, found %d errors",
+                              num_elems, errors)
+            raise AssertionError("Errors found, validation failed")
+
 
 _wd_loglevels = {'INFO': logging.INFO, 'WARN': logging.WARNING,
                  'SEVERE': logging.ERROR, 'CRITICAL': logging.CRITICAL
