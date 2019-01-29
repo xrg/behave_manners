@@ -461,6 +461,11 @@ class DBodyElement(ConsumeTmplMixin, DPageElement):
     _inherit = 'any'
 
 
+class ScriptElement(DPageElement):
+    _name = 'tag.script'
+    _consume_in = ()  # Not allowed anywhere, so far
+
+
 class DTemplateElement(DPageElement):
     """A template defines reusable DOM that is not normally rendered/scanned
     
