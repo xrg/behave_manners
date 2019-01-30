@@ -46,10 +46,11 @@ def cmdline_main():
     for page, trg in site.page_dir.items():
         print("    %s: %s" % (page, trg))
 
-        if True:  # TODO
-            pagetmpl = site.get_by_file(trg)
-            for lvl, name, details in pagetmpl.pretty_dom():
-                print('  '* lvl, name, details)
+    for fname in args.inputs:
+        pagetmpl = site.get_by_file(fname)
+        print("\nTemplate: %s" % fname)
+        for lvl, name, details in pagetmpl.pretty_dom():
+            print('  '* lvl, name, details)
 
 
 if __name__ == '__main__':
