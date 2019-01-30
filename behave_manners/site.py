@@ -160,6 +160,8 @@ class WebContext(SiteContext):
         else:
             raise NotImplementedError('Unsupported engine: %s' % desired_engine)
 
+        if browser_opts.get('implicit_wait'):
+            context.browser.implicitly_wait(float(1.0))
         context.add_cleanup(self._release_browser, context)
 
     _pixel_size_re = re.compile(r'(\d+)x(\d+)$')

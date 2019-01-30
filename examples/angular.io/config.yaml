@@ -4,7 +4,7 @@
 site:
     # global parameters on the site (assuming single main site)
     base_url: https://angular.io/
-    element_timeout: 1000ms
+    implicit_wait: 1000ms
 
 browser:        # Technical conf about the browser
     engine: chrome
