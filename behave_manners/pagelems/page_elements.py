@@ -548,15 +548,12 @@ class DUseTemplateElem(DPageElement):
         raise NotImplementedError
 
 
-class DHtmlObject(DPageElement):
-    """Consume the <html> element as top-level site page
-    
-    """
-    _name = 'tag.html'
+class DBaseHtmlObject(DPageElement):
+    _name = '.basehtml'
     _consume_in = (DSiteCollection,)
 
     def __init__(self, tag, attrs):
-        super(DHtmlObject, self).__init__(tag, attrs)
+        super(DBaseHtmlObject, self).__init__(tag, attrs)
         self._templates = {}
 
     def consume(self, element):
@@ -567,7 +564,15 @@ class DHtmlObject(DPageElement):
                                          position=tmpl.pos)
                 self._templates[tmpl.this_id] = tmpl
             element._tmp_templates = []
-        super(DHtmlObject, self).consume(element)
+        super(DBaseHtmlObject, self).consume(element)
+
+
+class DHtmlObject(DPageElement):
+    """Consume the <html> element as top-level site page
+    
+    """
+    _name = 'tag.html'
+    _inherit = '.basehtml'
 
     def reduce(self, site=None):
         if site is not None:
@@ -610,6 +615,26 @@ class DHtmlObject(DPageElement):
         return PageProxy(self, webdriver, context=new_context)
 
 
+class GHtmlObject(DPageElement):
+    """Handle the <html> element of a gallery file
+    
+    """
+    _name = 'gallery.html'
+    _inherit = '.basehtml'
+
+    def reduce(self, site=None):
+        logger = logging.getLogger(__name__ + '.GHtmlObject')
+        if isinstance(site, DSiteCollection):
+            for tn in self._templates.keys():
+                if tn in site._templates:
+                    logger.warning("Template id=%s already in gallery: %s", 
+                                   tn, site.cur_file)
+            site._templates.update(self._templates)
+            return None
+        else:
+            return super(GHtmlObject, self).reduce()
+
+
 class DPageObject(DPageElement):
     """HTML page embedded as a sub-element of <html>
     
@@ -626,6 +651,19 @@ class DPageObject(DPageElement):
 
 DHeadElement._consume_in = (DHtmlObject,)
 DBodyElement._consume_in = (DHtmlObject,)
+
+
+class GHeadElement(ConsumeTmplMixin, DPageElement):
+    _name = 'gallery.head'
+    _consume_in = (GHtmlObject,)
+
+
+class GBodyElement(ConsumeTmplMixin, DPageElement):
+    _name = 'gallery.body'
+    _consume_in = (GHtmlObject,)
+
+
+DTemplateElement._consume_in += (GHeadElement, GBodyElement)
 
 
 class PageParser(BaseDPOParser):
@@ -678,6 +716,22 @@ class PageParser(BaseDPOParser):
 
         elem.pos = self.getpos()
         self._dom_stack.append(elem)
+
+
+class GalleryParser(PageParser):
+    logger = logging.getLogger(__name__ + '.GalleryParser')
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ('html', 'head', 'body'):
+            # these need to be overriden, only
+            try:
+                elem = DPageElement.get_class('gallery.' + tag)(tag, attrs)
+            except ValueError, e:
+                raise HTMLParseError(unicode(e), position=self.getpos())
+            elem.pos = self.getpos()
+            self._dom_stack.append(elem)
+        else:
+            super(GalleryParser, self).handle_starttag(tag, attrs)
 
 
 #eof

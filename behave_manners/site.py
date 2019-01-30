@@ -245,7 +245,10 @@ class WebContext(SiteContext):
         # TODO: up = urlparse.urlparse(driver.current_url)
         if force or context.browser.current_url != url:
             context.browser.get(url)
-        context.cur_page = page.get_root(context.browser)
+        if not hasattr(context, 'pagelems_ctx'):
+            context.pagelems_ctx = self._collection.get_context()
+        context.cur_page = page.get_root(context.browser,
+                                         parent_ctx=context.pagelems_ctx)
     
     def get_cur_title(self, context):
         #up = urlparse.urlparse()

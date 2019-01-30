@@ -28,21 +28,24 @@ class DSiteCollection(DPageElement):
         self.page_dir = {}  # title-to-filename mapping
         self.url_dir = {}  # title-to-url mapping
         self.pending_load = set()
+        self.pending_gallery = set()
+        self._loaded_gallery = set()   # mark already loaded files
+        self._templates = {}
 
     def consume(self, element):
         from .page_elements import DHtmlObject
         from .index_elems import IHtmlObject
-        if isinstance(element, (IHtmlObject, DHtmlObject)):
-            element = element.reduce(self)
-            if element is None:
-                pass
-            elif self.cur_file:
+        
+        element = element.reduce(self)
+        if element is None:
+            return
+        if isinstance(element, DHtmlObject):
+            if self.cur_file:
                 assert not self.file_dir.get(self.cur_file, None), self.cur_file
                 self.file_dir[self.cur_file] = element
-            else:
-                super(DSiteCollection, self).consume(element)
         else:
             raise TypeError("Cannot consume %s in a site collection" % type(element))
+        super(DSiteCollection, self).consume(element)
 
     def register_link(self, link):
         from .index_elems import ILinkObject
@@ -54,18 +57,20 @@ class DSiteCollection(DPageElement):
         if self.cur_file:
             cwd = pp.dirname(self.cur_file)
         target = pp.normpath(pp.join(cwd, link.href))
-        content = self.file_dir.setdefault(target, None)
-        if link.url:
-            link_re = fnmatch.translate(link.url)   # TODO nio-style matching
-            self.urls.add((re.compile(link_re), target))
-        if link.title:
-            self.page_dir[link.title] = target
-            if link.url is not None:
-                self.url_dir[link.title] = link.url
-        if link.rel == 'preload' and not content:
-            self.pending_load.add(target)
-        elif link.rel in ('next', 'prev', 'page'):
-            pass
+        if link.rel in ('next', 'prev', 'page'):
+            content = self.file_dir.setdefault(target, None)
+            if link.url:
+                link_re = fnmatch.translate(link.url)   # TODO nio-style matching
+                self.urls.add((re.compile(link_re), target))
+            if link.title:
+                self.page_dir[link.title] = target
+                if link.url is not None:
+                    self.url_dir[link.title] = link.url
+            if link.rel == 'preload' and not content:
+                self.pending_load.add(target)
+        elif link.rel == 'import':
+            if target not in self._loaded_gallery:
+                self.pending_gallery.add(target)
         else:
             raise ValueError("Invalid <link rel=\"%s\">" % (link.rel))
 
@@ -73,6 +78,16 @@ class DSiteCollection(DPageElement):
 
     def __len__(self):
         return len(self.children)
+
+    def _feed_parser(self, parser, pname, ptype):
+        with self._loader.open(pname) as fp:
+            while True:
+                chunk = fp.read(65536)
+                if not chunk:
+                    break
+                parser.feed(chunk)
+
+        self.logger.info("Read %s from '%s'", ptype, pname)
 
     def load_index(self, pname):
         from .index_elems import IndexHTMLParser
@@ -84,25 +99,19 @@ class DSiteCollection(DPageElement):
             pname = pp.normpath(pname)
             self.cur_file = pname
             self.logger.debug("Trying to read index: %s", pname)
-            parser = IndexHTMLParser(self)
-            with self._loader.open(pname) as fp:
-                while True:
-                    chunk = fp.read(65536)
-                    if not chunk:
-                        break
-                    parser.feed(chunk)
-
+            self._feed_parser(IndexHTMLParser(self), pname, 'index')
             # TODO: reduce
-            self.logger.info("Read index from '%s'", pname)
         finally:
             self.cur_file = old_file
 
     def load_preloads(self):
-        """Load pending specified preloads
+        """Load pending preloads or gallery files
         """
-        while self.pending_load:
-            pname = self.pending_load.pop()
-            self.load_pagefile(pname)
+        while self.pending_load or self.pending_gallery:
+            if self.pending_gallery:
+                self.load_galleryfile(self.pending_gallery.pop())
+            if self.pending_load:
+                self.load_pagefile(self.pending_load.pop())
 
     def load_all(self):
         """Load all referenced pages
@@ -130,16 +139,25 @@ class DSiteCollection(DPageElement):
                 return
             self.cur_file = pname
             self.logger.debug("Trying to read page: %s", pname)
-            parser = PageParser(self)
-            with self._loader.open(pname) as fp:
-                while True:
-                    chunk = fp.read(65536)
-                    if not chunk:
-                        break
-                    parser.feed(chunk)
-
+            self._feed_parser(PageParser(self), pname, 'page')
             # TODO: reduce
-            self.logger.info("Read page from '%s'", pname)
+        finally:
+            self.cur_file = old_file
+
+    def load_galleryfile(self, pname):
+        from .page_elements import GalleryParser   # lazy import
+        old_file = self.cur_file
+        try:
+            if self.cur_file:
+                pname = pp.join(pp.dirname(self.cur_file), pname)
+            pname = pp.normpath(pname)
+            if pname in self._loaded_gallery:
+                self.logger.warning("Attempted to load gallery twice: %s", pname)
+                return
+            self.cur_file = pname
+            self.logger.debug("Trying to read page: %s", pname)
+            self._feed_parser(GalleryParser(self), pname, 'gallery')
+            self._loaded_gallery.add(pname)
         finally:
             self.cur_file = old_file
 
@@ -196,7 +214,7 @@ class DSiteCollection(DPageElement):
             Then, this context should be passed to pages under this site,
             as those returned by `get_by_title()` , `get_by_url()` etc.
         """
-        return DOMContext(templates=None)
+        return DOMContext(templates=self._templates)
 
 
 # eof
