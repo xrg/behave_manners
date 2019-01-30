@@ -147,6 +147,7 @@ class WebContext(SiteContext):
                 options.binary_location = browser_opts['binary_location']
             if browser_opts.get('headless', True):
                 options.add_argument('headless')
+            options.add_argument('disable-infobars')
             if 'window' in browser_opts:
                 w, h = self._decode_win_size(browser_opts['window'])
                 options.add_argument('window-size=%dx%d' % (w, h))
