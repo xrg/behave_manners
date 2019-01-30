@@ -1,0 +1,27 @@
+<html>
+<body>
+
+    <template id="mdn-header">
+        <header>
+            <form id="nav-main-search" role="search" this="Search form">
+                <div>
+                    <input type="search" name="q">
+                    <button type="submit" />
+                    <button type="button" id="close-header-search"/>
+                </div>
+            </form>
+            <div>
+                <nav this="navigation">
+                    <ul>
+                        <repeat>
+                            <li this="nav">
+                            </li>
+                        </repeat>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+    </template>
+
+</body>
+</html>
