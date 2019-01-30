@@ -3,12 +3,17 @@ from __future__ import print_function
 import behave_manners.steplib.run_bg_devel
 
 from behave import given, when, then
+import time
 
 
 @given(u'I am at the "{page}"')
 def step_impl1(context, page):
     context.site.navigate_by_title(context, page)
 
+
+@when(u'Browser URL is "{url}"')
+def step_browser_url(context, url):
+    context.site.navigate_by_url(context, url)
 
 @when(u'I use the {component}')
 def step_impl2(context, component):
@@ -31,5 +36,9 @@ def step_impl5(context, page):
     cur_page = context.site.get_cur_title(context)
     assert cur_page == page, "Currently at %s (%s)" % (cur_page, context.browser.current_url)
 
+
+@then(u'the page validates according to template')
+def step_validate(context):
+    context.site.validate_cur_page(context)
 
 # eof

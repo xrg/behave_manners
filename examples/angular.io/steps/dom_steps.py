@@ -21,8 +21,8 @@ def step_impl4(context, elem):
 def step_impl5(context, page):
     cur_page = context.site.get_cur_title(context)
     assert cur_page == page, "Currently at %s (%s)" % (cur_page, context.browser.current_url)
-    time.sleep(5)
     context.browser.get_screenshot_as_file('%s.png' % page)
+    time.sleep(3.0)
 
 
 # eof
