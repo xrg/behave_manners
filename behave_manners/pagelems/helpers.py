@@ -17,7 +17,7 @@ def textescape(tstr):
 
 def prepend_xpath(pre, xpath):
     """Prepend some xpath to another, properly joining the slashes
-    
+
     """
 
     if pre.endswith('./'):

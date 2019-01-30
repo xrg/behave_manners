@@ -162,7 +162,7 @@ class DSiteCollection(DPageElement):
                         break
                 return page, title, m.groups()[1:]
         else:
-            raise KeyError("No match for url")
+            raise KeyError("No match for url: %s" % url)
 
     def get_by_file(self, fname):
         """Get page by template filename

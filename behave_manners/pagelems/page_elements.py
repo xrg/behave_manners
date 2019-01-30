@@ -85,7 +85,6 @@ class AnyElement(DPageElement):
             ret._reset_xpath_locator()
             return ret
         return self
-    
 
     def xpath_locator(self, score, top=False):
         if score and score > 0:
@@ -214,7 +213,7 @@ class InputElement(DPageElement):
     class _InputValueActor(object):
         def __init__(self, xpath):
             self._xpath = xpath
-        
+
         def _elem(self, welem):
             if self._xpath:
                 ielem = welem.find_element_by_xpath(self._xpath)
@@ -544,6 +543,7 @@ class DUseTemplateElem(DPageElement):
         tmpl = context.get_template(self.template_id)
         ctx2 = context.child()
         return tmpl.iter_items(remote, ctx2, xpath_prefix)
+
     def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
         raise NotImplementedError
 
