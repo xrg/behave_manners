@@ -352,7 +352,8 @@ class RepeatObj(DPageElement):
     
     _attrs_map = {'min': ('min_elems', int, 0),
                   'max': ('max_elems', int, 1000000),
-                  'this': ('this_name', str, '')
+                  'this': ('this_name', str, ''),
+                  'slot': ('_dom_slot', None, None),
                   }
 
     def __init__(self, tag, attrs):
