@@ -32,7 +32,7 @@ DataElement._consume_in += (DomContainerElement,)
 
 
 class AnyElement(DPageElement):
-    _name = 'tag.anyelement'
+    _name = 'tag.pe-any'
     _inherit = '.domContainer'
 
     def __init__(self, tag, attrs):
@@ -312,7 +312,7 @@ class MustContain(DPageElement):
 
 
 class DeepContainObj(DPageElement):
-    _name = 'tag.deep'
+    _name = 'tag.pe-deep'
     _inherit = '.domContainer'
 
     def __init__(self, tag, attrs):
@@ -361,7 +361,7 @@ class DeepContainObj(DPageElement):
 
 
 class RepeatObj(DPageElement):
-    _name = 'tag.repeat'
+    _name = 'tag.pe-repeat'
     _inherit = '.domContainer'
     
     _attrs_map = {'min': ('min_elems', int, 0),
