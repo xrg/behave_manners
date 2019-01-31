@@ -472,6 +472,34 @@ class PeChoiceElement(DPageElement):
                                       parent=remote)
 
 
+class PeGroupElement(DPageElement):
+    """Trivial group, DOM-less container of many elements
+    
+        Elements within a group are ordered!
+    """
+    _name = 'tag.pe-group'
+    _inherit = '.domContainer'
+    _attrs_map = {'slot': ('_dom_slot', None, None),
+                  }
+
+    def __init__(self, tag, attrs):
+        super(PeGroupElement, self).__init__(tag)
+        self._parse_attrs(attrs)
+        
+    def reduce(self, site=None):
+        if not self._children:
+            return None
+        elif len(self._children) == 1:
+            return self._children[0]
+        else:
+            return super(PeGroupElement, self).reduce(site)
+
+    def _locate_in(self, remote, context, xpath_prefix):
+        first_exc = None
+        for ch in self._children:
+            for y4 in ch._locate_in(remote, context, xpath_prefix):
+                yield y4
+
 class ConsumeTmplMixin(object):
     """Common between Head and Body elements, temporarily hold templates
     """
