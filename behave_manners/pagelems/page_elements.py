@@ -297,20 +297,6 @@ class InputElement(DPageElement):
                        self.InputValueSetter(self._xpath))
 
 
-class MustContain(DPageElement):
-    _name = 'tag.mustcontain'
-    _consume_in = ()
-    
-    @property
-    def xpath(self):
-        return ''
-
-    def must_have(self):
-        print "must have of ", self
-        # is ./ needed?
-        return [ prepend_xpath('./', ch.xpath) for ch in self._children]
-
-
 class DeepContainObj(DPageElement):
     _name = 'tag.pe-deep'
     _inherit = '.domContainer'
@@ -399,10 +385,6 @@ class RepeatObj(DPageElement):
         else:
             raise ValueError("<Repeat> cannot contain %s" % ch._name)
         return self
-
-    def must_have(self):
-        print "must have of ", self
-        return [ './' + ch.xpath for ch in self._children]
 
     def iter_items(self, remote, context, xpath_prefix=''):
         pattern = self._children[0].this_name   # assuming NamedElement, so far
