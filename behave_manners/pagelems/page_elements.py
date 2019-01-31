@@ -423,6 +423,55 @@ class RepeatObj(DPageElement):
                 yield y4
 
 
+class PeChoiceElement(DPageElement):
+    """Matches the first child of this element
+    
+    """
+    _name = 'tag.pe-choice'
+    _inherit = '.domContainer'
+    _attrs_map = {'slot': ('_dom_slot', None, None),
+                  }
+
+    def __init__(self, tag, attrs):
+        super(PeChoiceElement, self).__init__(tag)
+        self._parse_attrs(attrs)
+        
+    def reduce(self, site=None):
+        if not self._children:
+            return None
+        elif len(self._children) == 1:
+            return self._children[0]
+        else:
+            return super(PeChoiceElement, self).reduce(site)
+
+    def _locate_in(self, remote, context, xpath_prefix):
+        first_exc = None
+        for ch in self._children:
+            # Stop at first 'welem' that yields any children results
+            try:
+                ret = list(ch._locate_in(remote, context, xpath_prefix))
+                # all children elements have been resolved here
+                # good to go 
+                # List may be empty, but no children would have
+                # raised exception by this point.
+                for y4 in ret:
+                    yield y4
+            except ElementNotFound as e:
+                if first_exc is None:
+                    first_exc = e
+                continue
+            break
+        else:
+            if first_exc is not None:
+                raise first_exc
+            else:
+                locs = []
+                for ch in self._children[:3]:
+                    locs.append(ch.xpath)
+                raise ElementNotFound(selector=' or '.join(locs),
+                                      parent=remote)
+
+
 class ConsumeTmplMixin(object):
     """Common between Head and Body elements, temporarily hold templates
     """
