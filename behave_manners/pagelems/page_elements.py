@@ -106,7 +106,6 @@ class AnyElement(DPageElement):
         return locator
 
     def _locate_in(self, remote, context, xpath_prefix):
-        found = False
         xpath2 = prepend_xpath(xpath_prefix, self.xpath)
         for welem in remote.find_elements_by_xpath(xpath2):
             # Stop at first 'welem' that yields any children results
@@ -636,7 +635,6 @@ class DHtmlObject(DPageElement):
 
     def reduce(self, site=None):
         if site is not None:
-            i = 0
             nchildren = []
             for celem in self._children:
                 try:
