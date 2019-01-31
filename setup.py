@@ -17,6 +17,10 @@ setup(
     provides = ["behave_manners"],
     packages = ["behave_manners"],
     entry_points={
+        'console_scripts': [
+            'behave-test-sitelems=behave_manners.pagelems.main:cmdline_main',
+            'behave-validate-remote=behave_manners.dpo_validator:cmdline_main'
+            ]
     },
     install_requires=[
         "behave >= 1.2.6",
