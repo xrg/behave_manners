@@ -4,18 +4,16 @@
   </head>
   <body>
   <div id="some-id" this="ThePage">
-    <Deep>
+    <pe-Deep>
         <form class="form-class" this="Form" ab=c>
-            <MustContain>
-                <div class="form-inner"> Text!</div>
-            </MustContain>
+            <div class="form-inner"> Text!</div>
             <div>
-                <Repeat min=1>
+                <pe-Repeat min=1>
                     <label this="Label" for="[data]"/>
                     <field name="[data]" type="[type]"/>
-                </Repeat>
+                </pe-Repeat>
             </div>
         </form>
-    </Deep>
+    </pe-Deep>
   </body>
 </html>

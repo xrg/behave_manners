@@ -75,7 +75,7 @@ class AnyElement(DPageElement):
 
     def reduce(self):
         if len(self._children) == 1 \
-                and self._name in ('any', 'tag.anyelement') \
+                and self._name in ('any', 'tag.pe-any') \
                 and not self.read_attrs \
                 and self._dom_slot is None \
                 and isinstance(self._children[0], NamedElement):
@@ -143,7 +143,7 @@ class AnyElement(DPageElement):
 
 class GenericElement(DPageElement):
     _name = 'any'
-    _inherit = 'tag.anyelement'
+    _inherit = 'tag.pe-any'
     
     def __init__(self, tag, attrs):
         super(GenericElement, self).__init__(tag, attrs)
@@ -321,7 +321,7 @@ class DeepContainObj(DPageElement):
         super(DeepContainObj, self).__init__(tag)
 
     def reduce(self):
-        if len(self._children) == 1 and self._children[0]._name in ('any', 'tag.anyelement', 'named'):
+        if len(self._children) == 1 and self._children[0]._name in ('any', 'tag.pe-any', 'named'):
             ch = self._children.pop()
             ch._xpath = prepend_xpath('.//', ch._xpath)
             ch._reset_xpath_locator()
