@@ -2,14 +2,14 @@
 Behave manners
 ===============
 
-code::
+```Gherkin
 
   Given: that real-world scenarios are more complicated than examples
     and: sites are now bloated with many layers of components
    When: I write feature tests
    Then: I want them to be simple, abstract
     and: I want them to be thorough and precise
-
+```
 
 A set of utility methods, on top of `behave` test framework.
 This goes further than the Gherkin language, implementing a more rich
