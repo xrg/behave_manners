@@ -16,30 +16,58 @@ from behave.model_core import Status
 import logging
 import urllib3.exceptions
 import datetime
+from .context import EventContext
+
 
 log = logging.getLogger(__name__)
+
+def _noop_fn(context, *args):
+    pass
+
 
 class SiteContext(object):
 
     def __init__(self, context, config=None):
         self._config = config or {}
-        self.__orig_hooks = {}
+        self.__orig_hooks = context._runner.hooks.copy()
         context.config.setup_logging()
         self._log.debug("site setup at %s" % getattr(context, '@layer', '?'))
+        self.events = EventContext()
 
+        hook_names = {}
+        for htime in ('before', 'after'):
+            for hevent in ('all', 'feature', 'scenario', 'step'):
+                self.__setup_hook(htime, hevent, context)
+                hook_names[htime + '_' + hevent] = None
+
+        self.events.update(**hook_names)
+        self.events.push()
         context.add_cleanup(self.__cleanup_site, context)
         self._collection = None
 
-    def _setup_hook(self, hook_key, context):
-        assert hook_key not in self.__orig_hooks, "Already installed: %s" % hook_key
+    def __setup_hook(self, htime, hevent, context):
+        hkey = htime + '_' + hevent
         rhooks = context._runner.hooks
-        if hook_key in rhooks:
-            self.__orig_hooks[hook_key] = rhooks[hook_key]
-        rhooks[hook_key] = getattr(self, '_hook_' + hook_key)
+        orig_fn = self.__orig_hooks.get(hkey, _noop_fn)
+        if htime == 'before':
+            # Resolutions from self.events must happen at runtime,
+            # in order to use the running context then
+            def __hook_fn(context, *args):
+                orig_fn(context, *args)
+                getattr(self.events, hkey)(context, *args)
+        elif htime == 'after':
+            def __hook_fn(context, *args):
+                getattr(self.events, hkey)(context, *args)
+                orig_fn(context, *args)
+        else:
+            raise RuntimeError(htime)
+        rhooks[hkey] = __hook_fn
 
     def __cleanup_site(self, context):
-        for hkey in self.__orig_hooks:
-            context._runner.hooks[hkey] = self.__orig_hooks[hkey]
+        self.events.pop()
+        rhooks = context._runner.hooks
+        rhooks.clear()
+        rhooks.update(self.__orig_hooks)
         self.__orig_hooks.clear()
         del context.site
 
@@ -84,22 +112,6 @@ class SiteContext(object):
         finally:
             os.chdir(old_cwd)
 
-    def _hook_before_step(self, context, step):
-        if 'before_step' in self.__orig_hooks:
-            self.__orig_hooks['before_step'](context, step)
-
-    def _hook_after_step(self, context, step):
-        if 'after_step' in self.__orig_hooks:
-            self.__orig_hooks['after_step'](context, step)
-
-    def _hook_before_scenario(self, context, scenario):
-        if 'before_scenario' in self.__orig_hooks:
-            self.__orig_hooks['before_scenario'](context, scenario)
-
-    def _hook_before_feature(self, context, feature):
-        if 'before_feature' in self.__orig_hooks:
-            self.__orig_hooks['before_feature'](context, feature)
-
     @property
     def base_url(self):
         return self._config['site']['base_url']
@@ -122,10 +134,11 @@ class WebContext(SiteContext):
     def __init__(self, context, config=None):
         super(WebContext, self).__init__(context, config)
         # install hooks
-        self._setup_hook('before_feature', context)
-        self._setup_hook('before_scenario', context)
-        self._setup_hook('after_step', context)
+        self.events.push(before_feature=self._event_before_feature,
+                         before_scenario=self._event_before_scenario,
+                         after_step=self._event_after_step)
         self._config.setdefault('browser', {})
+        context.add_cleanup(self.events.pop)
 
     def launch_browser(self, context):
         browser_opts = self._config['browser']
@@ -186,33 +199,24 @@ class WebContext(SiteContext):
         self._log.info("cleanup browser")
         context.browser.quit()
 
-    def _hook_before_feature(self, context, feature):
-        super(WebContext, self)._hook_before_feature(context, feature)
+    def _event_before_feature(self, context, feature):
         browser_launch = self._config['browser'].get('launch_on', False)
         if browser_launch == 'feature' or \
                 (browser_launch == 'scenario' and 'serial' in feature.tags):
             self.launch_browser(context)
 
-    def _hook_before_scenario(self, context, scenario):
-        super(WebContext, self)._hook_before_scenario(context, scenario)
+    def _event_before_scenario(self, context, scenario):
         browser_launch = self._config['browser'].get('launch_on', False)
         if browser_launch == 'scenario' and 'serial' not in scenario.feature.tags:
             self.launch_browser(context)
 
-    def _hook_before_step(self, context, step):
-        super(WebContext, self)._hook_before_step(context, step)
-        self._log.info("Entering step: %s", step.name)
-
-    def _hook_after_step(self, context, step):
-        if step.status == Status.failed:
-            self._log.warning("Step: %s failed. Taking screenshot to ./screenshot1.png", step.name)
+    def _event_after_step(self, context, step):
         try:
             self.process_logs(context)
         except urllib3.exceptions.RequestError, e:
             self._log.warning("Could not fetch logs, browser closed? %s", e)
         except Exception, e:
             self._log.error("Could not fetch step logs: %s", e)
-        super(WebContext, self)._hook_after_step(context, step)
 
     def process_logs(self, context):
         for lt in context.browser.log_types:
