@@ -105,5 +105,70 @@ class GContext(object):
             raise TypeError("attempt to set value to read-only context")
 
 
+class EventContext(object):
+    """Holder of stackable event handlers
+    
+        Each level of the stack can register new event handlers within
+        the named slots.
+    """
+
+    def __init__(self, **kwargs):
+        self._stack = [dict()]
+        self._on_enter = None
+        self.__prepare(self._stack[0], kwargs)
+
+    def __prepare(self, cur_stack, kwargs):
+        for k, v in kwargs.items():
+            self._stack[0].setdefault(k, None)
+            if v is None:
+                continue
+            if not callable(v):
+                raise TypeError("Attempt to register non callable %s" % k)
+            cur_stack[k] = v
+
+    def update(self, **kwargs):
+        self.__prepare(self._stack[-1], kwargs)
+
+    def push(self, **kwargs):
+        nstack = dict()
+        self.__prepare(nstack, kwargs)
+        self._stack.append(nstack)
+        return self
+
+    def pop(self):
+        self._stack.pop()
+
+    def __getattr__(self, name):
+        if name.startswith('_') or name not in self._stack[0]:
+            raise AttributeError(name)
+
+        fn_list = [s[name] for s in self._stack if s.get(name) is not None]
+        fn_list.reverse()
+
+        def __ret_fn(*args, **kwargs):
+            for fn in fn_list:
+                r = fn(*args, **kwargs)
+                if r is not None:
+                    return r
+            return None
+        return __ret_fn
+
+    def __call__(self, **kwargs):
+        if self._on_enter:
+            raise RuntimeError("Double call to event context")
+        self._on_enter = dict()
+        self.__prepare(self._on_enter, kwargs)
+        return self
+
+    def __enter__(self):
+        self._stack.append(self._on_enter or dict())
+        self._on_enter = None
+        return self
+
+    def __exit__(self, *args):
+        self._on_enter = None
+        self.pop()
+
+
 
 # eof

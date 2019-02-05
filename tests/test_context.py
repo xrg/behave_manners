@@ -3,7 +3,7 @@
 from __future__ import absolute_import, print_function
 import threading
 import pytest
-from behave_manners.context import GContext
+from behave_manners.context import GContext, EventContext
 
 
 def function_check(context, var, value):
@@ -59,3 +59,69 @@ class TestTheContext(object):
             assert self.context._parent.a == 1
             with pytest.raises(TypeError):
                 self.context._parent.a = 2
+
+
+class TestEventContext(object):
+    econtext = EventContext(on_spam=None, on_ham=lambda l: l.append('ham1'))
+
+    def test_call_spam(self):
+        lr = []
+        self.econtext.on_spam(lr)
+        assert lr == []
+
+    def test_call_ham(self):
+        lr = []
+        self.econtext.on_ham(lr)
+        assert lr == ['ham1']
+
+    def test_call_other(self):
+        with pytest.raises(AttributeError):
+            self.econtext.on_nee()
+
+    def test_call_spam2(self):
+        self.econtext.push(on_spam=lambda l: l.append('spam2'),
+                           on_ham=lambda l: l.append('ham2'))
+        try:
+            spam = []
+            ham = []
+            self.econtext.on_spam(spam)
+            self.econtext.on_ham(ham)
+
+            assert spam == ['spam2']
+            assert ham == ['ham2', 'ham1']
+
+        finally:
+            self.econtext.pop()
+
+    def test_call_contextmgr(self):
+        ham = []
+        spam = []
+        with self.econtext(on_spam=lambda l: l.append('spam3'),
+                           on_ham=lambda l: l.append('ham3')):
+            self.econtext.on_spam(spam)
+            self.econtext.on_ham(ham)
+
+        assert spam == ['spam3']
+        assert ham == ['ham3', 'ham1']
+
+        self.econtext.on_spam(spam)
+        self.econtext.on_ham(ham)
+
+        assert spam == ['spam3']
+        assert ham == ['ham3', 'ham1', 'ham1']
+
+
+    def test_call_return(self):
+        def fn_with_return(l):
+            l.append('ret')
+            return 1
+
+        ham = []
+        with self.econtext(on_ham=fn_with_return):
+            r = self.econtext.on_ham(ham)
+
+        assert ham == ['ret']
+        assert r == 1
+
+
+# eof
