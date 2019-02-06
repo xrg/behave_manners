@@ -134,9 +134,12 @@ class WebContext(SiteContext):
     def __init__(self, context, config=None):
         super(WebContext, self).__init__(context, config)
         # install hooks
-        self.events.push(before_feature=self._event_before_feature,
-                         before_scenario=self._event_before_scenario,
-                         after_step=self._event_after_step)
+        self.events.update(before_feature=self._event_before_feature,
+                           before_scenario=self._event_before_scenario,
+                           after_step=self._event_after_step,
+                           after_step_failed=None,
+                           on_missing_element=None)
+        self.events.push()
         self._config.setdefault('browser', {})
         context.add_cleanup(self.events.pop)
 
@@ -211,6 +214,9 @@ class WebContext(SiteContext):
             self.launch_browser(context)
 
     def _event_after_step(self, context, step):
+        if step.status == Status.failed:
+            self.events.after_step_failed(context, step)
+            self._log.warning("Step: %s failed", step.name)
         try:
             self.process_logs(context)
         except urllib3.exceptions.RequestError, e:
