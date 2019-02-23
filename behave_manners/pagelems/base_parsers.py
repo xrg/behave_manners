@@ -4,10 +4,10 @@ import six
 from f3utils.service_meta import abstractmethod, _ServiceMeta
 from .helpers import textescape, Integer
 
+from six.moves.html_parser import HTMLParser
 if six.PY2:
-    from HTMLParser import HTMLParser as parser, HTMLParseError
+    from HTMLParser import HTMLParseError
 else:
-    from html import parser
     
     class HTMLParseError(Exception):
         """Exception raised for all parse errors."""
@@ -27,7 +27,7 @@ else:
             return result
 
 
-class BaseDPOParser(parser, object):
+class BaseDPOParser(HTMLParser, object):
     logger = None
 
     def __init__(self, root_element):
