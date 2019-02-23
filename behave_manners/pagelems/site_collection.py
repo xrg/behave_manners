@@ -4,7 +4,7 @@ import posixpath as pp
 import fnmatch
 import logging
 import re
-from .base_parsers import DPageElement, DOMContext
+from .base_parsers import DPageElement, RootDOMContext
 from .loaders import BaseLoader
 
 
@@ -214,7 +214,7 @@ class DSiteCollection(DPageElement):
             Then, this context should be passed to pages under this site,
             as those returned by `get_by_title()` , `get_by_url()` etc.
         """
-        return DOMContext(templates=self._templates)
+        return RootDOMContext(templates=self._templates)
 
 
 # eof

@@ -282,7 +282,7 @@ class DOMContext(object):
     """A simple holder of shared components or variables across DOM levels
     """
     
-    def __init__(self, parent=None, templates=None):
+    def __init__(self, parent, templates=None):
         self._parent = parent
         self._templates = templates or {}
 
@@ -299,6 +299,12 @@ class DOMContext(object):
                 return self._parent.get_template(key)
             else:
                 raise KeyError("Template id='%s' not found" % key)
+
+
+class RootDOMContext(DOMContext):
+    def __init__(self, parent=None, templates=None,):
+        super(RootDOMContext, self).__init__(parent=parent, templates=templates)
+
 
 
 #eof
