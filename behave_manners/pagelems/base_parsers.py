@@ -96,8 +96,9 @@ class BaseDPOParser(HTMLParser, object):
         raise NotImplementedError
 
     def handle_comment(self, data):
-        print "Encountered comment :", repr(data)
-        # raise NotImplementedError
+        """Comments are ignored
+        """
+        pass
 
     def handle_decl(self, decl):
         raise HTMLParseError("Declaration not allowed at this level",
