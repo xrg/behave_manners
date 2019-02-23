@@ -215,12 +215,12 @@ class WebContext(SiteContext):
 
     def _event_after_step(self, context, step):
         if step.status == Status.failed:
+            self._log.warning("Step: \"%s\" failed.\n%s", step.name, step.exception or "no exception")
             self.events.after_step_failed(context, step)
-            self._log.warning("Step: %s failed", step.name)
         try:
             self.process_logs(context)
         except urllib3.exceptions.RequestError, e:
-            self._log.warning("Could not fetch logs, browser closed? %s", e)
+            self._log.warning("Could not fetch logs, browser closed?\n%s", e)
         except Exception, e:
             self._log.error("Could not fetch step logs: %s", e)
 
