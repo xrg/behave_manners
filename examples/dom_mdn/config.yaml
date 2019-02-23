@@ -13,6 +13,11 @@ browser:        # Technical conf about the browser
     # more capabilities...
     # headless: true
     headless: false
+    
+    screenshots:
+        dir: screenshots
+        on_failure: true
+        on_success: true
 
 page_objects:
     index: site/index.html
