@@ -42,6 +42,9 @@ class BaseDPOParser(HTMLParser, object):
                                  position=self.getpos())
         while self._dom_stack:
             closed = self._dom_stack.pop()
+            if not self._dom_stack:
+                raise HTMLParseError("Syntax error at element <%s>" % closed.tag,
+                                     position=self.getpos())
             prev = self._dom_stack[-1]
             if not isinstance(prev, closed._consume_in):
                 raise HTMLParseError("A <%s> element cannot be consumed in a <%s>" % \
