@@ -5,6 +5,8 @@ from f3utils.service_meta import abstractmethod, _ServiceMeta
 from .helpers import textescape, Integer
 
 from six.moves.html_parser import HTMLParser
+from six.moves import html_entities
+
 if six.PY2:
     from HTMLParser import HTMLParseError
 else:
@@ -89,11 +91,14 @@ class BaseDPOParser(HTMLParser, object):
                         position=self.getpos())
 
     def handle_charref(self, name):
-        print "Encountered char ref :", repr(name)
+        self.handle_data(six.unichr(int(name)))
 
     def handle_entityref(self, name):
-        print "Encountered entity ref :", repr(name)
-        raise NotImplementedError
+        uchr = html_entities.name2codepoint.get(name, None)
+        if uchr is None:
+            raise HTMLParseError("Invalid HTML entity ref: &%s;" % name,
+                                 position=self.getpos())
+        self.handle_data(six.unichr(uchr))
 
     def handle_comment(self, data):
         """Comments are ignored
