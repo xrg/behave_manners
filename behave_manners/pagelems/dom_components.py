@@ -41,6 +41,23 @@
 
 import logging
 from collections import namedtuple
+from selenium.common.exceptions import WebDriverException
+from functools import wraps
+
+
+def throws_self(fn):
+    """Decorate method exceptions with reference to self (component)
+    """
+    @wraps(fn)
+    def __wrapper(self, *args, **kwargs):
+        try:
+            return fn(self, *args, **kwargs)
+        except WebDriverException as e:
+            # Reset traceback to this level, ignore rest of stack
+            e.component = self
+            raise e
+
+    return __wrapper
 
 
 class _SomeProxy(object):
@@ -162,8 +179,13 @@ class ComponentProxy(_SomeProxy):
     def path(self):
         return self._parent.path + (self._name,)
 
+    @throws_self
     def click(self):
-        self._remote.click()
+        try:
+            self._remote.click()
+        except Exception as e:
+            raise e
+
 
 
 #  class EmptyComponent(_SomeProxy): ??
