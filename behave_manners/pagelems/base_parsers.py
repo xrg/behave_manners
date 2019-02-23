@@ -258,6 +258,7 @@ class DPageElement(object):
 class DataElement(DPageElement):
     _name = 'text'
     _consume_in = ()
+    is_empty = True
 
     def __init__(self, data):
         super(DataElement, self).__init__()
@@ -265,6 +266,9 @@ class DataElement(DPageElement):
         self.data = data
 
     def consume(self, element):
+        if isinstance(element, DataElement):
+            self.data += element.data
+            return
         raise TypeError('Data cannot consume %r' % element)
 
     def append(self, other):
@@ -276,6 +280,9 @@ class DataElement(DPageElement):
             return ['contains(text(), %s)' % textescape(self.data.strip())]
         else:
             return ['text()=%s' % textescape(self.data)]
+
+
+DataElement._consume_in = (DataElement,)
 
 
 class DOMContext(object):
