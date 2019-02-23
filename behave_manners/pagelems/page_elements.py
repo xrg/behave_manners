@@ -49,7 +49,11 @@ class AnyElement(DPageElement):
         for k, vs in match_attrs.items():
             if len(vs) > 1:
                 raise NotImplementedError('Dup arg: %s' % k)
-            self._xpath += '[@%s=%s]' % (k, textescape(vs[0]))
+            if vs[0] is True:
+                # only match existence of attribute
+                self._xpath += '[@%s]' % (k,)
+            else:
+                self._xpath += '[@%s=%s]' % (k, textescape(vs[0]))
         self._xpath_score += self.calc_xpath_score(match_attrs.keys())
 
     def _split_this(self, value, sub=None):
@@ -61,6 +65,9 @@ class AnyElement(DPageElement):
                 self._split_this(v)
             elif k == 'slot':
                 self._dom_slot = v
+            elif v is None:
+                assert '.' not in k, k
+                match_attrs[k].append(True)
             elif v.startswith('[') and v.endswith(']'):
                 assert '.' not in k, k   # TODO
                 # attribute to read value from
