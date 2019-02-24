@@ -11,7 +11,7 @@ Then the page validates according to template
     Then the page validates according to template
 
 
-  Examples: Selenium URLs
+  Examples: Mozilla Dev Network URLs
     | url                                         |
     | /HTML/Element/html                          |
     | /HTML/Element                               |
