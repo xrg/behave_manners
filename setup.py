@@ -19,6 +19,7 @@ setup(
     entry_points={
         'console_scripts': [
             'behave-test-sitelems=behave_manners.pagelems.main:cmdline_main',
+            'behave-run-browser=behave_manners.dpo_run_browser:cmdline_main',
             'behave-validate-remote=behave_manners.dpo_validator:cmdline_main'
             ]
     },

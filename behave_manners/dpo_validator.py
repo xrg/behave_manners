@@ -55,11 +55,11 @@ def cmdline_main():
     """
     import argparse
     parser = argparse.ArgumentParser(description='Try DPO templates against open page')
-    parser.add_argument('-f', '--output', action='store_true', default=False,
+    parser.add_argument('-f', '--full-site', action='store_true', default=False,
                         help='Check all site, not just index')
     parser.add_argument('-s', '--session-file', default='dbg-browser.session',
                         help="Path to file with saved Remote session")
-    parser.add_argument('index', metavar='index.html', nargs=1,
+    parser.add_argument('index', metavar='index.html', nargs='?',
                         help="path to 'index.html' file")
 
     args = parser.parse_args()
@@ -67,12 +67,6 @@ def cmdline_main():
     logging.basicConfig(level=logging.INFO)
     site = DSiteCollection(FSLoader('.'))
     log = logging.getLogger('main')
-    log.debug("Loading index from %s", args.index[0])
-    site.load_index(args.index[0])
-    site.load_preloads()
-
-    log.info("Site collection contains %d pages, %d files",
-             len(site.page_dir), len(site.file_dir))
 
     with open(args.session_file, 'rb') as fp:
         sdata = json.load(fp)
@@ -81,20 +75,45 @@ def cmdline_main():
                                 session_id = sdata['session'])
     else:
         raise RuntimeError("Saved session must have 'url' and 'session' set")
-    
-    log.info("Entering main phase, connected to browser")
-    while True:
-        try:
-            up = urlparse.urlparse(driver.current_url)
+
+    if args.index:
+        log.debug("Loading index from %s", args.index[0])
+        site.load_index(args.index[0])
+    elif sdata.get('page_objects', {}).get('index'):
+        log.debug("Loading index from %s", sdata['page_objects']['index'])
+        site.load_index(sdata['page_objects']['index'])
+    else:
+        raise RuntimeError("Session does not contain 'page_objects' and no index specified in arguments")
+    site.load_preloads()
+
+    log.info("Site collection contains %d pages, %d files",
+             len(site.page_dir), len(site.file_dir))
+
+    def _get_cur_path(cur_url):
+        if sdata.get('base_url'):
+            if cur_url.startswith(sdata['base_url']):
+                return cur_url[len(sdata['base_url']):]
+            else:
+                log.warning("Current url not under base_url")
+                return None
+        else:
+            # Try to decode URL, assume site at /
+            up = urlparse.urlparse(cur_url)
             if up.scheme not in ('http', 'https'):
                 log.warning("Page is in unknown scheme, %s://", up.scheme)
             elif not up.netloc:
                 log.warning("Page is not yet at server")
             else:
-                
+                return up.path
+
+    log.info("Entering main phase, connected to browser")
+    while True:
+        try:
+            cur_path = _get_cur_path(driver.current_url)
+            if cur_path is not None:
                 try:
                     site_ctx = site.get_context()
-                    page, title, page_args = site.get_by_url(up.path, fragment=up.fragment)
+                    page, title, page_args = site.get_by_url(cur_path, fragment=None)
                     log.info("Got page %s %r", title, page_args)
 
                     for path, elem in page.walk(driver, parent_ctx=site_ctx):
@@ -108,7 +127,7 @@ def cmdline_main():
 
                     break
                 except KeyError as e:
-                    log.warning("URL path not templated. %s: %s", e, up.path)
+                    log.warning("URL path not templated. %s: %s", e, cur_path)
                 except Exception as e:
                     log.warning("Could not resolve elements:", exc_info=True)
                     break
