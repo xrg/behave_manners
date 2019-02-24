@@ -122,6 +122,21 @@ class PageProxy(_SomeProxy):
             return '<Page >'
 
 
+class CSSProxy(object):
+    def __init__(self, parent):
+        self.__remote = parent._remote
+
+    def __getitem__(self, name):
+        try:
+            # non-existing properties will just return None from this call
+            return self.__remote.value_of_css_property(name)
+        except WebDriverException as e:   # TODO handling of WebDriverExceptions
+            raise
+
+    def __setitem__(self, name, value):
+        raise NotImplementedError
+
+
 attrs_fn = namedtuple('attrs_fn', ('xpath', 'getter', 'setter'))
 
 class ComponentProxy(_SomeProxy):
@@ -138,6 +153,7 @@ class ComponentProxy(_SomeProxy):
         # Keep list of attributes
         self.__attrs = { n: attrs_fn(x, g, s)
                         for n,x,g,s in self._pagetmpl.iter_attrs(webelem) }
+        self.css = CSSProxy(self)
 
     def __repr__(self):
         try:
@@ -162,7 +178,7 @@ class ComponentProxy(_SomeProxy):
         return self.__attrs.keys()
 
     def __setattr__(self, name, value):
-        if name.startswith('_'):
+        if name.startswith('_') or name in ('css',):
             return super(ComponentProxy, self).__setattr__(name, value)
         attr = self.__attrs.get(name, None)
         if attr is None:
