@@ -181,16 +181,21 @@ class DPageElement(object):
         else:
             self._children.append(element)
 
-    def reduce(self):
+    def reduce(self, site=None):
         """Cleanup internally, possibly merging nested elements
         
             None can be returned, in case this element is no longer
             useful.
+            `reduce()` shall be called *after* all children have been
+            scanned and appended to this; after thet have been reduced.
+            
+            If `site` is provided, this should be a context object,
+            which provides (or consumes) additional resources from this
+            element.
         """
         # reset cached xpath, let it compute again
         self.__xpath = None
         return self
-
 
     def pretty_dom(self):
         """Walk this template, generate (indent, name, xpath) sets of each node
