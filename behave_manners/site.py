@@ -342,7 +342,7 @@ class WebContext(SiteContext):
             if len(path) >= max_depth:
                 break
             try:
-                celems = [(path + (n,), c) for n, c in comp.iteritems()]
+                celems = [(path + (n,), c) for n, c in comp.items()]
                 celems.reverse()
                 stack += celems
             except ElementNotFound as e:

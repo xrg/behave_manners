@@ -668,7 +668,7 @@ class DHtmlObject(DPageElement):
             path, comp = stack.pop()
             yield path, comp
             if len(path) < max_depth:
-                celems = [(path + (n,), c) for n, c in comp.iteritems()]
+                celems = [(path + (n,), c) for n, c in comp.items()]
                 celems.reverse()
                 stack += celems
 

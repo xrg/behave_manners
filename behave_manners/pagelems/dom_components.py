@@ -92,10 +92,10 @@ class _SomeProxy(object):
         return self.__iter__()
 
     def __iter__(self):
-        for name, welem, ptmpl in self._pagetmpl.iter_items(self._remote, self._context):
+        for name, welem, ptmpl, ctx in self._pagetmpl.iter_items(self._remote, self._context):
             yield name
 
-    def iteritems(self):
+    def items(self):
         for iname, ielem, ptmpl, ctx in self._pagetmpl.iter_items(self._remote, self._context):
             yield iname, ComponentProxy(iname, self, ptmpl, ielem, ctx)
 
