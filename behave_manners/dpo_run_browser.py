@@ -9,36 +9,9 @@ from __future__ import print_function
 import logging
 import json
 import time
-from behave_manners.site import SiteContext, WebContext
+from behave_manners.site import SiteContext, WebContext, FakeContext
 from selenium.common.exceptions import WebDriverException
 
-
-class FakeContext(object):
-    log = logging.getLogger('context')
-
-    class Runner(object):
-        def __init__(self):
-            self.hooks = {}
-
-    class Config(object):
-        def setup_logging(self):
-            pass
-
-    def __init__(self):
-        self.browser = None
-        self._runner = FakeContext.Runner()
-        self.config = FakeContext.Config()
-        self.__cleanups = []
-
-    def add_cleanup(self, fn, *args):
-        self.__cleanups.append((fn, args))
-
-    def close(self):
-        for fn, args in self.__cleanups:
-            try:
-                fn(*args)
-            except Exception as e:
-                self.log.warning("Could not cleanup: %s", e)
 
 
 def cmdline_main():

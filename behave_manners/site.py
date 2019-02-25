@@ -373,4 +373,37 @@ def _cleanup_logentry(rec):
     return rec
 
 
+class FakeContext(object):
+    """Dummy *behave* context
+    
+        Will substitute a proper `behave` context for when manners stuff
+        is run outside of a `behave` test suite.
+    """
+    log = logging.getLogger('context')
+
+    class Runner(object):
+        def __init__(self):
+            self.hooks = {}
+
+    class Config(object):
+        def setup_logging(self):
+            pass
+
+    def __init__(self):
+        self.browser = None
+        self._runner = FakeContext.Runner()
+        self.config = FakeContext.Config()
+        self.__cleanups = []
+
+    def add_cleanup(self, fn, *args):
+        self.__cleanups.append((fn, args))
+
+    def close(self):
+        for fn, args in self.__cleanups:
+            try:
+                fn(*args)
+            except Exception as e:
+                self.log.warning("Could not cleanup: %s", e)
+
+
 #eof
