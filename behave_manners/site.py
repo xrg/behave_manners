@@ -358,6 +358,35 @@ class WebContext(SiteContext):
                               num_elems, errors)
             raise AssertionError("Errors found, validation failed")
 
+    def update_cur_page(self, context):
+        """Update `context.cur_page` when URL may have changed
+        """
+        cur_url = context.browser.current_url
+        if not cur_url.startswith(self.base_url):
+            raise AssertionError("Browser at %s, not under base url" % cur_url)
+        cur_url = cur_url[len(self.base_url):].split('?', 1)[0]
+
+        try:
+            page, title, params = self._collection.get_by_url(cur_url)
+            self._log.debug("Resolved browser url to \"%s\" page", title)
+        except KeyError:
+            self._log.warning("Browser is no longer at a known page: %s", cur_url)
+            page = None
+        cur_page = getattr(context, 'cur_page', None)
+        if cur_page is not None and page is not None:
+            if page is cur_page._pagetmpl:
+                return  # still on the same page
+
+        if page is None:
+            context.cur_page = None
+            return
+
+        self._log.info('Page changed to %s', title or cur_url)
+        if not hasattr(context, 'pagelems_ctx'):
+            context.pagelems_ctx = self._collection.get_context()
+        context.cur_page = page.get_root(context.browser,
+                                         parent_ctx=context.pagelems_ctx)
+
 
 _wd_loglevels = {'INFO': logging.INFO, 'WARN': logging.WARNING,
                  'SEVERE': logging.ERROR, 'CRITICAL': logging.CRITICAL
