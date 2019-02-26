@@ -393,6 +393,21 @@ class RepeatObj(DPageElement):
             raise ValueError("<Repeat> cannot contain %s" % ch._name)
         return self
 
+    def _elem_get_attr(self, elem, pattern, context, xpath_prefix):
+        """Closure for computing item name based on attributes
+        
+            :param elem: pagelement to resolve attributes from
+            :param pattern: name of attribute to resolve
+        """
+        def _resolver(n, welem):
+            for name, xpath, getter, s in elem.iter_attrs(welem, context, xpath_prefix):
+                if name == pattern:
+                    if xpath:
+                        welem = welem.find_element_by_xpath(xpath)
+                    return getter(welem)
+            return n
+        return _resolver
+
     def iter_items(self, remote, context, xpath_prefix=''):
         pattern = self._children[0].this_name   # assuming NamedElement, so far
         if not pattern:
@@ -401,8 +416,7 @@ class RepeatObj(DPageElement):
             pattern = pattern[1:-1].strip()
             if not word_re.match(pattern):
                 raise NotImplementedError("Cannot parse expression '%s'" % pattern)
-            #pfun = lambda n, x: self._children[0].get_attr(pattern, x) or str(n)
-            pfun = lambda n, x: x.get_attribute(pattern)
+            pfun = self._elem_get_attr(self._children[0], pattern, context, xpath_prefix)
         elif '%s' in pattern or '%d' in pattern:
             pfun = lambda n, x: pattern % n
         else:
