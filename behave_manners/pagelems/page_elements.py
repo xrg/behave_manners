@@ -197,6 +197,42 @@ class NamedElement(DPageElement):
     _name = 'named'
     _inherit = 'any'
 
+    def __init__(self, tag, attrs):
+        super(NamedElement, self).__init__(tag, attrs)
+
+        # parse `this_name` into dynamic function
+        pattern = self.this_name
+        if pattern.startswith('[') and pattern.endswith(']'):
+            pattern = pattern[1:-1].strip()
+            if not word_re.match(pattern):
+                raise NotImplementedError("Cannot parse expression '%s'" % pattern)
+
+            self._this_fn = self.__get_pattern_resolver(pattern)
+        elif '%s' in pattern or '%d' in pattern:
+            self._this_fn = lambda n, x, c: pattern % n
+        else:
+            # plain name, no iteration
+            self._this_fn = lambda *a: pattern
+
+    def __get_pattern_resolver(self, pattern):
+        """Closure for computing item name based on attributes
+
+            :param pattern: name of attribute to resolve
+        """
+        def _resolver(n, welem, context):
+            for name, xpath, getter, s in self.iter_attrs(welem, context):
+                if name == pattern:
+                    if xpath:
+                        welem = welem.find_element_by_xpath(xpath)
+                    ret = getter(welem)
+                    if ret:
+                        return ret.strip()
+                    else:
+                        return ''
+            return n
+
+        return _resolver
+
     def _split_this(self, value, sub=None):
         if sub:
             raise NotImplementedError()
@@ -212,11 +248,11 @@ class NamedElement(DPageElement):
 
     def _locate_in(self, remote, context, xpath_prefix):
         xpath = prepend_xpath(xpath_prefix, self.xpath)
-        enoent = True
+        n = 0
         for welem in remote.find_elements_by_xpath(xpath):
-            enoent = False
-            yield self.this_name, welem, self, context
-        if enoent:
+            yield self._this_fn(n, welem, context), welem, self, context
+            n += 1
+        if not n:
             raise ElementNotFound(parent=remote, selector=xpath)
 
     def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
@@ -392,59 +428,18 @@ class RepeatObj(DPageElement):
             raise NotImplementedError("Cannot handle siblings in <Repeat>")  # yet
 
         self._reset_xpath_locator()
-        # Check top child
-        ch = self._children[0]
-        if isinstance(ch, NamedElement):
-            pass
-        elif isinstance(ch, AnyElement):
-            # convert to NamedElement
-            name = ''
-            if 'id' in ch.read_attrs:
-                name = '[id]'
-            nch = NamedElement.new(ch.tag, [])
-            nch.this_name = name
-            nch._xpath = ch._xpath
-            nch.read_attrs = ch.read_attrs
-            nch._children = ch._children[:]
-            self._children[0] = nch
-        else:
-            raise ValueError("<Repeat> cannot contain %s" % ch._name)
         return self
 
-    def _elem_get_attr(self, elem, pattern, context, xpath_prefix):
-        """Closure for computing item name based on attributes
-        
-            :param elem: pagelement to resolve attributes from
-            :param pattern: name of attribute to resolve
-        """
-        def _resolver(n, welem):
-            for name, xpath, getter, s in elem.iter_attrs(welem, context, xpath_prefix):
-                if name == pattern:
-                    if xpath:
-                        welem = welem.find_element_by_xpath(xpath)
-                    return getter(welem)
-            return n
-        return _resolver
-
     def iter_items(self, remote, context, xpath_prefix=''):
-        pattern = self._children[0].this_name   # assuming NamedElement, so far
-        if not pattern:
-            pfun = lambda n, x: n
-        elif pattern.startswith('[') and pattern.endswith(']'):
-            pattern = pattern[1:-1].strip()
-            if not word_re.match(pattern):
-                raise NotImplementedError("Cannot parse expression '%s'" % pattern)
-            pfun = self._elem_get_attr(self._children[0], pattern, context, xpath_prefix)
-        elif '%s' in pattern or '%d' in pattern:
-            pfun = lambda n, x: pattern % n
-        else:
-            # suffix
-            pfun = lambda n, x: pattern + str(n)
-
         ni = 0
+        seen = set()
         for name, welem, ptmpl, ctx in self._children[0] \
                 ._locate_in(remote, context, xpath_prefix):
-            yield pfun(ni, welem), welem, ptmpl, ctx
+            if not name:
+                name = ni   # integer type, not a string!
+            elif name in seen:
+                name += str(ni)
+            yield name, welem, ptmpl, ctx
             ni += 1
             if ni > self.max_elems:
                 break
