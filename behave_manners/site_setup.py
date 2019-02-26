@@ -2,6 +2,7 @@
 """
 """
 from __future__ import print_function
+import copy
 import six
 from behave.runner import Context
 from .site import SiteContext, WebContext
@@ -35,6 +36,12 @@ def site_setup(context, config=None):
 
     if config.get('page_objects'):
         context.site.init_collection()
+
+    if config.get('context'):
+        if not isinstance(config['context'], dict):
+            raise TypeError("Config 'context' section must be a dict")
+        for k, v in config['context'].items():
+            setattr(context, k, copy.deepcopy(v))
     return
 
 
