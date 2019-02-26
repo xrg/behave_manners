@@ -35,12 +35,12 @@ class AnyElement(DPageElement):
     _name = 'tag.pe-any'
     _inherit = '.domContainer'
 
-    def __init__(self, tag, attrs):
+    def __init__(self, tag, attrs, any_tag='*'):
         super(AnyElement, self).__init__(tag)
         match_attrs = defaultdict(list)
         self.read_attrs = {}
+        self._xpath = any_tag
         self._split_attrs(attrs, match_attrs, self.read_attrs)
-        self._xpath = '*'
         self._xpath_score = 0
         self._set_match_attrs(match_attrs)
         self._dom_slot = None
@@ -68,6 +68,8 @@ class AnyElement(DPageElement):
                 self._split_this(v)
             elif k == 'slot':
                 self._dom_slot = v
+            elif k == 'pe-deep':
+                self._xpath = './/' + self._xpath
             elif v is None:
                 assert '.' not in k, k
                 match_attrs[k].append(True)
@@ -163,8 +165,7 @@ class GenericElement(DPageElement):
     _inherit = 'tag.pe-any'
     
     def __init__(self, tag, attrs):
-        super(GenericElement, self).__init__(tag, attrs)
-        self._xpath = tag + self._xpath[1:]  # no '/', _xpath is clauses on same element
+        super(GenericElement, self).__init__(tag, attrs, any_tag=tag)
         self._xpath_score += 10
 
 
