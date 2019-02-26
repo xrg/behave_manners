@@ -114,6 +114,7 @@ class AnyElement(DPageElement):
 
     def _locate_in(self, remote, context, xpath_prefix):
         xpath2 = prepend_xpath(xpath_prefix, self.xpath)
+        enoent = True
         for welem in remote.find_elements_by_xpath(xpath2):
             # Stop at first 'welem' that yields any children results
             try:
@@ -123,11 +124,17 @@ class AnyElement(DPageElement):
                 # raised exception by this point.
                 for y4 in ret:
                     yield y4
-            except ElementNotFound:
-                continue
-            break
-        else:
-            raise ElementNotFound(selector=xpath2, parent=remote)
+                enoent = False
+            except ElementNotFound as e:
+                if enoent is True:
+                    # Keep first exception encountered
+                    enoent = e
+
+        if enoent:
+            if enoent is True:
+                # No element matched xpath2, loop above didn't run
+                enoent = ElementNotFound(selector=xpath2, parent=remote)
+            raise enoent
 
     def iter_items(self, remote, context, xpath_prefix=''):
         return self._iter_items_cont(remote, context, xpath_prefix)
@@ -200,10 +207,11 @@ class NamedElement(DPageElement):
 
     def _locate_in(self, remote, context, xpath_prefix):
         xpath = prepend_xpath(xpath_prefix, self.xpath)
+        enoent = True
         for welem in remote.find_elements_by_xpath(xpath):
+            enoent = False
             yield self.this_name, welem, self, context
-            break
-        else:
+        if enoent:
             raise ElementNotFound(parent=remote, selector=xpath)
 
     def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
@@ -279,8 +287,13 @@ class InputElement(DPageElement):
 
     def _locate_in(self, remote, context, xpath_prefix):
         if self.this_name:
-            for welem in remote.find_elements_by_xpath(prepend_xpath(xpath_prefix, self.xpath)):
+            enoent = True
+            xpath2 = prepend_xpath(xpath_prefix, self.xpath)
+            for welem in remote.find_elements_by_xpath(xpath2):
+                enoent = False
                 yield self.this_name, welem, self, context
+            if enoent:
+                raise ElementNotFound(parent=remote, selector=xpath2)
         else:
             return
     

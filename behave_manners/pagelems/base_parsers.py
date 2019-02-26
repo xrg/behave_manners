@@ -236,14 +236,17 @@ class DPageElement(object):
     
     def _iter_items_cont(self, remote, context, xpath_prefix=''):
         """Standard `iter_items()` implementation for containing components
+        
+            Returns **one** set of discovered elements
         """
         seen_names = set()
         for ch in self._children:
             for n, w, p, ctx in ch._locate_in(remote, context, xpath_prefix):
                 # Suppress duplicate names, only return first match
-                if n not in seen_names:
-                    yield n, w, p, ctx
-                    seen_names.add(n)
+                if n in seen_names:
+                    break
+                yield n, w, p, ctx
+                seen_names.add(n)
 
     def _locate_in(self, remote, context, xpath_prefix):
         """Locate (possibly) this component under 'remote' webelem
@@ -251,7 +254,7 @@ class DPageElement(object):
             Called by the parent component, to resolve this.
             Returns tuple (name, welem, ptmpl, context)
         """
-        return ()
+        return []
 
     def iter_attrs(self, webelem=None, context=None, xpath_prefix=''):
         """Iterate names of possible attributes
