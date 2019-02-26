@@ -94,6 +94,7 @@ class AnyElement(DPageElement):
         return self
 
     def xpath_locator(self, score, top=False):
+        locator = ''
         if score and score > 0:
             locator = self._xpath
             score -= self._xpath_score
@@ -102,7 +103,7 @@ class AnyElement(DPageElement):
             child_locs = []
             for c in self._children:
                 cloc = c.xpath_locator(score)
-                if cloc:
+                if cloc and cloc != '*':
                     child_locs.append(cloc)
 
             if top or (len(child_locs) > 1):
