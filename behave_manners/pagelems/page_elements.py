@@ -190,7 +190,7 @@ class Text2AttrElement(DPageElement):
         raise TypeError('Data cannot consume %r' % element)
 
     def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
-        yield self._attr_name, xpath_prefix, lambda w: w.text, None
+        yield self._attr_name, xpath_prefix, lambda w: w.get_attribute('text'), None
 
 
 class NamedElement(DPageElement):
