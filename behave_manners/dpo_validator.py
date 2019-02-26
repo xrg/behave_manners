@@ -9,11 +9,13 @@ from __future__ import print_function
 import logging
 import json
 import time
+import sys
 from selenium import webdriver
 from selenium.webdriver.remote.command import Command
 from behave_manners.site import FakeContext
 from behave_manners.pagelems.main import DSiteCollection, FSLoader
 from behave_manners.pagelems.exceptions import ElementNotFound
+from behave_manners.pagelems.helpers import Integer
 from six.moves.urllib import parse as urlparse
 from behave_manners import screenshots
 
@@ -68,6 +70,7 @@ def cmdline_main():
                         help="path to 'index.html' file")
 
     args = parser.parse_args()
+    errors = Integer(0)
 
     logging.basicConfig(level=logging.INFO)
     site = DSiteCollection(FSLoader('.'))
@@ -124,6 +127,8 @@ def cmdline_main():
     def print_enoent(comp, exc):
         print("    Missing %s inside %s" % (exc.selector, comp))
 
+        e = errors  # transfer from outer to local scope
+        e += 1
         if camera:
             camera.capture_missing_elem(becontext, exc.parent, exc.selector)
         return True  # want walk() to continue
@@ -149,6 +154,7 @@ def cmdline_main():
                                 print_enoent(elem, e)
                             except Exception as e:
                                 print('  '* len(path), ' ' * 20, a, '= %s' % type(e))
+                                errors += 1
 
                     break
                 except KeyError as e:
@@ -164,11 +170,13 @@ def cmdline_main():
             break
 
     # driver.close()   # should be done by remote
-    log.info("Bye")
+    log.info("Validation finished, %s errors", errors or 'no')
+    return errors and 1 or 0
 
 
 if __name__ == '__main__':
-    cmdline_main()
+    r = cmdline_main()
+    sys.exit(r and 1)
 
 
 #eof
