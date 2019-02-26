@@ -380,6 +380,18 @@ class DeepContainObj(DPageElement):
     def _locate_in(self, remote, context, xpath_prefix):
         return self._iter_items_cont(remote, context, xpath_prefix='.//')
 
+    def iter_attrs(self, webelem=None, context=None, xpath_prefix='.//'):
+        """Iterate names of possible attributes
+
+            returns iterator of (name, getter, setter)
+        """
+        for ch in self._children:
+            for y4 in ch._locate_attrs(webelem, context, xpath_prefix):
+                yield y4
+
+    def _locate_attrs(self, webelem=None, context=None, xpath_prefix='.//'):
+        return self.iter_attrs(webelem, context, prepend_xpath(xpath_prefix, self.xpath))
+
     def xpath_locator(self, score, top=False):
         if score <= -100:
             return ''
