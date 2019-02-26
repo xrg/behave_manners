@@ -263,7 +263,7 @@ class WebContext(SiteContext):
             context.pagelems_ctx = self._collection.get_context()
         context.cur_page = page.get_root(context.browser,
                                          parent_ctx=context.pagelems_ctx)
-    
+
     def get_cur_title(self, context):
         #up = urlparse.urlparse()
         cur_url = context.browser.current_url
@@ -279,6 +279,7 @@ class WebContext(SiteContext):
         except KeyError:
             self._log.warning("No match for url: %s", cur_url)
             return None
+
     def navigate_by_url(self, context, url, force=False):
         # TODO: up = urlparse.urlparse(driver.current_url)
         curl = url.split('?', 1)[0]
@@ -297,10 +298,10 @@ class WebContext(SiteContext):
 
     def validate_cur_page(self, context, max_depth=10000):
         """Validates current browser page against pagelem template
-        
+
             Current page will be checked by url and the page template
             will be traversed all the way down.
-    
+
         """
         from .pagelems.dom_components import PageProxy
         from .pagelems.exceptions import ElementNotFound
@@ -314,7 +315,7 @@ class WebContext(SiteContext):
             self._log.info("Resolved browser url to \"%s\" page", title)
         except KeyError:
             page = None
-        
+
         errors = 0
         cur_page = getattr(context, 'cur_page', None)
         if cur_page is not None and not isinstance(cur_page, PageProxy):
@@ -333,7 +334,7 @@ class WebContext(SiteContext):
             cur_page = page.get_root(context.browser, parent_ctx=ctx)
         elif cur_page is None and page is None:
             raise AssertionError("No current page found, no resolution from URL either")
-        
+
         num_elems = 0
         stack = [((), cur_page)]
         while stack:
@@ -405,7 +406,7 @@ def _cleanup_logentry(rec):
 
 class FakeContext(object):
     """Dummy *behave* context
-    
+
         Will substitute a proper `behave` context for when manners stuff
         is run outside of a `behave` test suite.
     """

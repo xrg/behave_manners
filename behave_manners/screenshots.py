@@ -117,13 +117,13 @@ class Camera(object):
                 failed_comp = args[0].exception.component
         except AttributeError:
             pass
-        
+
         with self.highlight_element(context, failed_comp):
             self.take_shot(context, 'failure')
 
     def capture_missing_elem(self, context, parent, missing_path):
         """Screenshot of browser when some element is missing
-            
+
             :param context: behave Context containing site and browser
             :param parent: selenium.WebElement under which other was not found
             :param missing_path: string of XPath missing

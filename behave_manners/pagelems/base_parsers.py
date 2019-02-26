@@ -10,7 +10,7 @@ from six.moves import html_entities
 if six.PY2:
     from HTMLParser import HTMLParseError
 else:
-    
+
     class HTMLParseError(Exception):
         """Exception raised for all parse errors."""
 
