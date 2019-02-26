@@ -52,6 +52,9 @@ class AnyElement(DPageElement):
             if vs[0] is True:
                 # only match existence of attribute
                 self._xpath += '[@%s]' % (k,)
+            elif vs[0].startswith('+'):
+                val = vs[0][1:]
+                self._xpath += '[contains(@%s,%s)]' % (k, textescape(val))
             else:
                 self._xpath += '[@%s=%s]' % (k, textescape(vs[0]))
         self._xpath_score += self.calc_xpath_score(match_attrs.keys())
