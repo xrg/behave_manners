@@ -52,7 +52,7 @@ class Camera(object):
             self.take_shot(context, 'success')
 
     @contextmanager
-    def highlight_element(self, context, component):
+    def highlight_element(self, context, component=None, webelem=None):
         """Perform some action with an element visually highlighted
         
             This should place a square rectangle on the DOM, around the
@@ -60,9 +60,12 @@ class Camera(object):
             of the DOM to avoid any inheritance effects of the interesting
             element.
             After the action is performed, the highlight element is removed.
-            
+
         """
-        if component is None:
+        if webelem is None and component is not None:
+            webelem = component._remote
+
+        if webelem is None:
             yield
             return
 
@@ -70,7 +73,6 @@ class Camera(object):
         webdriver = None
 
         try:
-            webelem = component._remote
             webdriver = webelem.parent   # safer than using 'context.webdriver'
             # print "display p:", webelem.is_displayed(), webelem.rect
             # print "display c:", webelem.value_of_css_property('display')
@@ -122,8 +124,8 @@ class Camera(object):
             :param parent: selenium.WebElement under which other was not found
             :param missing_path: string of XPath missing
         """
-        # TODO highlight
-        self.take_shot(context, 'missing-elem')
+        with self.highlight_element(context, webelem=parent):
+            self.take_shot(context, 'missing-elem')
 
 
 # eof

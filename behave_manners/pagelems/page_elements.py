@@ -658,19 +658,28 @@ class DHtmlObject(DPageElement):
     def iter_items(self, remote, context, xpath_prefix=''):
         return self._iter_items_cont(remote, context, xpath_prefix='//')
 
-    def walk(self, webdriver, parent_ctx=None, max_depth=1000):
+    def walk(self, webdriver, parent_ctx=None, max_depth=1000, on_missing=None):
         """Discover all interesting elements within webdriver current page+context
         
+            :param on_missing: function to call like `fn(comp, e)` when ElementNotFound
+                               is raised under component=comp
             Iterator, yielding (path, Component) pairs, traversing depth first
         """
         stack = [((), self.get_root(webdriver, parent_ctx))]
+        if on_missing is None:
+            on_missing = lambda c, e: None
         while stack:
             path, comp = stack.pop()
             yield path, comp
             if len(path) < max_depth:
-                celems = [(path + (n,), c) for n, c in comp.items()]
-                celems.reverse()
-                stack += celems
+                try:
+                    celems = [(path + (n,), c) for n, c in comp.items()]
+                    celems.reverse()
+                    stack += celems
+                except ElementNotFound as e:
+                    if on_missing(comp, e):
+                        continue
+                    raise
 
     def get_root(self, webdriver, parent_ctx=None):
         """Obtain a proxy to the root DOM of remote WebDriver, bound to this template

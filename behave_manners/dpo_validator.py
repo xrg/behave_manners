@@ -11,8 +11,11 @@ import json
 import time
 from selenium import webdriver
 from selenium.webdriver.remote.command import Command
+from behave_manners.site import FakeContext
 from behave_manners.pagelems.main import DSiteCollection, FSLoader
+from behave_manners.pagelems.exceptions import ElementNotFound
 from six.moves.urllib import parse as urlparse
+from behave_manners import screenshots
 
 
 class ExistingRemote(webdriver.Remote):
@@ -59,6 +62,8 @@ def cmdline_main():
                         help='Check all site, not just index')
     parser.add_argument('-s', '--session-file', default='dbg-browser.session',
                         help="Path to file with saved Remote session")
+    parser.add_argument('-p', '--screenshots',
+                        help="Capture screenshots in this directory")
     parser.add_argument('index', metavar='index.html', nargs='?',
                         help="path to 'index.html' file")
 
@@ -88,6 +93,12 @@ def cmdline_main():
 
     log.info("Site collection contains %d pages, %d files",
              len(site.page_dir), len(site.file_dir))
+    
+    camera = None
+    becontext = FakeContext()
+    becontext.browser = driver
+    if args.screenshots:
+        camera = screenshots.Camera(args.screenshots)
 
     def _get_cur_path(cur_url):
         if sdata.get('base_url'):
@@ -107,6 +118,16 @@ def cmdline_main():
                 return up.path
 
     log.info("Entering main phase, connected to browser")
+    def path_str(path):
+        return '/'.join([str(x) for x in path])
+
+    def print_enoent(comp, exc):
+        print("    Missing %s inside %s" % (exc.selector, comp))
+
+        if camera:
+            camera.capture_missing_elem(becontext, exc.parent, exc.selector)
+        return True  # want walk() to continue
+
     while True:
         try:
             cur_path = _get_cur_path(driver.current_url)
@@ -116,13 +137,17 @@ def cmdline_main():
                     page, title, page_args = site.get_by_url(cur_path, fragment=None)
                     log.info("Got page %s %r", title, page_args)
 
-                    for path, elem in page.walk(driver, parent_ctx=site_ctx):
-                        print('  ' * len(path), '/'.join(path), elem)
+                    for path, elem in page.walk(driver, parent_ctx=site_ctx,
+                                                on_missing=print_enoent):
+                        print('  ' * len(path), path_str(path), elem)
                         for a in dir(elem):
                             try:
                                 print('  '* len(path), ' ' * 20, a, 
                                       '= %s' % shorten_txt(getattr(elem, a), 40))
-                            except Exception, e:
+                            except ElementNotFound as e:
+                                print('  '* len(path), ' ' * 20, a, '= X')
+                                print_enoent(elem, e)
+                            except Exception as e:
                                 print('  '* len(path), ' ' * 20, a, '= %s' % type(e))
 
                     break
