@@ -10,12 +10,11 @@ import yaml
 import six
 from f3utils.dict_tools import merge_dict
 import os.path
-import sys
 import re
 from behave.model_core import Status
 import logging
 import urllib3.exceptions
-import datetime
+# from six.moves.urllib import parse as urlparse
 from .context import EventContext
 
 
