@@ -76,8 +76,12 @@ class Camera(object):
             webdriver = webelem.parent   # safer than using 'context.webdriver'
             # print "display p:", webelem.is_displayed(), webelem.rect
             # print "display c:", webelem.value_of_css_property('display')
-            rect = webelem.rect.copy()
-            
+            try:
+                rect = webelem.rect.copy()
+            except WebDriverException:
+                rect = webelem.location.copy()
+                rect.update(webelem.size)
+
             # grow the rectangle to least 30x30 or +2px than original
             dw = 30 - rect['width']
             dh = 30 - rect['height']
