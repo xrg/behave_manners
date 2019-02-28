@@ -276,11 +276,16 @@ class DataElement(DPageElement):
     _name = 'text'
     _consume_in = ()
     is_empty = True
+    _xpath_score = 20
 
     def __init__(self, data):
         super(DataElement, self).__init__()
         assert isinstance(data, six.string_types)
         self.data = data
+        if data.startswith(' ') or data.endswith(' '):
+            self._xpath = 'contains(text(), %s)' % textescape(data.strip())
+        else:
+            self._xpath = 'text()=%s' % textescape(self.data)
 
     def consume(self, element):
         if isinstance(element, DataElement):
@@ -292,11 +297,12 @@ class DataElement(DPageElement):
         assert isinstance(other, DataElement)
         self.data += other.data
 
-    def must_have(self):
-        if self.data.startswith(' ') or self.data.endswith(' '):
-            return ['contains(text(), %s)' % textescape(self.data.strip())]
-        else:
-            return ['text()=%s' % textescape(self.data)]
+    def xpath_locator(self, score, top=False):
+        locator = ''
+        if score and score > 0:
+            locator = self._xpath
+            score -= self._xpath_score
+        return locator
 
 
 DataElement._consume_in = (DataElement,)
