@@ -510,7 +510,8 @@ class PeChoiceElement(DPageElement):
             return super(PeChoiceElement, self).reduce(site)
 
     def _locate_in(self, remote, context, xpath_prefix):
-        first_exc = None
+        enofound = None
+        nfound = 0
         for ch in self._children:
             # Stop at first 'welem' that yields any children results
             try:
@@ -521,14 +522,14 @@ class PeChoiceElement(DPageElement):
                 # raised exception by this point.
                 for y4 in ret:
                     yield y4
+                nfound += 1
             except ElementNotFound as e:
-                if first_exc is None:
-                    first_exc = e
-                continue
-            break
-        else:
-            if first_exc is not None:
-                raise first_exc
+                if enofound is None:
+                    enofound = e
+
+        if not nfound:
+            if enofound is not None:
+                raise enofound
             else:
                 locs = []
                 for ch in self._children[:3]:
