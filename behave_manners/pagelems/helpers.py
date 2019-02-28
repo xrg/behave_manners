@@ -15,7 +15,7 @@ def textescape(tstr):
         return "concat('" + "', '\"', '".join(tstr.split('"')) + "')"  # Perl alert!
 
 
-def prepend_xpath(pre, xpath):
+def prepend_xpath(pre, xpath, glue=False):
     """Prepend some xpath to another, properly joining the slashes
 
     """
@@ -31,6 +31,10 @@ def prepend_xpath(pre, xpath):
         return pre[:-1] + xpath
     elif pre.endswith('/') and xpath.startswith('./'):
         return pre + xpath[2:]
+    elif glue and not pre.endswith('/'):
+        if glue is True:
+            glue = '/'
+        return pre + glue + xpath
 
     return pre + xpath
 
