@@ -512,17 +512,16 @@ class PeChoiceElement(DPageElement):
     def _locate_in(self, remote, context, xpath_prefix):
         enofound = None
         nfound = 0
+        seen = set()
         for ch in self._children:
             # Stop at first 'welem' that yields any children results
             try:
-                ret = list(ch._locate_in(remote, context, xpath_prefix))
-                # all children elements have been resolved here
-                # good to go 
-                # List may be empty, but no children would have
-                # raised exception by this point.
-                for y4 in ret:
-                    yield y4
-                nfound += 1
+                for n, welem, p, ctx in ch._locate_in(remote, context, xpath_prefix):
+                    if welem in seen:
+                        continue
+                    seen.add(welem)
+                    yield n, welem, p, ctx
+                    nfound += 1
             except ElementNotFound as e:
                 if enofound is None:
                     enofound = e
