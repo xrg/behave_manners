@@ -167,7 +167,7 @@ class WebContext(SiteContext):
                 options.add_experimental_option('useAutomationExtension', False)
             if 'window' in browser_opts:
                 w, h = self._decode_win_size(browser_opts['window'])
-                options.add_argument('window-size=%dx%d' % (w, h))
+                options.add_argument('window-size=%d,%d' % (w, h))
             context.browser = webdriver.Chrome(chrome_options=options,
                                                desired_capabilities=dcaps,
                                                service_args=browser_opts\
