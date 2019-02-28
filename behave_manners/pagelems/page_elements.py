@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 import logging
+import re
 from collections import defaultdict
 
 from .helpers import textescape, prepend_xpath, word_re
@@ -10,6 +11,8 @@ from .site_collection import DSiteCollection
 from .exceptions import ElementNotFound
 from selenium.common.exceptions import NoSuchElementException
 
+
+method_re = re.compile(r'\w+\(')
 
 class DomContainerElement(DPageElement):
     """Base class for 'regular' DOM elements that can contain others
@@ -112,7 +115,8 @@ class AnyElement(DPageElement):
                 if cloc and cloc != '*':
                     child_locs.append(cloc)
 
-            if top or (len(child_locs) > 1):
+            if top or (len(child_locs) > 1) \
+                    or (child_locs and method_re.match(child_locs[0])):
                 for cloc in child_locs:
                     locator += '[%s]' % cloc
             elif child_locs:
