@@ -180,6 +180,7 @@ class LeafElement(DPageElement):
 
 class Text2AttrElement(DPageElement):
     _name = 'text2attr'
+    is_empty = True
     _consume_in = (DomContainerElement,)
     
     def __init__(self, name):
