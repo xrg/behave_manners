@@ -8,6 +8,7 @@ from .base_parsers import DPageElement, DataElement, BaseDPOParser, \
                           HTMLParseError, DOMContext
 from .site_collection import DSiteCollection
 from .exceptions import ElementNotFound
+from selenium.common.exceptions import NoSuchElementException
 
 
 class DomContainerElement(DPageElement):
@@ -250,11 +251,17 @@ class NamedElement(DPageElement):
     def _locate_in(self, remote, context, xpath_prefix):
         xpath = prepend_xpath(xpath_prefix, self.xpath)
         n = 0
+        enofound = None
         for welem in remote.find_elements_by_xpath(xpath):
-            yield self._this_fn(n, welem, context), welem, self, context
+            try:
+                yield self._this_fn(n, welem, context), welem, self, context
+            except NoSuchElementException, e:
+                enofound = ElementNotFound(msg=str(e), parent=welem, selector='*')
             n += 1
         if not n:
-            raise ElementNotFound(parent=remote, selector=xpath)
+            if enofound is None:
+                enofound = ElementNotFound(parent=remote, selector=xpath)
+            raise enofound
 
     def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
         # Stop traversing, no attributes exposed from this to parent
