@@ -458,18 +458,25 @@ class RepeatObj(DPageElement):
     def iter_items(self, remote, context, xpath_prefix=''):
         ni = 0
         seen = set()
-        for name, welem, ptmpl, ctx in self._children[0] \
-                ._locate_in(remote, context, xpath_prefix):
-            if not name:
-                name = ni   # integer type, not a string!
-            elif name in seen:
-                name += str(ni)
-            yield name, welem, ptmpl, ctx
-            ni += 1
-            if ni > self.max_elems:
-                break
+        enofound = None
+        try:
+            for name, welem, ptmpl, ctx in self._children[0] \
+                    ._locate_in(remote, context, xpath_prefix):
+                if not name:
+                    name = ni   # integer type, not a string!
+                elif name in seen:
+                    name += str(ni)
+                yield name, welem, ptmpl, ctx
+                ni += 1
+                if ni > self.max_elems:
+                    break
+        except ElementNotFound as e:
+            enofound = e
         if ni < self.min_elems:
-            raise ElementNotFound(parent=remote, selector=xpath_prefix)
+            if enofound is None:
+                raise ElementNotFound(parent=remote, selector=xpath_prefix)
+            else:
+                raise enofound
 
     def _locate_in(self, remote, context, xpath_prefix=''):
         # If this has a name, return new container Component,
