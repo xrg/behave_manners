@@ -325,7 +325,12 @@ class InputElement(DPageElement):
         return []
 
     def iter_attrs(self, webelem=None, context=None, xpath_prefix=''):
-        return []
+        for y4 in super(InputElement, self).iter_attrs(webelem, context, xpath_prefix):
+            yield y4
+        if self.this_name:
+            yield ('value', xpath_prefix,
+                       self.InputValueGetter(''),
+                       self.InputValueSetter(''))
 
     def _locate_in(self, remote, context, xpath_prefix):
         if self.this_name:
