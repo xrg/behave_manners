@@ -435,6 +435,52 @@ class DeepContainObj(DPageElement):
             score //= 2
 
 
+class RootAgainElem(DPageElement):
+    """Reset to root element (of DOM), keep component deep in tree
+        
+    """
+    _name = 'tag.pe-root'
+    _inherit = '.domContainer'
+
+    def __init__(self, tag, attrs):
+        if attrs:
+            raise ValueError('Deep cannot have attributes')
+        super(RootAgainElem, self).__init__(tag)
+
+    def iter_items(self, remote, context, xpath_prefix=''):
+        return self._iter_items_cont(remote, context, xpath_prefix='//')
+
+    def _locate_in(self, remote, context, xpath_prefix):
+        return self._iter_items_cont(remote, context, xpath_prefix='//')
+
+    def iter_attrs(self, webelem=None, context=None, xpath_prefix='//'):
+        """Iterate names of possible attributes
+
+            returns iterator of (name, getter, setter)
+        """
+        for ch in self._children:
+            for y4 in ch._locate_attrs(webelem, context, xpath_prefix):
+                yield y4
+
+    def _locate_attrs(self, webelem=None, context=None, xpath_prefix='//'):
+        return self.iter_attrs(webelem, context, prepend_xpath(xpath_prefix, self.xpath))
+
+    def xpath_locator(self, score, top=False):
+        if not top:
+            return ''
+
+        child_locs = []
+        for c in self._children:
+            cloc = c.xpath_locator(score)
+            if cloc:
+                child_locs.append(cloc)
+        
+        locator = '//'
+        for cloc in child_locs:
+            locator += '[%s]' % cloc
+        return locator
+
+
 class RepeatObj(DPageElement):
     _name = 'tag.pe-repeat'
     _inherit = '.domContainer'
