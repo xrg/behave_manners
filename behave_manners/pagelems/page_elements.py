@@ -162,7 +162,7 @@ class AnyElement(DPageElement):
                 yield y4
 
     def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
-        return self.iter_attrs(webelem, context, prepend_xpath(xpath_prefix, self.xpath))
+        return self.iter_attrs(webelem, context, prepend_xpath(xpath_prefix, self._xpath, '/'))
 
 
 class GenericElement(DPageElement):
