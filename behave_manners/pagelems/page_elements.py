@@ -610,11 +610,34 @@ class PeGroupElement(DPageElement):
             return super(PeGroupElement, self).reduce(site)
 
     def _locate_in(self, remote, context, xpath_prefix):
-        first_exc = None
+        ret = []
+
+        # get all sub-components in one go
+        seen = set()
         for ch in self._children:
             for y4 in ch._locate_in(remote, context, xpath_prefix):
-                yield y4
+                if y4[0] in seen:
+                    continue
+                ret.append(y4)
+                seen.add(y4[0])
 
+        # after this has finished (all located), return them
+        for y4 in ret:
+            yield y4
+
+    def xpath_locator(self, score, top=False):
+        if score < -100:
+            return ''
+
+        locs = []
+        for ch in self._children:
+            xloc = ch.xpath_locator(score, top=True)  # want the first DOM child
+            if xloc:
+                if locs:
+                    locs += '/following-sibling::'
+                locs.append(xloc)
+
+        return ''.join(locs)
 class ConsumeTmplMixin(object):
     """Common between Head and Body elements, temporarily hold templates
     """
