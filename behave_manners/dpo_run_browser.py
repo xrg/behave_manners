@@ -41,6 +41,7 @@ def cmdline_main():
         with open(args.session_file, 'wb') as fp:
             json.dump({'url': context.browser.command_executor._url,
                        'session': context.browser.session_id,
+                       'capabilities': context.browser.capabilities,
                        # Pass those so that validator doesn't need to load the config
                        'base_url': config.get('site', {}).get('base_url', None),
                        'page_objects': config.get('page_objects', {})

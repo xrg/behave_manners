@@ -147,6 +147,7 @@ class WebContext(SiteContext):
                            on_missing_element=None)
         self.events.push()
         self._config.setdefault('browser', {})
+        self._browser_log_types = []
         context.add_cleanup(self.events.pop)
 
     def launch_browser(self, context):
@@ -179,9 +180,23 @@ class WebContext(SiteContext):
                                                desired_capabilities=dcaps,
                                                service_args=browser_opts\
                                                    .get('chromedriver_args', []))
+            self._browser_log_types = context.browser.log_types
 
         elif desired_engine == 'firefox':
-            raise NotImplementedError('firefox')
+            options = webdriver.FirefoxOptions()
+            dcaps = webdriver.DesiredCapabilities.FIREFOX.copy()
+            dcaps.update(caps)
+            if 'binary_location' in browser_opts:
+                options.binary_location = browser_opts['binary_location']
+            options.headless = browser_opts.get('headless', True)
+            context.browser = webdriver.Firefox(firefox_options=options,
+                                                desired_capabilities=dcaps,
+                                                service_args=browser_opts\
+                                                    .get('geckodriver_args', []))
+            if 'window' in browser_opts:
+                w, h = self._decode_win_size(browser_opts['window'])
+                context.browser.set_window_size(w,h)
+            self._browser_log_types = []   # ['browser', 'driver', 'client', 'server']
         else:
             raise NotImplementedError('Unsupported engine: %s' % desired_engine)
 
@@ -233,7 +248,7 @@ class WebContext(SiteContext):
             self._log.error("Could not fetch step logs: %s", e)
 
     def process_logs(self, context):
-        for lt in context.browser.log_types:
+        for lt in self._browser_log_types:
             self._push_log_entries(lt, context.browser.get_log(lt), _cleanup_logentry)
 
     def _push_log_entries(self, logname, entries, fmt_func=None):

@@ -23,8 +23,10 @@ from behave_manners import screenshots
 class ExistingRemote(webdriver.Remote):
     """Remote webdriver that attaches to existing session
     """
-    def __init__(self, command_executor, session_id, desired_capabilities={}, **kwargs):
+    def __init__(self, command_executor, session_id, saved_capabilities,
+                 desired_capabilities={}, **kwargs):
         self.__session_id = session_id
+        self.__saved_caps = saved_capabilities
         super(ExistingRemote, self).__init__(command_executor=command_executor,
                                              desired_capabilities=desired_capabilities,
                                              **kwargs)
@@ -32,6 +34,14 @@ class ExistingRemote(webdriver.Remote):
     def start_session(self, desired_capabilities, browser_profile=None):
         if not self.__session_id:
             raise RuntimeError("session_id must be specified in constructor")
+        if self.__saved_caps and self.__saved_caps.get('browserName', '') == 'firefox':
+            # Geckodriver does not support the 'GET_ALL_SESSIONS' command,
+            # so have to trust data from JSON and go directly to that session
+            self.session_id = self.__session_id
+            self.capabilities = self.__saved_caps
+            self.w3c = "specificationLevel" in self.capabilities
+            return
+
         res = self.execute(Command.GET_ALL_SESSIONS)
         if res != 0:
             for session in res['value']:
@@ -82,7 +92,8 @@ def cmdline_main():
         sdata = json.load(fp)
     if 'url' in sdata and 'session' in sdata:
         driver = ExistingRemote(command_executor=sdata['url'],
-                                session_id = sdata['session'])
+                                session_id=sdata['session'],
+                                saved_capabilities=sdata.get('capabilities',{}))
     else:
         raise RuntimeError("Saved session must have 'url' and 'session' set")
 
