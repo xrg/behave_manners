@@ -227,43 +227,43 @@ class DPageElement(object):
         self.__xpath = None
 
     # Methods for Component Proxies
-    def iter_items(self, remote, context, xpath_prefix=''):
+    def iter_items(self, remote, scope, xpath_prefix=''):
         """Iterate possible children components
         
-            :return: tuple (name, welem, ptmpl, context)
+            :return: tuple (name, welem, ptmpl, scope)
         """
         return
     
-    def _iter_items_cont(self, remote, context, xpath_prefix=''):
+    def _iter_items_cont(self, remote, scope, xpath_prefix=''):
         """Standard `iter_items()` implementation for containing components
         
             Returns **one** set of discovered elements
         """
         seen_names = set()
         for ch in self._children:
-            for n, w, p, ctx in ch._locate_in(remote, context, xpath_prefix):
+            for n, w, p, scp in ch._locate_in(remote, scope, xpath_prefix):
                 # Suppress duplicate names, only return first match
                 if n in seen_names:
                     break
-                yield n, w, p, ctx
+                yield n, w, p, scp
                 seen_names.add(n)
 
-    def _locate_in(self, remote, context, xpath_prefix):
+    def _locate_in(self, remote, scope, xpath_prefix):
         """Locate (possibly) this component under 'remote' webelem
         
             Called by the parent component, to resolve this.
-            Returns tuple (name, welem, ptmpl, context)
+            Returns tuple (name, welem, ptmpl, scope)
         """
         return []
 
-    def iter_attrs(self, webelem=None, context=None, xpath_prefix=''):
+    def iter_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         """Iterate names of possible attributes
 
             returns iterator of (name, xpath, getter, setter)
         """
         return ()
 
-    def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
+    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         """Locate self and return our possible attributes
 
             To be called by parent to return possible attributes
@@ -308,7 +308,7 @@ class DataElement(DPageElement):
 DataElement._consume_in = (DataElement,)
 
 
-class DOMContext(object):
+class DOMScope(object):
     """A simple holder of shared components or variables across DOM levels
     """
     
@@ -317,7 +317,7 @@ class DOMContext(object):
         self._templates = templates or {}
 
     def child(self):
-        """Return a child context linked to this one
+        """Return a child scope linked to this one
         """
         return self.__class__(self)
 
@@ -331,9 +331,9 @@ class DOMContext(object):
                 raise KeyError("Template id='%s' not found" % key)
 
 
-class RootDOMContext(DOMContext):
+class RootDOMScope(DOMScope):
     def __init__(self, parent=None, templates=None,):
-        super(RootDOMContext, self).__init__(parent=parent, templates=templates)
+        super(RootDOMScope, self).__init__(parent=parent, templates=templates)
 
 
 

@@ -6,7 +6,7 @@ from collections import defaultdict
 
 from .helpers import textescape, prepend_xpath, word_re
 from .base_parsers import DPageElement, DataElement, BaseDPOParser, \
-                          HTMLParseError, DOMContext
+                          HTMLParseError, DOMScope
 from .site_collection import DSiteCollection
 from .exceptions import ElementNotFound
 from selenium.common.exceptions import NoSuchElementException
@@ -123,13 +123,13 @@ class AnyElement(DPageElement):
                 locator += prepend_xpath('/', child_locs[0])
         return locator
 
-    def _locate_in(self, remote, context, xpath_prefix):
+    def _locate_in(self, remote, scope, xpath_prefix):
         xpath2 = prepend_xpath(xpath_prefix, self.xpath)
         enoent = True
         for welem in remote.find_elements_by_xpath(xpath2):
             # Stop at first 'welem' that yields any children results
             try:
-                ret = list(self.iter_items(welem, context))
+                ret = list(self.iter_items(welem, scope))
                 # all children elements have been resolved here
                 # List may be empty, but no children would have
                 # raised exception by this point.
@@ -147,10 +147,10 @@ class AnyElement(DPageElement):
                 enoent = ElementNotFound(selector=xpath2, parent=remote)
             raise enoent
 
-    def iter_items(self, remote, context, xpath_prefix=''):
-        return self._iter_items_cont(remote, context, xpath_prefix)
+    def iter_items(self, remote, scope, xpath_prefix=''):
+        return self._iter_items_cont(remote, scope, xpath_prefix)
 
-    def iter_attrs(self, webelem=None, context=None, xpath_prefix=''):
+    def iter_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         """Iterate names of possible attributes
 
             returns iterator of (name, getter, setter)
@@ -158,11 +158,11 @@ class AnyElement(DPageElement):
         for k, fn in self.read_attrs.items():
             yield k, xpath_prefix, fn, None
         for ch in self._children:
-            for y4 in ch._locate_attrs(webelem, context, xpath_prefix):
+            for y4 in ch._locate_attrs(webelem, scope, xpath_prefix):
                 yield y4
 
-    def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
-        return self.iter_attrs(webelem, context, prepend_xpath(xpath_prefix, self._xpath, '/'))
+    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
+        return self.iter_attrs(webelem, scope, prepend_xpath(xpath_prefix, self._xpath, '/'))
 
 
 class GenericElement(DPageElement):
@@ -195,7 +195,7 @@ class Text2AttrElement(DPageElement):
     def consume(self, element):
         raise TypeError('Data cannot consume %r' % element)
 
-    def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
+    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         yield self._attr_name, xpath_prefix, lambda w: w.text or w.get_attribute('innerText'), None
 
 
@@ -225,8 +225,8 @@ class NamedElement(DPageElement):
 
             :param pattern: name of attribute to resolve
         """
-        def _resolver(n, welem, context):
-            for name, xpath, getter, s in self.iter_attrs(welem, context):
+        def _resolver(n, welem, scope):
+            for name, xpath, getter, s in self.iter_attrs(welem, scope):
                 if name == pattern:
                     if xpath:
                         welem = welem.find_element_by_xpath(xpath)
@@ -252,13 +252,13 @@ class NamedElement(DPageElement):
             for i, n, x in c.pretty_dom():
                 yield i+1, n, prepend_xpath('./',  x)
 
-    def _locate_in(self, remote, context, xpath_prefix):
+    def _locate_in(self, remote, scope, xpath_prefix):
         xpath = prepend_xpath(xpath_prefix, self.xpath)
         n = 0
         enofound = None
         for welem in remote.find_elements_by_xpath(xpath):
             try:
-                yield self._this_fn(n, welem, context), welem, self, context
+                yield self._this_fn(n, welem, scope), welem, self, scope
             except NoSuchElementException, e:
                 enofound = ElementNotFound(msg=str(e), parent=welem, selector='*')
             n += 1
@@ -267,7 +267,7 @@ class NamedElement(DPageElement):
                 enofound = ElementNotFound(parent=remote, selector=xpath)
             raise enofound
 
-    def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
+    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         # Stop traversing, no attributes exposed from this to parent
         return ()
 
@@ -335,27 +335,27 @@ class InputElement(DPageElement):
         # no children, nothing to return
         return []
 
-    def iter_attrs(self, webelem=None, context=None, xpath_prefix=''):
-        for y4 in super(InputElement, self).iter_attrs(webelem, context, xpath_prefix):
+    def iter_attrs(self, webelem=None, scope=None, xpath_prefix=''):
+        for y4 in super(InputElement, self).iter_attrs(webelem, scope, xpath_prefix):
             yield y4
         if self.this_name:
             yield ('value', xpath_prefix,
                        self.InputValueGetter(''),
                        self.InputValueSetter(''))
 
-    def _locate_in(self, remote, context, xpath_prefix):
+    def _locate_in(self, remote, scope, xpath_prefix):
         if self.this_name:
             enoent = True
             xpath2 = prepend_xpath(xpath_prefix, self.xpath)
             for welem in remote.find_elements_by_xpath(xpath2):
                 enoent = False
-                yield self.this_name, welem, self, context
+                yield self.this_name, welem, self, scope
             if enoent:
                 raise ElementNotFound(parent=remote, selector=xpath2)
         else:
             return
     
-    def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
+    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         if not self.this_name:
             # expose self as attribute
             if self.name_attr == '*':
@@ -391,23 +391,23 @@ class DeepContainObj(DPageElement):
             return ch
         return self
 
-    def iter_items(self, remote, context, xpath_prefix=''):
-        return self._iter_items_cont(remote, context, xpath_prefix='.//')
+    def iter_items(self, remote, scope, xpath_prefix=''):
+        return self._iter_items_cont(remote, scope, xpath_prefix='.//')
 
-    def _locate_in(self, remote, context, xpath_prefix):
-        return self._iter_items_cont(remote, context, xpath_prefix='.//')
+    def _locate_in(self, remote, scope, xpath_prefix):
+        return self._iter_items_cont(remote, scope, xpath_prefix='.//')
 
-    def iter_attrs(self, webelem=None, context=None, xpath_prefix='.//'):
+    def iter_attrs(self, webelem=None, scope=None, xpath_prefix='.//'):
         """Iterate names of possible attributes
 
             returns iterator of (name, getter, setter)
         """
         for ch in self._children:
-            for y4 in ch._locate_attrs(webelem, context, xpath_prefix):
+            for y4 in ch._locate_attrs(webelem, scope, xpath_prefix):
                 yield y4
 
-    def _locate_attrs(self, webelem=None, context=None, xpath_prefix='.//'):
-        return self.iter_attrs(webelem, context, prepend_xpath(xpath_prefix, self.xpath))
+    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix='.//'):
+        return self.iter_attrs(webelem, scope, prepend_xpath(xpath_prefix, self.xpath))
 
     def xpath_locator(self, score, top=False):
         if score <= -100:
@@ -447,23 +447,23 @@ class RootAgainElem(DPageElement):
             raise ValueError('Deep cannot have attributes')
         super(RootAgainElem, self).__init__(tag)
 
-    def iter_items(self, remote, context, xpath_prefix=''):
-        return self._iter_items_cont(remote, context, xpath_prefix='//')
+    def iter_items(self, remote, scope, xpath_prefix=''):
+        return self._iter_items_cont(remote, scope, xpath_prefix='//')
 
-    def _locate_in(self, remote, context, xpath_prefix):
-        return self._iter_items_cont(remote, context, xpath_prefix='//')
+    def _locate_in(self, remote, scope, xpath_prefix):
+        return self._iter_items_cont(remote, scope, xpath_prefix='//')
 
-    def iter_attrs(self, webelem=None, context=None, xpath_prefix='//'):
+    def iter_attrs(self, webelem=None, scope=None, xpath_prefix='//'):
         """Iterate names of possible attributes
 
             returns iterator of (name, getter, setter)
         """
         for ch in self._children:
-            for y4 in ch._locate_attrs(webelem, context, xpath_prefix):
+            for y4 in ch._locate_attrs(webelem, scope, xpath_prefix):
                 yield y4
 
-    def _locate_attrs(self, webelem=None, context=None, xpath_prefix='//'):
-        return self.iter_attrs(webelem, context, prepend_xpath(xpath_prefix, self.xpath))
+    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix='//'):
+        return self.iter_attrs(webelem, scope, prepend_xpath(xpath_prefix, self.xpath))
 
     def xpath_locator(self, score, top=False):
         if not top:
@@ -505,18 +505,18 @@ class RepeatObj(DPageElement):
         self._reset_xpath_locator()
         return self
 
-    def iter_items(self, remote, context, xpath_prefix=''):
+    def iter_items(self, remote, scope, xpath_prefix=''):
         ni = 0
         seen = set()
         enofound = None
         try:
-            for name, welem, ptmpl, ctx in self._children[0] \
-                    ._locate_in(remote, context, xpath_prefix):
+            for name, welem, ptmpl, scp in self._children[0] \
+                    ._locate_in(remote, scope, xpath_prefix):
                 if not name:
                     name = ni   # integer type, not a string!
                 elif name in seen:
                     name += str(ni)
-                yield name, welem, ptmpl, ctx
+                yield name, welem, ptmpl, scp
                 ni += 1
                 if ni > self.max_elems:
                     break
@@ -528,13 +528,13 @@ class RepeatObj(DPageElement):
             else:
                 raise enofound
 
-    def _locate_in(self, remote, context, xpath_prefix=''):
+    def _locate_in(self, remote, scope, xpath_prefix=''):
         # If this has a name, return new container Component,
         # else just iterate contents
         if self.this_name:
-            yield self.this_name, remote, self, context
+            yield self.this_name, remote, self, scope
         else:
-            for y4 in self.iter_items(remote, context, xpath_prefix):
+            for y4 in self.iter_items(remote, scope, xpath_prefix):
                 yield y4
 
 
@@ -559,18 +559,18 @@ class PeChoiceElement(DPageElement):
         else:
             return super(PeChoiceElement, self).reduce(site)
 
-    def _locate_in(self, remote, context, xpath_prefix):
+    def _locate_in(self, remote, scope, xpath_prefix):
         enofound = None
         nfound = 0
         seen = set()
         for ch in self._children:
             # Stop at first 'welem' that yields any children results
             try:
-                for n, welem, p, ctx in ch._locate_in(remote, context, xpath_prefix):
+                for n, welem, p, scp in ch._locate_in(remote, scope, xpath_prefix):
                     if welem in seen:
                         continue
                     seen.add(welem)
-                    yield n, welem, p, ctx
+                    yield n, welem, p, scp
                     nfound += 1
             except ElementNotFound as e:
                 if enofound is None:
@@ -609,13 +609,13 @@ class PeGroupElement(DPageElement):
         else:
             return super(PeGroupElement, self).reduce(site)
 
-    def _locate_in(self, remote, context, xpath_prefix):
+    def _locate_in(self, remote, scope, xpath_prefix):
         ret = []
 
         # get all sub-components in one go
         seen = set()
         for ch in self._children:
-            for y4 in ch._locate_in(remote, context, xpath_prefix):
+            for y4 in ch._locate_in(remote, scope, xpath_prefix):
                 if y4[0] in seen:
                     continue
                 ret.append(y4)
@@ -687,13 +687,13 @@ class DTemplateElement(DPageElement):
         super(DTemplateElement, self).__init__(tag)
         self._parse_attrs(attrs)
 
-    def _locate_in(self, remote, context, xpath_prefix):
+    def _locate_in(self, remote, scope, xpath_prefix):
         """A template is never parsed at its original DOM location
         """
         return ()
 
-    def iter_items(self, remote, context, xpath_prefix=''):
-        return self._iter_items_cont(remote, context, xpath_prefix)
+    def iter_items(self, remote, scope, xpath_prefix=''):
+        return self._iter_items_cont(remote, scope, xpath_prefix)
 
 
 class DSlotElement(DPageElement):
@@ -733,16 +733,16 @@ class DUseTemplateElem(DPageElement):
     def iter_items(self, remote, xpath_prefix=''):
         raise RuntimeError('should not be referenced by DOM component')
 
-    def iter_attrs(self, webelem=None, context=None, xpath_prefix=''):
+    def iter_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         raise RuntimeError('should not be referenced by DOM component')
 
-    def _locate_in(self, remote, context, xpath_prefix):
+    def _locate_in(self, remote, scope, xpath_prefix):
         # Proxy to actual template. Locate that one and iterate that
-        tmpl = context.get_template(self.template_id)
-        ctx2 = context.child()
-        return tmpl.iter_items(remote, ctx2, xpath_prefix)
+        tmpl = scope.get_template(self.template_id)
+        scp2 = scope.child()
+        return tmpl.iter_items(remote, scp2, xpath_prefix)
 
-    def _locate_attrs(self, webelem=None, context=None, xpath_prefix=''):
+    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         raise NotImplementedError
 
 
@@ -787,12 +787,12 @@ class DHtmlObject(DPageElement):
 
         return super(DHtmlObject, self).reduce()
 
-    def iter_items(self, remote, context, xpath_prefix=''):
-        return self._iter_items_cont(remote, context, xpath_prefix='//')
+    def iter_items(self, remote, scope, xpath_prefix=''):
+            return self._iter_items_cont(remote, scope, xpath_prefix='//')
 
-    def walk(self, webdriver, parent_ctx=None, max_depth=1000, on_missing=None, 
+    def walk(self, webdriver, parent_scope=None, max_depth=1000, on_missing=None, 
              starting_path=None):
-        """Discover all interesting elements within webdriver current page+context
+        """Discover all interesting elements within webdriver current page+scope
         
             :param on_missing: function to call like `fn(comp, e)` when ElementNotFound
                                is raised under component=comp
@@ -802,7 +802,7 @@ class DHtmlObject(DPageElement):
         if on_missing is None:
             on_missing = lambda c, e: None
 
-        comp = self.get_root(webdriver, parent_ctx)
+        comp = self.get_root(webdriver, parent_scope)
         if starting_path:
             try:
                 for p in starting_path:
@@ -828,12 +828,12 @@ class DHtmlObject(DPageElement):
                         continue
                     raise
 
-    def get_root(self, webdriver, parent_ctx=None):
+    def get_root(self, webdriver, parent_scope=None):
         """Obtain a proxy to the root DOM of remote WebDriver, bound to this template
         """
         from .dom_components import PageProxy
-        new_context = DOMContext(parent=parent_ctx, templates=self._templates)
-        return PageProxy(self, webdriver, context=new_context)
+        new_scope = DOMScope(parent=parent_scope, templates=self._templates)
+        return PageProxy(self, webdriver, scope=new_scope)
 
 
 class GHtmlObject(DPageElement):

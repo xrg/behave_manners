@@ -4,7 +4,7 @@ import posixpath as pp
 import fnmatch
 import logging
 import re
-from .base_parsers import DPageElement, RootDOMContext
+from .base_parsers import DPageElement, RootDOMScope
 from .loaders import BaseLoader
 
 
@@ -205,16 +205,16 @@ class DSiteCollection(DPageElement):
         url = self.url_dir.get(title, None)
         return self.get_by_file(fname), url
 
-    def get_context(self):
-        """Return new DOMContext bound to self
+    def get_root_scope(self):
+        """Return new DOMScope bound to self
         
             A `DSiteCollection` can be reused across runs, but ideally
-            each run should start with a new context, as returned by
+            each run should start with a new scope, as returned by
             this method.
-            Then, this context should be passed to pages under this site,
+            Then, this scope should be passed to pages under this site,
             as those returned by `get_by_title()` , `get_by_url()` etc.
         """
-        return RootDOMContext(templates=self._templates)
+        return RootDOMScope(templates=self._templates)
 
 
 # eof

@@ -143,11 +143,11 @@ def cmdline_main():
             cur_path = _get_cur_path(driver.current_url)
             if cur_path is not None:
                 try:
-                    site_ctx = site.get_context()
+                    site_scp = site.get_root_scope()
                     page, title, page_args = site.get_by_url(cur_path, fragment=None)
                     log.info("Got page %s %r", title, page_args)
 
-                    for path, elem in page.walk(driver, parent_ctx=site_ctx,
+                    for path, elem in page.walk(driver, parent_scope=site_scp,
                                                 on_missing=print_enoent,
                                                 starting_path=args.path):
                         print('  ' * len(path), path_str(path), elem)

@@ -25,6 +25,13 @@ def _noop_fn(context, *args):
 
 
 class SiteContext(object):
+    """Holds (web)site information in a behave context
+    
+        A SiteContext is attached to behave's context like
+            `context.site = SiteContext(...)`
+        and from there on tests can refer to site-wide attributes
+        through that `context.site` object.
+    """
 
     def __init__(self, context, config=None):
         self._config = config or {}
@@ -259,10 +266,10 @@ class WebContext(SiteContext):
         # TODO: up = urlparse.urlparse(driver.current_url)
         if force or context.browser.current_url != url:
             context.browser.get(url)
-        if not hasattr(context, 'pagelems_ctx'):
-            context.pagelems_ctx = self._collection.get_context()
+        if not hasattr(context, 'pagelems_scope'):
+            context.pagelems_scope = self._collection.get_root_scope()
         context.cur_page = page.get_root(context.browser,
-                                         parent_ctx=context.pagelems_ctx)
+                                         parent_scope=context.pagelems_scope)
 
     def get_cur_title(self, context):
         #up = urlparse.urlparse()
@@ -291,10 +298,10 @@ class WebContext(SiteContext):
         self._log.debug("Navigating to %s", url)
         if force or context.browser.current_url != url:
             context.browser.get(url)
-        if not hasattr(context, 'pagelems_ctx'):
-            context.pagelems_ctx = self._collection.get_context()
+        if not hasattr(context, 'pagelems_scope'):
+            context.pagelems_scope = self._collection.get_root_scope()
         context.cur_page = page.get_root(context.browser,
-                                         parent_ctx=context.pagelems_ctx)
+                                         parent_scope=context.pagelems_scope)
 
     def validate_cur_page(self, context, max_depth=10000):
         """Validates current browser page against pagelem template
@@ -328,10 +335,10 @@ class WebContext(SiteContext):
                 errors += 1
         elif cur_page is None and page is not None:
             # create new Proxy
-            ctx = getattr(context, 'pagelems_ctx', None)
-            if ctx is None:
-                ctx = self._collection.get_context()
-            cur_page = page.get_root(context.browser, parent_ctx=ctx)
+            scp = getattr(context, 'pagelems_scope', None)
+            if scp is None:
+                scp = self._collection.get_root_scope()
+            cur_page = page.get_root(context.browser, parent_scope=scp)
         elif cur_page is None and page is None:
             raise AssertionError("No current page found, no resolution from URL either")
 
@@ -385,10 +392,10 @@ class WebContext(SiteContext):
             return
 
         self._log.info('Page changed to %s', title or cur_url)
-        if not hasattr(context, 'pagelems_ctx'):
-            context.pagelems_ctx = self._collection.get_context()
+        if not hasattr(context, 'pagelems_scope'):
+            context.pagelems_scope = self._collection.get_root_scope()
         context.cur_page = page.get_root(context.browser,
-                                         parent_ctx=context.pagelems_ctx)
+                                         parent_scope=context.pagelems_scope)
 
 
 _wd_loglevels = {'INFO': logging.INFO, 'WARN': logging.WARNING,

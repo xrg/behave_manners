@@ -73,31 +73,31 @@ class _SomeProxy(object):
     _pagetmpl = None
     _remote = None
 
-    def __init__(self, pagetmpl, remote, context=None):
+    def __init__(self, pagetmpl, remote, scope=None):
         self._pagetmpl = pagetmpl
         self._remote = remote
-        self._context = context
+        self._scope = scope
 
     @property
     def path(self):
         raise NotImplementedError()
 
     def __getitem__(self, name):
-        for iname, ielem, ptmpl, ctx in self._pagetmpl.iter_items(self._remote, self._context):
+        for iname, ielem, ptmpl, scp in self._pagetmpl.iter_items(self._remote, self._scope):
             if name == iname:
-                return ComponentProxy(iname, self, ptmpl, ielem, ctx)
+                return ComponentProxy(iname, self, ptmpl, ielem, scp)
         raise KeyError(name)  # no such element
 
     def keys(self):
         return self.__iter__()
 
     def __iter__(self):
-        for name, welem, ptmpl, ctx in self._pagetmpl.iter_items(self._remote, self._context):
+        for name, welem, ptmpl, scp in self._pagetmpl.iter_items(self._remote, self._scope):
             yield name
 
     def items(self):
-        for iname, ielem, ptmpl, ctx in self._pagetmpl.iter_items(self._remote, self._context):
-            yield iname, ComponentProxy(iname, self, ptmpl, ielem, ctx)
+        for iname, ielem, ptmpl, scp in self._pagetmpl.iter_items(self._remote, self._scope):
+            yield iname, ComponentProxy(iname, self, ptmpl, ielem, scp)
 
 
 class PageProxy(_SomeProxy):
@@ -105,8 +105,8 @@ class PageProxy(_SomeProxy):
     
         Holds reference to remote WebDriver, has no parent
     """
-    def __init__(self, pagetmpl, webdriver, context):
-        super(PageProxy, self).__init__(pagetmpl, webdriver, context)
+    def __init__(self, pagetmpl, webdriver, scope):
+        super(PageProxy, self).__init__(pagetmpl, webdriver, scope)
 
     @property
     def path(self):
@@ -145,8 +145,8 @@ class ComponentProxy(_SomeProxy):
     """
     __attrs = {}
     
-    def __init__(self, name, parent, pagetmpl, webelem, context):
-        super(ComponentProxy, self).__init__(pagetmpl, webelem, context)
+    def __init__(self, name, parent, pagetmpl, webelem, scope):
+        super(ComponentProxy, self).__init__(pagetmpl, webelem, scope)
         assert isinstance(parent, _SomeProxy)
         self._name = name
         self._parent = parent
