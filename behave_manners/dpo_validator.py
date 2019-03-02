@@ -66,8 +66,10 @@ def cmdline_main():
                         help="Path to file with saved Remote session")
     parser.add_argument('-p', '--screenshots',
                         help="Capture screenshots in this directory")
-    parser.add_argument('index', metavar='index.html', nargs='?',
+    parser.add_argument('--index', metavar='index.html',
                         help="path to 'index.html' file")
+    parser.add_argument('path', metavar="component", nargs="*",
+                        help="Resolve components only under that path")
 
     args = parser.parse_args()
     errors = Integer(0)
@@ -125,6 +127,9 @@ def cmdline_main():
         return '/'.join([str(x) for x in path])
 
     def print_enoent(comp, exc):
+        if isinstance(exc, KeyError):
+            print("    Missing %s inside component %s" % (exc, comp))
+            return
         print("    Missing %s inside %s" % (exc.selector, comp))
 
         e = errors  # transfer from outer to local scope
@@ -143,7 +148,8 @@ def cmdline_main():
                     log.info("Got page %s %r", title, page_args)
 
                     for path, elem in page.walk(driver, parent_ctx=site_ctx,
-                                                on_missing=print_enoent):
+                                                on_missing=print_enoent,
+                                                starting_path=args.path):
                         print('  ' * len(path), path_str(path), elem)
                         for a in dir(elem):
                             try:
@@ -153,7 +159,7 @@ def cmdline_main():
                                 print('  '* len(path), ' ' * 20, a, '= X')
                                 print_enoent(elem, e)
                             except Exception as e:
-                                print('  '* len(path), ' ' * 20, a, '= %s' % type(e))
+                                print('  '* len(path), ' ' * 20, a, ': %s' % (e))
                                 errors += 1
 
                     break

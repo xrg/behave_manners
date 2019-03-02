@@ -5,12 +5,13 @@ from selenium.common.exceptions import NoSuchElementException
 
 class ElementNotFound(NoSuchElementException):
     def __init__(self, msg=None, screen=None, stacktrace=None, 
-                 parent=None, selector=None):
+                 parent=None, selector=None, pagelem_name=None):
         if not msg:
             msg = "No such element: %s" % selector
         super(ElementNotFound, self).__init__(msg, screen=screen, stacktrace=stacktrace)
         self.parent = parent
         self.selector = selector
+        self.pagelem_name = pagelem_name
 
     @property
     def pretty_parent(self):

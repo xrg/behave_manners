@@ -767,16 +767,31 @@ class DHtmlObject(DPageElement):
     def iter_items(self, remote, context, xpath_prefix=''):
         return self._iter_items_cont(remote, context, xpath_prefix='//')
 
-    def walk(self, webdriver, parent_ctx=None, max_depth=1000, on_missing=None):
+    def walk(self, webdriver, parent_ctx=None, max_depth=1000, on_missing=None, 
+             starting_path=None):
         """Discover all interesting elements within webdriver current page+context
         
             :param on_missing: function to call like `fn(comp, e)` when ElementNotFound
                                is raised under component=comp
+            :param path: list of elements to enter before walking
             Iterator, yielding (path, Component) pairs, traversing depth first
         """
-        stack = [((), self.get_root(webdriver, parent_ctx))]
         if on_missing is None:
             on_missing = lambda c, e: None
+
+        comp = self.get_root(webdriver, parent_ctx)
+        if starting_path:
+            try:
+                for p in starting_path:
+                    comp = comp[p]
+            except ElementNotFound as e:
+                on_missing(comp, e)
+                return
+            except KeyError as e:
+                on_missing(comp, e)
+                return
+
+        stack = [((), comp)]
         while stack:
             path, comp = stack.pop()
             yield path, comp
