@@ -20,6 +20,9 @@ def prepend_xpath(pre, xpath, glue=False):
 
     """
 
+    if xpath.startswith('//'):
+        # prefix doesn't matter
+        return xpath
     if pre.endswith('./'):
         if xpath.startswith('./'):
             return pre[:-2] + xpath
