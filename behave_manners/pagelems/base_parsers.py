@@ -330,11 +330,10 @@ class DOMScope(object):
             else:
                 raise KeyError("Template id='%s' not found" % key)
 
-
-class RootDOMScope(DOMScope):
-    def __init__(self, parent=None, templates=None,):
-        super(RootDOMScope, self).__init__(parent=parent, templates=templates)
-
+    def __getattr__(self, name):
+        if self._parent is not None:
+            return getattr(self._parent, name)
+        raise AttributeError(name)
 
 
 #eof

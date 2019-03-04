@@ -43,6 +43,8 @@ import logging
 from collections import namedtuple
 from selenium.common.exceptions import WebDriverException
 from functools import wraps
+from .base_parsers import DOMScope
+
 
 
 def throws_self(fn):
@@ -85,7 +87,7 @@ class _SomeProxy(object):
     def __getitem__(self, name):
         for iname, ielem, ptmpl, scp in self._pagetmpl.iter_items(self._remote, self._scope):
             if name == iname:
-                return ComponentProxy(iname, self, ptmpl, ielem, scp)
+                return scp.component_class(iname, self, ptmpl, ielem, scp)
         raise KeyError(name)  # no such element
 
     def keys(self):
@@ -97,7 +99,7 @@ class _SomeProxy(object):
 
     def items(self):
         for iname, ielem, ptmpl, scp in self._pagetmpl.iter_items(self._remote, self._scope):
-            yield iname, ComponentProxy(iname, self, ptmpl, ielem, scp)
+            yield iname, scp.component_class(iname, self, ptmpl, ielem, scp)
 
 
 class PageProxy(_SomeProxy):
@@ -202,6 +204,13 @@ class ComponentProxy(_SomeProxy):
         except Exception as e:
             raise e
 
+
+class RootDOMScope(DOMScope):
+    _name = '.root'
+    component_class = ComponentProxy
+
+    def __init__(self, parent=None, templates=None,):
+        super(RootDOMScope, self).__init__(parent=parent, templates=templates)
 
 
 #  class EmptyComponent(_SomeProxy): ??
