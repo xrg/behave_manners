@@ -308,6 +308,7 @@ class DataElement(DPageElement):
 DataElement._consume_in = (DataElement,)
 
 
+@six.add_metaclass(_ServiceMeta)
 class DOMScope(object):
     """A simple holder of shared components or variables across DOM levels
     """
