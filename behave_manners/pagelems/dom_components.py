@@ -32,7 +32,7 @@
     some other variable, if caching (rather than multiple WebDriver requests)
     is desired.
     
-    Unreachable components should be handled graciously. They would still
+    Unreachable components should be handled graceously. They would still
     raise an exception all the way up, but plugins may help in debugging,
     like by highlighting the visual position in the webpage where something
     is missing.
@@ -143,10 +143,10 @@ attrs_fn = namedtuple('attrs_fn', ('xpath', 'getter', 'setter'))
 
 class ComponentProxy(_SomeProxy):
     """Cross-breed of a Selenium element and DPO page object
-    
+
     """
     __attrs = {}
-    
+
     def __init__(self, name, parent, pagetmpl, webelem, scope):
         super(ComponentProxy, self).__init__(pagetmpl, webelem, scope)
         assert isinstance(parent, _SomeProxy)

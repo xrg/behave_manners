@@ -600,7 +600,7 @@ class PeGroupElement(DPageElement):
     def __init__(self, tag, attrs):
         super(PeGroupElement, self).__init__(tag)
         self._parse_attrs(attrs)
-        
+
     def reduce(self, site=None):
         if not self._children:
             return None

@@ -8,7 +8,6 @@ from .base_parsers import DPageElement
 from .loaders import BaseLoader
 
 
-
 class DSiteCollection(DPageElement):
     """Collection of several HTML pages, like a site
 
@@ -35,7 +34,7 @@ class DSiteCollection(DPageElement):
     def consume(self, element):
         from .page_elements import DHtmlObject
         from .index_elems import IHtmlObject
-        
+
         element = element.reduce(self)
         if element is None:
             return
