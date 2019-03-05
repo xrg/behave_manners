@@ -175,9 +175,10 @@ def cmdline_main():
 
                     break
                 except KeyError as e:
-                    log.warning("URL path not templated. %s: %s", e, cur_path)
+                    log.warning("URL path not templated. %s: '%s'", e, cur_path)
                 except Exception as e:
                     log.warning("Could not resolve elements:", exc_info=True)
+                    errors += 1
                     break
 
             # no useful result here, sleeping
