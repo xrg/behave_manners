@@ -58,7 +58,7 @@ class DSiteCollection(DPageElement):
         target = pp.normpath(pp.join(cwd, link.href))
         if link.rel in ('next', 'prev', 'page'):
             content = self.file_dir.setdefault(target, None)
-            if link.url:
+            if link.url is not None:
                 link_re = fnmatch.translate(link.url)   # TODO nio-style matching
                 self.urls.add((re.compile(link_re), target))
             if link.title:
