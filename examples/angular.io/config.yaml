@@ -4,15 +4,19 @@
 site:
     # global parameters on the site (assuming single main site)
     base_url: https://angular.io/
-    implicit_wait: 1000ms
+    # no: implicit_wait: 1000ms
 
 browser:        # Technical conf about the browser
     engine: chrome
     launch_on: feature  # or 'scenario' or 'demand'
-    window: 1200x900
+    window: 1200x700
     # more capabilities...
     # headless: true
     headless: false
+
+    screenshots:
+        dir: screenshots
+        on_failure: true
 
 page_objects:
     index: site/index.html
