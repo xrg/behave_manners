@@ -1,7 +1,6 @@
 # -*-coding: UTF-8 -*-
 
 from __future__ import division, absolute_import, print_function
-import re
 import time
 
 from .base_parsers import DOMScope
@@ -64,11 +63,14 @@ class WaitScope(DOMScope):
 
 class RootDOMScope(DOMScope):
     _name = '.root'
-    _inherit = 'wait.base'
     component_class = ComponentProxy
 
-    def __init__(self, parent=None, templates=None,):
-        super(RootDOMScope, self).__init__(parent=parent, templates=templates)
+    def __init__(self, templates=None, site_config=None):
+        if templates is not None:
+            assert isinstance(templates, dict)
+        super(RootDOMScope, self).__init__(parent=None, templates=templates)
+        self.site_config = site_config or {}
+
 
 
 class AngularJSApp(DOMScope):

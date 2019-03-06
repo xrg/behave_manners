@@ -833,7 +833,11 @@ class DHtmlObject(DPageElement):
         """Obtain a proxy to the root DOM of remote WebDriver, bound to this template
         """
         from .dom_components import PageProxy
-        new_scope = DOMScope(parent=parent_scope, templates=self._templates)
+        if parent_scope is not None:
+            klsname = parent_scope.site_config.get('page_controller', 'page')
+        else:
+            klsname = 'page'
+        new_scope = DOMScope[klsname](parent=parent_scope, templates=self._templates)
         return PageProxy(self, webdriver, scope=new_scope)
 
 

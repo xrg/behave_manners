@@ -42,24 +42,9 @@
 import logging
 from collections import namedtuple
 from selenium.common.exceptions import WebDriverException
-from functools import wraps
-from .base_parsers import DOMScope
 
 
-
-def throws_self(fn):
-    """Decorate method exceptions with reference to self (component)
-    """
-    @wraps(fn)
-    def __wrapper(self, *args, **kwargs):
-        try:
-            return fn(self, *args, **kwargs)
-        except WebDriverException as e:
-            # Reset traceback to this level, ignore rest of stack
-            e.component = self
-            raise e
-
-    return __wrapper
+logger = logging.getLogger(__name__)
 
 
 class _SomeProxy(object):
@@ -123,6 +108,14 @@ class PageProxy(_SomeProxy):
         except Exception:
             return '<Page >'
 
+    def __getattr__(self, name):
+        if not name.startswith('_'):
+            pwrap = getattr(self._scope, '_pwrap_'+name, None)
+            if pwrap is not None:
+                return pwrap(self, name)
+
+        raise AttributeError(name)
+
 
 class CSSProxy(object):
     def __init__(self, parent):
@@ -168,7 +161,12 @@ class ComponentProxy(_SomeProxy):
             raise AttributeError(name)
         attr = self.__attrs.get(name, None)
         if attr is None:
-            raise AttributeError(name)
+            cwrap = getattr(self._scope, '_cwrap_'+name, None)
+            if cwrap is None:
+                raise AttributeError(name)
+            # Found factory of remote element method
+            return cwrap(self, name)
+
         if attr.getter is None:
             raise AttributeError('%s is write-only' % name)
         welem = self._remote
@@ -196,13 +194,6 @@ class ComponentProxy(_SomeProxy):
     @property
     def path(self):
         return self._parent.path + (self._name,)
-
-    @throws_self
-    def click(self):
-        try:
-            self._remote.click()
-        except Exception as e:
-            raise e
 
 
 #  class EmptyComponent(_SomeProxy): ??

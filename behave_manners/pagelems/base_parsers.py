@@ -6,6 +6,7 @@ from .helpers import textescape, Integer
 
 from six.moves.html_parser import HTMLParser
 from six.moves import html_entities
+from selenium.common.exceptions import WebDriverException
 
 if six.PY2:
     from HTMLParser import HTMLParseError
@@ -322,7 +323,7 @@ class DOMScope(object):
     def child(self):
         """Return a child scope linked to this one
         """
-        return self.__class__(self)
+        return DOMScope.new(self)
 
     def get_template(self, key):
         try:
@@ -337,6 +338,30 @@ class DOMScope(object):
         if self._parent is not None:
             return getattr(self._parent, name)
         raise AttributeError(name)
+
+    def _cwrap_simple(self, comp, click):
+        """Make method for component, that would call `click()` on remote
+
+            Overridable way to expose `component._remote.click()` method,
+            wrapped with context-specific pre/post actions
+
+            *click being any method name
+        """
+        def __fn(*args):
+            try:
+                return getattr(comp._remote, click)(*args)
+            except WebDriverException as e:
+                # Reset traceback to this level, ignore rest of stack
+                e.component = comp
+                raise e
+            except Exception as e:
+                raise e
+        return __fn
+
+    # aliases for simple WebElement methods:
+    _cwrap_click = _cwrap_clear = _cwrap_get_attribute = _cwrap_get_property \
+            = _cwrap_is_displayed = _cwrap_is_enabled = _cwrap_is_selected \
+            = _cwrap_send_keys = _cwrap_submit = _cwrap_simple
 
 
 #eof

@@ -127,8 +127,9 @@ class SiteContext(object):
             return
         from .pagelems import FSLoader, DSiteCollection
 
-        self._collection = DSiteCollection(FSLoader('.'))
-        index = self._config['page_objects'].get('index', 'index.html')
+        po_config = self._config['page_objects']
+        self._collection = DSiteCollection(FSLoader('.'), po_config)
+        index = po_config.get('index', 'index.html')
         log.debug("Loading index from %s", index)
         self._collection.load_index(index)
         self._collection.load_preloads()
@@ -267,6 +268,19 @@ class WebContext(SiteContext):
             rec.msecs = (ct - long(ct)) * 1000
             log.handle(rec)
 
+    def _root_scope(self, context, do_set=True):
+        """Return root-level scope, initializing if needed
+
+            :param do_set: keep newly created scope in `context.pagelems_scope`
+        """
+        try:
+            return context.pagelems_scope
+        except AttributeError:
+            new_scope = self._collection.get_root_scope()
+            if do_set:
+                context.pagelems_scope = new_scope
+            return new_scope
+
     def navigate_by_title(self, context, title, force=False):
         """Open a URL, by pretty title
         """
@@ -281,10 +295,8 @@ class WebContext(SiteContext):
         # TODO: up = urlparse.urlparse(driver.current_url)
         if force or context.browser.current_url != url:
             context.browser.get(url)
-        if not hasattr(context, 'pagelems_scope'):
-            context.pagelems_scope = self._collection.get_root_scope()
-        context.cur_page = page.get_root(context.browser,
-                                         parent_scope=context.pagelems_scope)
+        scp = self._root_scope(context)
+        context.cur_page = page.get_root(context.browser, parent_scope=scp)
 
     def get_cur_title(self, context):
         #up = urlparse.urlparse()
@@ -313,10 +325,8 @@ class WebContext(SiteContext):
         self._log.debug("Navigating to %s", url)
         if force or context.browser.current_url != url:
             context.browser.get(url)
-        if not hasattr(context, 'pagelems_scope'):
-            context.pagelems_scope = self._collection.get_root_scope()
-        context.cur_page = page.get_root(context.browser,
-                                         parent_scope=context.pagelems_scope)
+        scp = self._root_scope(context)
+        context.cur_page = page.get_root(context.browser, parent_scope=scp)
 
     def validate_cur_page(self, context, max_depth=10000):
         """Validates current browser page against pagelem template
@@ -350,9 +360,7 @@ class WebContext(SiteContext):
                 errors += 1
         elif cur_page is None and page is not None:
             # create new Proxy
-            scp = getattr(context, 'pagelems_scope', None)
-            if scp is None:
-                scp = self._collection.get_root_scope()
+            scp = self._root_scope(context, do_set=False)
             cur_page = page.get_root(context.browser, parent_scope=scp)
         elif cur_page is None and page is None:
             raise AssertionError("No current page found, no resolution from URL either")
@@ -407,10 +415,9 @@ class WebContext(SiteContext):
             return
 
         self._log.info('Page changed to %s', title or cur_url)
-        if not hasattr(context, 'pagelems_scope'):
-            context.pagelems_scope = self._collection.get_root_scope()
-        context.cur_page = page.get_root(context.browser,
-                                         parent_scope=context.pagelems_scope)
+        scp = self._root_scope(context)
+        context.cur_page = page.get_root(context.browser, parent_scope=scp)
+        return title
 
 
 _wd_loglevels = {'INFO': logging.INFO, 'WARN': logging.WARNING,

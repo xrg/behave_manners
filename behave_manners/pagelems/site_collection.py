@@ -17,7 +17,7 @@ class DSiteCollection(DPageElement):
     _name = '.siteCollection'
     logger = logging.getLogger('site_collection')
 
-    def __init__(self, loader):
+    def __init__(self, loader, config=None):
         super(DSiteCollection, self).__init__()
         assert isinstance(loader, BaseLoader)
         self._loader = loader
@@ -30,6 +30,7 @@ class DSiteCollection(DPageElement):
         self.pending_gallery = set()
         self._loaded_gallery = set()   # mark already loaded files
         self._templates = {}
+        self._site_config = config
 
     def consume(self, element):
         from .page_elements import DHtmlObject
@@ -206,14 +207,16 @@ class DSiteCollection(DPageElement):
 
     def get_root_scope(self):
         """Return new DOMScope bound to self
-        
+
             A `DSiteCollection` can be reused across runs, but ideally
             each run should start with a new scope, as returned by
             this method.
             Then, this scope should be passed to pages under this site,
             as those returned by `get_by_title()` , `get_by_url()` etc.
         """
-        return DOMScope['.root'](templates=self._templates)
+        root_klass = self._site_config.get('root_controller', '.root')
+        return DOMScope[root_klass](templates=self._templates,
+                                    site_config=self._site_config)
 
 
 from . import scopes  # put scopes in scope, ensure they're loaded
