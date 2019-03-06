@@ -312,6 +312,8 @@ DataElement._consume_in = (DataElement,)
 class DOMScope(object):
     """A simple holder of shared components or variables across DOM levels
     """
+    wait_js_conditions = []
+
     
     def __init__(self, parent, templates=None):
         self._parent = parent

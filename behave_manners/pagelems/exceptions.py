@@ -29,4 +29,12 @@ class ElementNotFound(NoSuchElementException):
             return repr(self.parent)
 
 
+class PageNotReady(AssertionError):
+    pass
+
+
+class Timeout(AssertionError):
+    pass
+
+
 #eof

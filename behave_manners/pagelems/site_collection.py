@@ -4,7 +4,7 @@ import posixpath as pp
 import fnmatch
 import logging
 import re
-from .base_parsers import DPageElement
+from .base_parsers import DPageElement, DOMScope
 from .loaders import BaseLoader
 
 
@@ -213,8 +213,9 @@ class DSiteCollection(DPageElement):
             Then, this scope should be passed to pages under this site,
             as those returned by `get_by_title()` , `get_by_url()` etc.
         """
-        from .dom_components import RootDOMScope
-        return RootDOMScope(templates=self._templates)
+        return DOMScope['.root'](templates=self._templates)
 
+
+from . import scopes  # put scopes in scope, ensure they're loaded
 
 # eof

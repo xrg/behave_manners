@@ -205,14 +205,6 @@ class ComponentProxy(_SomeProxy):
             raise e
 
 
-class RootDOMScope(DOMScope):
-    _name = '.root'
-    component_class = ComponentProxy
-
-    def __init__(self, parent=None, templates=None,):
-        super(RootDOMScope, self).__init__(parent=parent, templates=templates)
-
-
 #  class EmptyComponent(_SomeProxy): ??
 
 # eof
