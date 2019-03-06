@@ -15,6 +15,11 @@ class WaitScope(DOMScope):
                           "if (window.jQuery && window.jQuery.active) { return 'jQuery'; }"
                           ]
 
+    timeouts = { 'short': 2.0,
+                 'medium': 10.0,
+                 'long': 60.0
+                }
+
     def isready_js(self, driver):
         """One-off check that JS is settled
 
@@ -27,38 +32,50 @@ class WaitScope(DOMScope):
     def isready_all(self, driver):
         self.isready_js(driver)
 
-    def wait_all(self, welem, timeout='short'):
+    def wait_all(self, timeout='short', welem=None, webdriver=None):
         """Waits for all conditions of `isready_all()`
         """
         tstart = time.time()
         tend = tstart + self.resolve_timeout(timeout)
         lastmsg = 'all'
         pause = 0.05
-        
+        if webdriver is None:
+            webdriver = welem.parent
+
         while True:
             tnow = time.time()
             if tnow > tend:
                 raise Timeout("Timed out after %.2fs waiting for %s" %
                               (tnow - tstart, lastmsg))
-            
+
             try:
-                self.isready_all(welem.parent)
+                self.isready_all(webdriver)
                 break
             except PageNotReady as e:
                 lastmsg = e.args[0]
-            
+
             time.sleep(pause)
             if pause < 0.8:
                 pause *= 2.0
 
     def resolve_timeout(self, timeout):
+        factor = self.site_config.get('time_factor', 1.0)  # global multiplier for timeouts
         if isinstance(timeout, (int, float)):
-            return timeout
-        elif timeout == 'short':
-            return 5.0
+            return timeout * factor
         else:
-            # parent?
-            raise NotImplementedError # TODO
+            num = self.site_config.get('timeouts', {}).get(timeout, None)
+            if num is None:
+                num = self.timeouts.get(timeout, None)
+            if num is None:
+                raise KeyError("Unknown timeout '%s'" % timeout)
+            return num * factor
+
+    def _pwrap_wait_all(self, comp, name):
+        def __wait_all(timeout):
+            # the component itself is not needed
+            self.wait_all(timeout, webdriver=comp._remote)
+
+        return __wait_all
 
 
 class RootDOMScope(DOMScope):
