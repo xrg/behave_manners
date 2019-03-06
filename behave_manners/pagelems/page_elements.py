@@ -65,7 +65,7 @@ class AnyElement(DPageElement):
 
     def _split_this(self, value, sub=None):
         raise RuntimeError('%s passed \'this\'' % self.__class__.__name__)
-    
+
     def _split_attrs(self, attrs, match_attrs, read_attrs):
         for k, v in attrs:
             if k == 'this':
@@ -168,7 +168,7 @@ class AnyElement(DPageElement):
 class GenericElement(DPageElement):
     _name = 'any'
     _inherit = 'tag.pe-any'
-    
+
     def __init__(self, tag, attrs):
         super(GenericElement, self).__init__(tag, attrs, any_tag=tag)
         self._xpath_score += 10
@@ -178,7 +178,7 @@ class LeafElement(DPageElement):
     # TODO
     _name = '.leaf'
     _inherit = 'any'
-    
+
     def consume(self, element):
         raise TypeError('%s cannot consume %r' % (self._name, element))
 
@@ -187,7 +187,7 @@ class Text2AttrElement(DPageElement):
     _name = 'text2attr'
     is_empty = True
     _consume_in = (DomContainerElement,)
-    
+
     def __init__(self, name):
         super(Text2AttrElement, self).__init__()
         self._attr_name = name
@@ -276,7 +276,7 @@ class InputElement(DPageElement):
     _name = 'tag.input'
     _inherit = 'any'
     is_empty = True
-    
+
     class _InputValueActor(object):
         def __init__(self, xpath):
             self._xpath = xpath
@@ -330,7 +330,7 @@ class InputElement(DPageElement):
 
     def consume(self, element):
         raise TypeError('Input cannot consume %r' % element)
-    
+
     def iter_items(self, remote, xpath_prefix=''):
         # no children, nothing to return
         return []
@@ -354,7 +354,7 @@ class InputElement(DPageElement):
                 raise ElementNotFound(parent=remote, selector=xpath2)
         else:
             return
-    
+
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         if not self.this_name:
             # expose self as attribute
@@ -413,14 +413,14 @@ class DeepContainObj(DPageElement):
         if score <= -100:
             return ''
 
-        score *= 2   # operating in half-score 
+        score *= 2   # operating in half-score
         try:
             child_locs = []
             for c in self._children:
                 cloc = c.xpath_locator(score)
                 if cloc:
                     child_locs.append(cloc)
-            
+
             if top or (len(child_locs) > 1):
                 locator = './/'
                 for cloc in child_locs:
@@ -437,7 +437,7 @@ class DeepContainObj(DPageElement):
 
 class RootAgainElem(DPageElement):
     """Reset to root element (of DOM), keep component deep in tree
-        
+
     """
     _name = 'tag.pe-root'
     _inherit = '.domContainer'
@@ -474,17 +474,18 @@ class RootAgainElem(DPageElement):
             cloc = c.xpath_locator(score)
             if cloc:
                 child_locs.append(cloc)
-        
+
         locator = '//'
         for cloc in child_locs:
             locator += '[%s]' % cloc
         return locator
 
 
+
 class RepeatObj(DPageElement):
     _name = 'tag.pe-repeat'
     _inherit = '.domContainer'
-    
+
     _attrs_map = {'min': ('min_elems', int, 0),
                   'max': ('max_elems', int, 1000000),
                   'this': ('this_name', str, ''),
@@ -498,7 +499,7 @@ class RepeatObj(DPageElement):
     def reduce(self):
         if not self._children:
             raise ValueError("<Repeat> must have contained elements")
-        
+
         if len(self._children) > 1:
             raise NotImplementedError("Cannot handle siblings in <Repeat>")  # yet
 
@@ -540,7 +541,7 @@ class RepeatObj(DPageElement):
 
 class PeChoiceElement(DPageElement):
     """Matches the first child of this element
-    
+
     """
     _name = 'tag.pe-choice'
     _inherit = '.domContainer'
@@ -550,7 +551,7 @@ class PeChoiceElement(DPageElement):
     def __init__(self, tag, attrs):
         super(PeChoiceElement, self).__init__(tag)
         self._parse_attrs(attrs)
-        
+
     def reduce(self, site=None):
         if not self._children:
             return None
@@ -589,7 +590,7 @@ class PeChoiceElement(DPageElement):
 
 class PeGroupElement(DPageElement):
     """Trivial group, DOM-less container of many elements
-    
+
         Elements within a group are ordered!
     """
     _name = 'tag.pe-group'
@@ -669,13 +670,13 @@ class ScriptElement(DPageElement):
 
 class DTemplateElement(DPageElement):
     """A template defines reusable DOM that is not normally rendered/scanned
-    
+
         See: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template
-        
+
         Likewise, the template will be re-used in this parser, match remote
         DOM and generate same proxy elements, under their caller.
     """
-    
+
     _name = 'tag.template'
     _inherit = '.domContainer'
     _consume_in = (DHeadElement, DBodyElement, )
@@ -767,7 +768,7 @@ class DBaseHtmlObject(DPageElement):
 
 class DHtmlObject(DPageElement):
     """Consume the <html> element as top-level site page
-    
+
     """
     _name = 'tag.html'
     _inherit = '.basehtml'
@@ -793,7 +794,7 @@ class DHtmlObject(DPageElement):
     def walk(self, webdriver, parent_scope=None, max_depth=1000, on_missing=None, 
              starting_path=None):
         """Discover all interesting elements within webdriver current page+scope
-        
+
             :param on_missing: function to call like `fn(comp, e)` when ElementNotFound
                                is raised under component=comp
             :param path: list of elements to enter before walking
@@ -838,7 +839,7 @@ class DHtmlObject(DPageElement):
 
 class GHtmlObject(DPageElement):
     """Handle the <html> element of a gallery file
-    
+
     """
     _name = 'gallery.html'
     _inherit = '.basehtml'
@@ -848,7 +849,7 @@ class GHtmlObject(DPageElement):
         if isinstance(site, DSiteCollection):
             for tn in self._templates.keys():
                 if tn in site._templates:
-                    logger.warning("Template id=%s already in gallery: %s", 
+                    logger.warning("Template id=%s already in gallery: %s",
                                    tn, site.cur_file)
             site._templates.update(self._templates)
             return None
@@ -858,7 +859,7 @@ class GHtmlObject(DPageElement):
 
 class DPageObject(DPageElement):
     """HTML page embedded as a sub-element of <html>
-    
+
         This would behave like a <html> but can be nested inside a file,
         unlike <html> element that is unique per file.
     """
@@ -927,10 +928,10 @@ class PageParser(BaseDPOParser):
             else:
                 if not data:
                     data = 'text'   # hard code "[ ]" to "[ text ]"
-                
+
                 if not word_re.match(data):
                     raise ValueError("Invalid expression: %s" % data)
-                
+
                 elem = Text2AttrElement.new(data)
         else:
             elem = DataElement.new(data)

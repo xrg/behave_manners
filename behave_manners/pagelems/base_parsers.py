@@ -183,12 +183,12 @@ class DPageElement(object):
 
     def reduce(self, site=None):
         """Cleanup internally, possibly merging nested elements
-        
+
             None can be returned, in case this element is no longer
             useful.
             `reduce()` shall be called *after* all children have been
             scanned and appended to this; after thet have been reduced.
-            
+
             If `site` is provided, this should be a context object,
             which provides (or consumes) additional resources from this
             element.
@@ -199,7 +199,7 @@ class DPageElement(object):
 
     def pretty_dom(self):
         """Walk this template, generate (indent, name, xpath) sets of each node
-        
+
             Used for debugging, pretty-printing of parsed structure
         """
         #return []
@@ -209,7 +209,7 @@ class DPageElement(object):
 
     def xpath_locator(self, score, top=False):
         """Return xpath locator of this and any child elements
-        
+
             :param score: mutable Integer, decrement depending on precision of locators
             :param top: locate exactly this (the top) element, or else any of its children
 
@@ -222,21 +222,21 @@ class DPageElement(object):
         if self.__xpath is None:
             self.__xpath = self.xpath_locator(Integer(100), top=True)
         return self.__xpath
-    
+
     def _reset_xpath_locator(self):
         self.__xpath = None
 
     # Methods for Component Proxies
     def iter_items(self, remote, scope, xpath_prefix=''):
         """Iterate possible children components
-        
+
             :return: tuple (name, welem, ptmpl, scope)
         """
         return
-    
+
     def _iter_items_cont(self, remote, scope, xpath_prefix=''):
         """Standard `iter_items()` implementation for containing components
-        
+
             Returns **one** set of discovered elements
         """
         seen_names = set()
@@ -250,7 +250,7 @@ class DPageElement(object):
 
     def _locate_in(self, remote, scope, xpath_prefix):
         """Locate (possibly) this component under 'remote' webelem
-        
+
             Called by the parent component, to resolve this.
             Returns tuple (name, welem, ptmpl, scope)
         """
