@@ -116,7 +116,7 @@ class Angular5App(DOMScope):
     _inherit = 'wait.base'
 
     wait_js_conditions = [
-        "if(window.getAllAngularTestabilities().findIndex(x=>!x.isStable()) >= 0)"
+        "if(window.getAllAngularTestabilities().findIndex(function(x) { return !x.isStable(); }) >= 0)"
         " {return 'angular';}"
         ]
 
