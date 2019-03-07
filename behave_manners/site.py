@@ -297,6 +297,7 @@ class WebContext(SiteContext):
             context.browser.get(url)
         scp = self._root_scope(context)
         context.cur_page = page.get_root(context.browser, parent_scope=scp)
+        context.cur_page.wait_all('medium')
 
     def get_cur_title(self, context):
         #up = urlparse.urlparse()
@@ -327,6 +328,7 @@ class WebContext(SiteContext):
             context.browser.get(url)
         scp = self._root_scope(context)
         context.cur_page = page.get_root(context.browser, parent_scope=scp)
+        context.cur_page.wait_all('medium')
 
     def validate_cur_page(self, context, max_depth=10000):
         """Validates current browser page against pagelem template
@@ -362,6 +364,7 @@ class WebContext(SiteContext):
             # create new Proxy
             scp = self._root_scope(context, do_set=False)
             cur_page = page.get_root(context.browser, parent_scope=scp)
+            cur_page.wait_all('medium')
         elif cur_page is None and page is None:
             raise AssertionError("No current page found, no resolution from URL either")
 
@@ -417,6 +420,7 @@ class WebContext(SiteContext):
         self._log.info('Page changed to %s', title or cur_url)
         scp = self._root_scope(context)
         context.cur_page = page.get_root(context.browser, parent_scope=scp)
+        context.cur_page.wait_all('medium')
         return title
 
 
