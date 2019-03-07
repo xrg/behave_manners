@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*
 from __future__ import print_function
-import behave_manners.steplib.run_bg_devel
-
-from behave import given, when, then
+from behave import given, when, then, step
+from behave_manners.step_utils import implies
 import time
 
 
@@ -17,13 +16,19 @@ def step_impl4(context, elem):
     context.cur_element[elem].click()
 
 
+@step('I wait for page to load')
+def step_wait_page(context):
+    context.cur_page.wait_all('medium')
+
+
 @then(u'I am directed to the "{page}"')
+@implies(u'When I wait for page to load')
 def step_impl5(context, page):
-    cur_page = context.site.get_cur_title(context)
-    assert cur_page == page, "Currently at %s (%s)" % (cur_page, context.browser.current_url)
+    title = context.site.update_cur_page(context)
+    assert title == page, "Currently at %s (%s)" % (title, context.browser.current_url)
     context.site_camera.take_shot(context)
-    assert context.cur_page['main']['content']['title'].text == 'Getting Started'
-    time.sleep(3.0)
+    title_text = context.cur_page['main']['content']['title'].text
+    assert title_text == 'Getting started', title_text
 
 
 # eof

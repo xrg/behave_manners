@@ -20,3 +20,5 @@ browser:        # Technical conf about the browser
 
 page_objects:
     index: site/index.html
+    # root_controller: .root
+    page_controller: app.angular
