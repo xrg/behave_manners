@@ -30,7 +30,7 @@ class DSiteCollection(DPageElement):
         self.pending_gallery = set()
         self._loaded_gallery = set()   # mark already loaded files
         self._templates = {}
-        self._site_config = config
+        self._site_config = config or {}
 
     def consume(self, element):
         from .page_elements import DHtmlObject
