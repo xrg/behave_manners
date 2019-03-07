@@ -44,6 +44,7 @@ class AnyElement(DPageElement):
         match_attrs = defaultdict(list)
         self.read_attrs = {}
         self._xpath = any_tag
+        self._pe_class = None
         self._split_attrs(attrs, match_attrs, self.read_attrs)
         self._xpath_score = 0
         self._set_match_attrs(match_attrs)
@@ -74,6 +75,10 @@ class AnyElement(DPageElement):
                 self._dom_slot = v
             elif k == 'pe-deep':
                 self._xpath = './/' + self._xpath
+            elif k == 'pe-controller' or k == 'pe-ctrl':
+                if self._pe_class:
+                    raise ValueError("Attribute 'pe-controller' defined more than once")
+                self._pe_class = DOMScope.get_class(v)  # is it defined?
             elif v is None:
                 assert '.' not in k, k
                 match_attrs[k].append(True)
@@ -129,7 +134,11 @@ class AnyElement(DPageElement):
         for welem in remote.find_elements_by_xpath(xpath2):
             # Stop at first 'welem' that yields any children results
             try:
-                ret = list(self.iter_items(welem, scope))
+                nscope = scope
+                if self._pe_class is not None:
+                    nscope = self._pe_class(parent=scope)
+
+                ret = list(self.iter_items(welem, nscope))
                 # all children elements have been resolved here
                 # List may be empty, but no children would have
                 # raised exception by this point.
@@ -258,7 +267,11 @@ class NamedElement(DPageElement):
         enofound = None
         for welem in remote.find_elements_by_xpath(xpath):
             try:
-                yield self._this_fn(n, welem, scope), welem, self, scope
+                if self._pe_class is not None:
+                    nscope = self._pe_class(parent=scope)
+                else:
+                    nscope = scope
+                yield self._this_fn(n, welem, nscope), welem, self, nscope
             except NoSuchElementException, e:
                 enofound = ElementNotFound(msg=str(e), parent=welem, selector='*')
             n += 1
@@ -348,8 +361,11 @@ class InputElement(DPageElement):
             enoent = True
             xpath2 = prepend_xpath(xpath_prefix, self.xpath)
             for welem in remote.find_elements_by_xpath(xpath2):
+                nscope = scope
+                if self._pe_class is not None:
+                    nscope = self._pe_class(parent=scope)
                 enoent = False
-                yield self.this_name, welem, self, scope
+                yield self.this_name, welem, self, nscope
             if enoent:
                 raise ElementNotFound(parent=remote, selector=xpath2)
         else:
@@ -596,11 +612,17 @@ class PeGroupElement(DPageElement):
     _name = 'tag.pe-group'
     _inherit = '.domContainer'
     _attrs_map = {'slot': ('_dom_slot', None, None),
+                  'pe-controller': ('_pe_ctrl', None, None),
+                  'pe-ctrl': ('_pe_ctrl', None, None),
                   }
 
     def __init__(self, tag, attrs):
         super(PeGroupElement, self).__init__(tag)
         self._parse_attrs(attrs)
+        if self._pe_ctrl is None:
+            self._pe_class = None
+        else:
+            self._pe_class = DOMScope.get_class(self._pe_ctrl)
 
     def reduce(self, site=None):
         if not self._children:
@@ -615,8 +637,11 @@ class PeGroupElement(DPageElement):
 
         # get all sub-components in one go
         seen = set()
+        nscope = scope
+        if self._pe_class is not None:
+            nscope = self._pe_class(parent=scope)
         for ch in self._children:
-            for y4 in ch._locate_in(remote, scope, xpath_prefix):
+            for y4 in ch._locate_in(remote, nscope, xpath_prefix):
                 if y4[0] in seen:
                     continue
                 ret.append(y4)
@@ -740,11 +765,15 @@ class DUseTemplateElem(DPageElement):
     def _locate_in(self, remote, scope, xpath_prefix):
         # Proxy to actual template. Locate that one and iterate that
         tmpl = scope.get_template(self.template_id)
-        scp2 = scope.child()
+        scp2 = DOMScope.new(parent=scope)
+        scp2.slots = self._by_slot
         return tmpl.iter_items(remote, scp2, xpath_prefix)
 
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
-        raise NotImplementedError
+        tmpl = scope.get_template(self.template_id)
+        scp2 = DOMScope.new(parent=scope)
+        scp2.slots = self._by_slot
+        return tmpl.iter_attrs(webelem, scp2, xpath_prefix)
 
 
 class DBaseHtmlObject(DPageElement):
