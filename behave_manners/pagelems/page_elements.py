@@ -723,15 +723,28 @@ class DTemplateElement(DPageElement):
 
 
 class DSlotElement(DPageElement):
+    """The contents of a <slot> are replaced by parent scope, if available
+    
+        This resembles the official W3C definition of slots in the browser,
+        meant to be a placeholder for content that can be customized within
+        a template.
+    """
     _name = 'tag.slot'
     _inherit = '.domContainer'
-    # _consume_in = anywhere
     _attrs_map = { 'name': ('this_name', str, AttributeError),
                  }
 
     def __init__(self, tag, attrs):
         super(DSlotElement, self).__init__(tag)
         self._parse_attrs(attrs)
+
+    def _locate_in(self, remote, scope, xpath_prefix):
+        this = scope.slots.get(self.this_name, super(DSlotElement, self))
+        return this._locate_in(remote, scope, xpath_prefix)
+
+    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
+        this = scope.slots.get(self.this_name, super(DSlotElement, self))
+        return this._locate_attrs(webelem, scope, xpath_prefix)
 
 
 class DUseTemplateElem(DPageElement):
