@@ -1,0 +1,20 @@
+<html>
+<head>
+    <!--<link rel="import" href="layout.html">-->
+
+    
+</head>
+<body>
+    <use-template id="layout">
+        <div slot="title">Basic radios</div>
+        <radio-overview-example slot="body">
+            <mat-radio-group this="radio-group">
+                <mat-radio-button this="[value]" value="[value]">
+                    <input pe-deep type="radio" this="input">
+                    <div pe-deep class="mat-radio-label-content">[text]</div>
+                </mat-radio-button>
+            </mat-radio-group>
+        </radio-overview-example>
+    </use-template>
+</body>
+</html>

@@ -1,5 +1,6 @@
 <html>
 <body>
+  <template id="layout">
     <material-docs-app>
         <app-navbar>
         </app-navbar>
@@ -21,17 +22,21 @@
         <doc-viewer pe-deep>
             <pe-repeat this="examples">
                 <div pe-deep this="[example]" material-docs-example="[example]">
-                    <example-viewer pe-deep>
+                    <example-viewer>
                         <div pe-deep class="docs-example-viewer-title">
-                            <div>[title]</div>
+                            <slot name="title">
+                                <div>[title]</div>
+                            </slot>
                             <button class="+mat-icon-button"></button>
                         </div>
                         <div pe-deep class="docs-example-viewer-body" this="body">
+                            <slot name="body"></slot>
                         </div>
                     </example-viewer>
                 </div>
             </pe-repeat>
         </doc-viewer>
     </material-docs-app>
+</template>
 </body>
 </html>
