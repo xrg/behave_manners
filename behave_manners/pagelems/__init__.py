@@ -8,7 +8,9 @@
 """
 
 from .loaders import FSLoader
+from .base_parsers import DPageElement, DOMScope
 from .index_elems import DSiteCollection
+
 
 
 # eof
