@@ -45,10 +45,10 @@ class AnyElement(DPageElement):
         self.read_attrs = {}
         self._xpath = any_tag
         self._pe_class = None
+        self._dom_slot = None
         self._split_attrs(attrs, match_attrs, self.read_attrs)
         self._xpath_score = 0
         self._set_match_attrs(match_attrs)
-        self._dom_slot = None
 
     def _set_match_attrs(self, match_attrs):
         for k, vs in match_attrs.items():
@@ -763,7 +763,8 @@ class DUseTemplateElem(DPageElement):
         if not isinstance(element, AnyElement):
             raise ValueError('Use-template cannot consume %s' % (element._name))
         if not element._dom_slot:
-            raise ValueError('Use-template can only have sub-elements with slot= defined')
+            raise ValueError('Use-template can only have sub-elements with slot= defined '
+                             'Cannot consume a %s' % element)
 
         if element._dom_slot in self._by_slot:
             raise ValueError('Slot "%s" already defined' % element._dom_slot)
@@ -833,7 +834,7 @@ class DHtmlObject(DPageElement):
     def iter_items(self, remote, scope, xpath_prefix=''):
             return self._iter_items_cont(remote, scope, xpath_prefix='//')
 
-    def walk(self, webdriver, parent_scope=None, max_depth=1000, on_missing=None, 
+    def walk(self, webdriver, parent_scope=None, max_depth=1000, on_missing=None,
              starting_path=None):
         """Discover all interesting elements within webdriver current page+scope
 
