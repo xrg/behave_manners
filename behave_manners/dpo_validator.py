@@ -10,8 +10,10 @@ import logging
 import json
 import time
 import sys
+import os.path
 from selenium import webdriver
 from selenium.webdriver.remote.command import Command
+from behave.runner_util import exec_file
 from behave_manners.site import FakeContext
 from behave_manners.pagelems.main import DSiteCollection, FSLoader
 from behave_manners.pagelems.exceptions import ElementNotFound
@@ -65,6 +67,36 @@ def shorten_txt(txt, maxlen):
     return txt
 
 
+class _dummy_decorator(object):
+    def __init__(self, txt, *args):
+        pass
+
+    def __call__(self, fn):
+        return fn
+
+
+def import_step_modules(paths, modules):
+    """Import any python module under 'paths', store its names in 'modules/xx'
+    
+        This is used to implicitly register ServiceMeta classes defined in these
+        step modules.
+    """
+    dglobals = globals().copy()
+    for key in ('given', 'when', 'then', 'step'):
+        dglobals[key] = dglobals[key.title()] = _dummy_decorator
+
+    for p in paths:
+        if os.path.isdir(p):
+            for name in sorted(os.listdir(p)):
+                if name.endswith(".py"):
+                    globs = modules[p + '/' + name] = dglobals.copy()
+                    exec_file(os.path.join(p, name), globs)
+        elif os.path.isfile(p):
+            assert p.endswith('.py')
+            modules[p] = dglobals.copy()
+            exec_file(p, modules[p])
+
+
 def cmdline_main():
     """when sun as a script, this behaves like a syntax checker for DPO files
     """
@@ -96,6 +128,14 @@ def cmdline_main():
                                 saved_capabilities=sdata.get('capabilities',{}))
     else:
         raise RuntimeError("Saved session must have 'url' and 'session' set")
+
+    bmodules = {}
+    try:
+        # Import steps modules a-la behave
+        import_step_modules(['environment.py', 'steps'], bmodules)
+        log.info("Loaded %d python modules relative to behave", len(bmodules))
+    except Exception:
+        log.warning("Cannot load behave environment and steps:", exc_info=True)
 
     if args.index:
         log.debug("Loading index from %s", args.index[0])
