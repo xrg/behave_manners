@@ -1,0 +1,37 @@
+<html>
+<body>
+    <material-docs-app>
+        <app-navbar>
+        </app-navbar>
+        <component-page-header pe-deep this="page-header">
+            <h1 pe-deep>[title]</h1>
+        </component-page-header>
+        <app-component-nav pe-deep this="nav-menu">
+            <div>
+            <div class="docs-component-viewer-nav-content">
+                <nav this="nav_%d">
+                    <button class="docs-nav-content-btn">[title]</button>
+                    <ul>
+                        <li this="[title]"><a href="[href]">[title]</a></li>
+                    </ul>
+                </nav>
+            </div>
+            </div>
+        </app-component-nav>
+        <doc-viewer pe-deep>
+            <pe-repeat this="examples">
+                <div pe-deep this="[example]" material-docs-example="[example]">
+                    <example-viewer pe-deep>
+                        <div pe-deep class="docs-example-viewer-title">
+                            <div>[title]</div>
+                            <button class="+mat-icon-button"></button>
+                        </div>
+                        <div pe-deep class="docs-example-viewer-body" this="body">
+                        </div>
+                    </example-viewer>
+                </div>
+            </pe-repeat>
+        </doc-viewer>
+    </material-docs-app>
+</body>
+</html>
