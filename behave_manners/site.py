@@ -24,6 +24,9 @@ def _noop_fn(context, *args):
     pass
 
 
+seconds_re = re.compile(r'([1-9]\d+)(m?)s(?:ec)?$')
+
+
 class SiteContext(object):
     """Holds (web)site information in a behave context
     
@@ -149,6 +152,7 @@ class WebContext(SiteContext):
         self.events.push()
         self._config.setdefault('browser', {})
         self._browser_log_types = []
+        self._implicit_sec = 0
         context.add_cleanup(self.events.pop)
 
     def launch_browser(self, context):
@@ -202,7 +206,17 @@ class WebContext(SiteContext):
             raise NotImplementedError('Unsupported engine: %s' % desired_engine)
 
         if browser_opts.get('implicit_wait'):
-            context.browser.implicitly_wait(float(1.0))
+            m = seconds_re.match(browser_opts['implicit_wait'])
+            if not m:
+                raise ValueError("Invalid implicit wait: %s" % browser_opts['implicit_wait'])
+            self._implicit_sec = float(int(m.group(1)))
+            if not m.group(2):
+                pass
+            elif m.group(2) == 'm':
+                self._implicit_sec /= 1000.0
+            else:
+                raise ValueError("Unknown multiplier: %s" % m.group(2))
+            context.browser.implicitly_wait(self._implicit_sec)
         context.add_cleanup(self._release_browser, context)
 
     _pixel_size_re = re.compile(r'(\d+)x(\d+)$')
