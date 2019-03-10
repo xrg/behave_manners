@@ -4,7 +4,7 @@ import posixpath as pp
 import fnmatch
 import logging
 import re
-from .base_parsers import DPageElement, DOMScope
+from .base_parsers import DPageElement, DOMScope, DBaseLinkElement
 from .loaders import BaseLoader
 
 
@@ -48,8 +48,7 @@ class DSiteCollection(DPageElement):
         super(DSiteCollection, self).consume(element)
 
     def register_link(self, link):
-        from .index_elems import ILinkObject
-        assert isinstance(link, ILinkObject), repr(link)
+        assert isinstance(link, DBaseLinkElement), repr(link)
 
         if not link.href:
             raise ValueError("Invalid <link>, without href=")

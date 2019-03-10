@@ -327,6 +327,36 @@ class DataElement(DPageElement):
 DataElement._consume_in = (DataElement,)
 
 
+class DBaseLinkElement(DPageElement):
+    """Baseclass for `<link>` elements in any pagelem document
+    
+        Links have mandatory "rel", "href" attributes and
+        optional "url", "title".
+    """
+    _name = '.base.link'
+    is_empty = True
+
+    _attrs_map = {'rel': ('rel', None, AttributeError),
+                  'href': ('href', None, AttributeError),
+                  'title': ('title', None, None),
+                  'url': ('url', None, None),
+                 }
+
+    def __init__(self, tag, attrs):
+        super(DBaseLinkElement, self).__init__(tag, attrs)
+        self._parse_attrs(attrs)
+        self.registered = False
+
+    def reduce(self, site=None):
+        if site is not None and site.register_link(self):
+            self.registered = True
+
+        return super(DBaseLinkElement, self).reduce()
+
+    def consume(self, element):
+        raise TypeError('%s cannot consume %r' % (self._name, element))
+
+
 @six.add_metaclass(_ServiceMeta)
 class DOMScope(object):
     """A simple holder of shared components or variables across DOM levels

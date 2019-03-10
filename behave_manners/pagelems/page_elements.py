@@ -701,6 +701,12 @@ class ScriptElement(DPageElement):
     _consume_in = ()  # Not allowed anywhere, so far
 
 
+class DLinkObject(DPageElement):
+    _name = 'tag.link'
+    _inherit = '.base.link'
+    _consume_in = (DHeadElement,)
+
+
 class DTemplateElement(DPageElement):
     """A template defines reusable DOM that is not normally rendered/scanned
 

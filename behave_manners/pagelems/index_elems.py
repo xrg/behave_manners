@@ -35,37 +35,21 @@ class IHeadObject(DPageElement):
     _inherit = '.index.base'
     _consume_in = (IHtmlObject,)
 
+    def reduce(self, site=None):
+        ret = super(IHeadObject, self).reduce(site)
+        if site is not None and ret is self:
+            self._children = [c for c in self._children
+                              if not (isinstance(c, ILinkObject) and c.registered)]
+            if not self._children:
+                ret = None
+        return ret
+
 
 class ILinkObject(DPageElement):
     _name = 'index.link'
-    is_empty = True
+    _inherit = '.base.link'
     _consume_in = (IHeadObject,)
-    SUPPORTED_ATTRS = ('rel', 'href', 'title', 'url')
-    
-    def __init__(self, tag, attrs=()):
-        super(ILinkObject, self).__init__(tag, attrs)
-        self.title = self.url = None    # defaults
-        seen = set()
-        for k, v in attrs:
-            if k in seen:
-                raise ValueError("Duplicate attribute in <%s %s >" % (tag, k))
-            if k in self.SUPPORTED_ATTRS:
-                setattr(self, k, v)
-                seen.add(k)
-            else:
-                raise ValueError("Unsupported attribute in <%s %s >" % (tag, k))
-        for k in self.SUPPORTED_ATTRS:
-            if not hasattr(self, k):
-                raise ValueError("Tag <%s> missing '%s=' attribute" % (tag, k))
 
-    def reduce(self, site=None):
-        if site is not None and site.register_link(self):
-            return None
-
-        return super(ILinkObject, self).reduce()
-
-    def consume(self, element):
-        raise TypeError('%s cannot consume %r' % (self._name, element))
 
 
 class IndexHTMLParser(BaseDPOParser):
