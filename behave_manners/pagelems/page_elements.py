@@ -467,11 +467,11 @@ class RootAgainElem(DPageElement):
             raise ValueError('Deep cannot have attributes')
         super(RootAgainElem, self).__init__(tag)
 
-    def iter_items(self, remote, scope, xpath_prefix=''):
-        return self._iter_items_cont(remote, scope, xpath_prefix='//')
+    def iter_items(self, remote, scope, xpath_prefix='//'):
+        return self._iter_items_cont(remote, scope, xpath_prefix=xpath_prefix)
 
     def _locate_in(self, remote, scope, xpath_prefix):
-        return self._iter_items_cont(remote, scope, xpath_prefix='//')
+        return self._iter_items_cont(remote.parent, scope, xpath_prefix='//')
 
     def iter_attrs(self, webelem=None, scope=None, xpath_prefix='//'):
         """Iterate names of possible attributes
@@ -483,7 +483,7 @@ class RootAgainElem(DPageElement):
                 yield y4
 
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix='//'):
-        return self.iter_attrs(webelem, scope, prepend_xpath(xpath_prefix, self.xpath))
+        return self.iter_attrs(webelem.parent, scope, self.xpath)
 
     def xpath_locator(self, score, top=False):
         if not top:
