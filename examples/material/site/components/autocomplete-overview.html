@@ -1,0 +1,32 @@
+<html>
+<head>
+    <link rel="import" href="layout.html">
+</head>
+<body>
+    <use-template id="layout">
+        <!--<div slot="title">Filter autocomplete</div>-->
+        <mat-form-field pe-deep slot="body" this="autocomplete"
+                        pe-controller="mat-autocomplete">
+            <input pe-deep this="input"
+                   type="text" matinput role="combobox"
+                   aria-owns='[owns]'>
+            <pe-root>
+                <div class="cdk-overlay-container" this="overlays">
+                <pe-repeat max="1">
+                    <div>
+                    <div class="+cdk-overlay-pane">
+                        <div class="+mat-autocomplete-panel" this="[id]" id="[id]">
+                            <mat-option this="[text]" role="option">
+                                <span class="mat-option-text">[text]</span>
+                            </mat-option>
+                        </div>
+                    </div>
+                    </div>
+                </pe-repeat>
+                </div>
+            </pe-root>
+        </mat-form-field>
+        
+    </use-template>
+</body>
+</html>
