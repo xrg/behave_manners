@@ -191,6 +191,8 @@ class DSiteCollection(DPageElement):
         if self.file_dir[fname] is None:
             # must load it
             self.load_pagefile(fname)
+            # and any dependencies that have appeared since
+            self.load_preloads()
 
         return self.file_dir[fname]
 

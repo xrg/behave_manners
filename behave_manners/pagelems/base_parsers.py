@@ -367,7 +367,9 @@ class DOMScope(object):
     
     def __init__(self, parent, templates=None):
         self._parent = parent
-        self._templates = templates or {}
+        if templates is None:
+            templates = {}
+        self._templates = templates
 
     def child(self):
         """Return a child scope linked to this one
