@@ -88,6 +88,7 @@ class RootDOMScope(DOMScope):
         super(RootDOMScope, self).__init__(parent=None, templates=templates)
         self.site_config = site_config or {}
 
+
 class GenericPageScope(DOMScope):
     """Default page scope
     

@@ -116,7 +116,7 @@ class SiteContext(object):
             if extra_conf:
                 merge_dict(config, extra_conf, copy=False)
             return config
-        except IOError, e:
+        except IOError:
             raise
         finally:
             os.chdir(old_cwd)
