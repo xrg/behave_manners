@@ -76,7 +76,7 @@ class DSiteCollection(DPageElement):
         return True
 
     def __len__(self):
-        return len(self.children)
+        return len(self._children)
 
     def _feed_parser(self, parser, pname, ptype):
         with self._loader.open(pname) as fp:
