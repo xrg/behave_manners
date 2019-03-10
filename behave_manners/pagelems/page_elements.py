@@ -35,6 +35,10 @@ DomContainerElement._consume_in = (DomContainerElement, )
 DataElement._consume_in += (DomContainerElement,)
 
 
+def _attr_getter(attr):
+    return lambda w: w.get_attribute(attr)
+
+
 class AnyElement(DPageElement):
     _name = 'tag.pe-any'
     _inherit = '.domContainer'
@@ -88,7 +92,7 @@ class AnyElement(DPageElement):
                 if k in read_attrs:
                     raise ValueError('Attribute defined more than once: %s' % k)
                 v = v[1:-1].strip()
-                read_attrs[v or k] = lambda w: w.get_attribute(k)
+                read_attrs[v or k] = _attr_getter(k)
             else:
                 assert '.' not in k, k
                 # attribute to match as locator
