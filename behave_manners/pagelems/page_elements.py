@@ -686,6 +686,12 @@ class ConsumeTmplMixin(object):
 class DHeadElement(ConsumeTmplMixin, DPageElement):
     _name = 'tag.head'
 
+    def reduce(self, site=None):
+        self._reduce_children(site)
+        if not self._children:
+            return None
+        return super(DHeadElement, self).reduce()
+
 
 class DBodyElement(ConsumeTmplMixin, DPageElement):
     _name = 'tag.body'
