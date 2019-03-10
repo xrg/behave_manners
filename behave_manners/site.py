@@ -202,6 +202,18 @@ class WebContext(SiteContext):
                 w, h = self._decode_win_size(browser_opts['window'])
                 context.browser.set_window_size(w,h)
             self._browser_log_types = []   # ['browser', 'driver', 'client', 'server']
+        elif desired_engine == 'iexplorer':
+            options = webdriver.IeOptions()
+            dcaps = webdriver.DesiredCapabilities.INTERNETEXPLORER.copy()
+            dcaps.update(caps)
+            if 'binary_location' in browser_opts:
+                options.binary_location = browser_opts['binary_location']
+            context.browser = webdriver.Ie(ie_options=options,
+                                           desired_capabilities=dcaps)
+            if 'window' in browser_opts:
+                w, h = self._decode_win_size(browser_opts['window'])
+                context.browser.set_window_size(w,h)
+            self._browser_log_types = []
         else:
             raise NotImplementedError('Unsupported engine: %s' % desired_engine)
 
