@@ -20,7 +20,7 @@ def prepend_xpath(pre, xpath, glue=False):
 
     """
 
-    if xpath.startswith('//'):
+    if (not pre) or xpath.startswith('//'):
         # prefix doesn't matter
         return xpath
     if pre.endswith('./'):
@@ -36,7 +36,7 @@ def prepend_xpath(pre, xpath, glue=False):
         return pre + xpath[2:]
     elif xpath.startswith('./'):
         return pre + xpath[1:]
-    elif glue and pre and not pre.endswith('/') and xpath[0].isalpha():
+    elif glue and not pre.endswith('/') and xpath[0].isalpha():
         if glue is True:
             glue = '/'
         return pre + glue + xpath
