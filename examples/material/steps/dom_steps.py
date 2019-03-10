@@ -12,11 +12,6 @@ def step_impl1(context, page):
     context.cur_element = context.cur_page
 
 
-@when(u'I click {elem}')
-def step_impl4(context, elem):
-    context.cur_element[elem].click()
-
-
 @step('I wait for page to load')
 def step_wait_page(context):
     context.cur_page.wait_all('medium')
@@ -32,8 +27,35 @@ def step_impl5(context, page):
     assert title_text == 'Getting started', title_text
 
 
-class soScope(DOMScope):
-    _name = 'sofo'
+@given(u'I use the {example} example')
+def use_example(context, example):
+    context.cur_element = context.cur_page['examples'][example]['body']
 
+
+@step(u'I use the "{comp}" in there')
+def use_sub_component(context, comp):
+    context.cur_element = context.cur_element[comp]
+
+
+@when(u'I click option value "{value}"')
+def step_impl(context, value):
+    context.cur_element.set_value(value)
+
+
+@when(u'I click option labelled "{label}"')
+def click_option_lbl(context, label):
+    context.cur_element.set_by_label(label)
+
+
+@then(u'the selected value is "{value}"')
+def check_option_value(context, value):
+    cur_value = context.cur_element.get_value()
+    assert cur_value == value, '%r != %r' % (cur_value, value)
+
+
+@then(u'the selection is blank')
+def step_impl(context):
+    cur_value = context.cur_element.get_value()
+    assert cur_value == None, '%r != None' % (cur_value, )
 
 # eof

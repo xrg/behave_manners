@@ -8,8 +8,8 @@
     <use-template id="layout">
         <div slot="title">Basic radios</div>
         <radio-overview-example slot="body">
-            <mat-radio-group this="radio-group">
-                <mat-radio-button this="[value]" value="[value]">
+            <mat-radio-group this="radio-group" pe-controller="mat-radio">
+                <mat-radio-button this="[value]" value="[value]" class="[class_]">
                     <input pe-deep type="radio" this="input">
                     <div pe-deep class="mat-radio-label-content">[text]</div>
                 </mat-radio-button>
