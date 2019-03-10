@@ -98,7 +98,7 @@ class AnyElement(DPageElement):
                 # attribute to match as locator
                 match_attrs[k].append(v)
 
-    def reduce(self):
+    def reduce(self, site=None):
         if len(self._children) == 1 \
                 and self._name in ('any', 'tag.pe-any') \
                 and not self.read_attrs \
@@ -403,7 +403,7 @@ class DeepContainObj(DPageElement):
             raise ValueError('Deep cannot have attributes')
         super(DeepContainObj, self).__init__(tag)
 
-    def reduce(self):
+    def reduce(self, site=None):
         if len(self._children) == 1 and self._children[0]._name in ('any', 'tag.pe-any', 'named'):
             ch = self._children.pop()
             ch._xpath = prepend_xpath('.//', ch._xpath)
@@ -516,7 +516,7 @@ class RepeatObj(DPageElement):
         super(RepeatObj, self).__init__(tag)
         self._parse_attrs(attrs)
 
-    def reduce(self):
+    def reduce(self, site=None):
         if not self._children:
             raise ValueError("<Repeat> must have contained elements")
 
