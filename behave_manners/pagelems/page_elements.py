@@ -691,6 +691,10 @@ class DBodyElement(ConsumeTmplMixin, DPageElement):
     _name = 'tag.body'
     _inherit = 'any'
 
+    def reduce(self, site=None):
+        self._reduce_children(site)
+        return super(DBodyElement, self).reduce()
+
 
 class ScriptElement(DPageElement):
     _name = 'tag.script'
@@ -821,18 +825,7 @@ class DHtmlObject(DPageElement):
     _inherit = '.basehtml'
 
     def reduce(self, site=None):
-        if site is not None:
-            nchildren = []
-            for celem in self._children:
-                try:
-                    ncelem = celem.reduce(site)
-                    if ncelem is not None:
-                        nchildren.append(ncelem)
-                except TypeError:
-                    nchildren.append(celem)
-
-            self._children[:] = nchildren     # inplace
-
+        self._reduce_children(site)
         return super(DHtmlObject, self).reduce()
 
     def iter_items(self, remote, scope, xpath_prefix=''):

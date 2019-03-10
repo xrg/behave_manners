@@ -13,21 +13,11 @@ class ISomeObject(DPageElement):
     """
     _name = '.index.base'
     def reduce(self, site=None):
-        if site is not None:
-            i = 0
-            while i < len(self._children):
-                celem = self._children[i]
-                ncelem = celem.reduce(site)
-                if ncelem is not celem:
-                    self._children.pop(i)
-                    if ncelem is not None:
-                        self._children.insert(i, ncelem)
-                if ncelem is not None:
-                    i += 1
+        self._reduce_children(site)
 
         if not self._children:
             return None
-        
+
         return super(ISomeObject, self).reduce()
 
 

@@ -198,6 +198,24 @@ class DPageElement(object):
         self.__xpath = None
         return self
 
+    def _reduce_children(self, site):
+        """Apply site reduce to immediate children
+
+            To be added to `reduce()` in those classes that need it
+        """
+        if site is None:
+            return
+        nchildren = []
+        for celem in self._children:
+            try:
+                ncelem = celem.reduce(site)
+                if ncelem is not None:
+                    nchildren.append(ncelem)
+            except TypeError:
+                nchildren.append(celem)
+
+        self._children[:] = nchildren     # inplace
+
     def pretty_dom(self):
         """Walk this template, generate (indent, name, xpath) sets of each node
 
