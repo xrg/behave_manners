@@ -44,4 +44,39 @@ class MatRadioCtrl(DOMScope):
         return _set_value
 
 
+class MatAutocompleteCtrl(DOMScope):
+    _name = 'mat-autocomplete'
+    
+    def _cwrap_get_value(self, comp, name):
+        """Easy access to input value
+        """
+        
+        def _get_value():
+            return comp['input'].value
+
+        return _get_value
+
+    def _cwrap_set_value(self, comp, name):
+        """Sets the value by both typing and selecting from autocomplete
+        """
+        def _set_value(value):
+            if not value:
+                comp['input'].value = ''
+                return
+
+            # Type (fast) most of the string inside the input
+            comp['input'].value = value[:-1]
+            # Then, click the last letter to let the dropdown open
+            comp['input'].send_keys(value[-1])
+            dropdown_id = comp['input'].owns
+            if not dropdown_id:
+                raise AssertionError("Did not cause drop-down: %s" % comp)
+            comp._scope.wait_all('short', welem=comp._remote)
+            dropdown = comp['overlays'][dropdown_id]
+            dropdown[value].click()
+            comp._scope.wait_all('short', welem=comp._remote)
+            assert comp['input'].value == value
+        return _set_value
+
+
 #eof

@@ -54,8 +54,14 @@ def check_option_value(context, value):
 
 
 @then(u'the selection is blank')
-def step_impl(context):
+def step_blank_selection(context):
     cur_value = context.cur_element.get_value()
     assert cur_value == None, '%r != None' % (cur_value, )
+
+
+@when(u'I enter value "{value}"')
+def step_enter_value(context, value):
+    context.cur_element.set_value(value)
+
 
 # eof

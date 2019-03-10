@@ -17,4 +17,10 @@ Feature: Check operation of Angular-Material controllers
         When I click option value "2"
         Then the selected value is "2"
 
+    Scenario: Autocomplete with filter
+        Given I am at the "Autocomplete overview"
+          and I use the autocomplete-filter example
+          and I use the "autocomplete" in there
+        When I enter value "Two"
+        Then the selected value is "Two"
 
