@@ -201,15 +201,24 @@ class Text2AttrElement(DPageElement):
     is_empty = True
     _consume_in = (DomContainerElement,)
 
-    def __init__(self, name):
+    def _return_elem_text(self, elem):
+        ret = elem.text
+        if not ret:
+            ret = elem.get_attribute('innerText')
+        if ret and self._do_strip:
+            ret = ret.strip()
+        return ret
+
+    def __init__(self, name, strip=False):
         super(Text2AttrElement, self).__init__()
         self._attr_name = name
+        self._do_strip = strip
 
     def consume(self, element):
         raise TypeError('Data cannot consume %r' % element)
 
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
-        yield self._attr_name, xpath_prefix, lambda w: w.text or w.get_attribute('innerText'), None
+        yield self._attr_name, xpath_prefix, self._return_elem_text, None
 
 
 class NamedElement(DPageElement):
@@ -972,12 +981,15 @@ class PageParser(BaseDPOParser):
         self._dom_stack.append(elem)
 
     def handle_data(self, data):
-        if not data.strip():
+        sdata = data.strip()
+        if not sdata:
             return
 
         self._pop_empty()
-        if data.startswith('[') and data.endswith(']'):
-            data = data[1:-1].strip()
+        stripped = (sdata == data)
+
+        if sdata.startswith('[') and sdata.endswith(']'):
+            data = sdata[1:-1]
             if data.startswith('[') and data.endswith(']'):
                 # Quoting for [] expressions
                 elem = DataElement.new(data)
@@ -988,7 +1000,7 @@ class PageParser(BaseDPOParser):
                 if not word_re.match(data):
                     raise ValueError("Invalid expression: %s" % data)
 
-                elem = Text2AttrElement.new(data)
+                elem = Text2AttrElement.new(data, strip=stripped)
         else:
             elem = DataElement.new(data)
 
