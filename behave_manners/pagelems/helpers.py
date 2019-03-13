@@ -15,6 +15,18 @@ def textescape(tstr):
         return "concat('" + "', '\"', '".join(tstr.split('"')) + "')"  # Perl alert!
 
 
+def to_bool(v):
+    """Convert boolean-like value of html attribute to python True/False
+    
+        Example truthy values (for `attr` in <b> ):
+            <b attr> <b attr="1"> <b attr="true"> <b attr="anything">
+        example falsy values:
+            <b attr="0"> <b attr="false"> <b attr="False">
+
+    """
+    return v is None or (v not in ('0', 'false', 'False'))
+
+
 def prepend_xpath(pre, xpath, glue=False):
     """Prepend some xpath to another, properly joining the slashes
 

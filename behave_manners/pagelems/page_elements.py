@@ -4,7 +4,7 @@ import logging
 import re
 from collections import defaultdict
 
-from .helpers import textescape, prepend_xpath, word_re
+from .helpers import textescape, prepend_xpath, word_re, to_bool
 from .base_parsers import DPageElement, DataElement, BaseDPOParser, \
                           HTMLParseError, DOMScope
 from .site_collection import DSiteCollection
@@ -50,6 +50,7 @@ class AnyElement(DPageElement):
         self._xpath = any_tag
         self._pe_class = None
         self._dom_slot = None
+        self._pe_optional = False
         self._split_attrs(attrs, match_attrs, self.read_attrs)
         self._xpath_score = 0
         self._set_match_attrs(match_attrs)
@@ -79,6 +80,8 @@ class AnyElement(DPageElement):
                 self._dom_slot = v
             elif k == 'pe-deep':
                 self._xpath = './/' + self._xpath
+            elif k == 'pe-optional':
+                self._pe_optional = to_bool(v)
             elif k == 'pe-controller' or k == 'pe-ctrl':
                 if self._pe_class:
                     raise ValueError("Attribute 'pe-controller' defined more than once")
@@ -103,16 +106,21 @@ class AnyElement(DPageElement):
                 and self._name in ('any', 'tag.pe-any') \
                 and not self.read_attrs \
                 and self._dom_slot is None \
+                and self._pe_class is None \
                 and isinstance(self._children[0], NamedElement):
             # Merge Named element with self (its parent)
             ret = self._children[0]
             ret._xpath = prepend_xpath(self._xpath + '/', ret._xpath)
+            if self._pe_optional:
+                ret._pe_optional = True
             ret._reset_xpath_locator()
             return ret
         return self
 
     def xpath_locator(self, score, top=False):
         locator = ''
+        if self._pe_optional and not top:
+            return locator
         if score and score > 0:
             locator = self._xpath
             score -= self._xpath_score
@@ -154,7 +162,7 @@ class AnyElement(DPageElement):
                     # Keep first exception encountered
                     enoent = e
 
-        if enoent:
+        if enoent and not self._pe_optional:
             if enoent is True:
                 # No element matched xpath2, loop above didn't run
                 enoent = ElementNotFound(selector=xpath2, parent=remote)
@@ -288,7 +296,7 @@ class NamedElement(DPageElement):
             except NoSuchElementException, e:
                 enofound = ElementNotFound(msg=str(e), parent=welem, selector='*')
             n += 1
-        if not n:
+        if not (n or self._pe_optional):
             if enofound is None:
                 enofound = ElementNotFound(parent=remote, selector=xpath)
             raise enofound
@@ -379,7 +387,7 @@ class InputElement(DPageElement):
                     nscope = self._pe_class(parent=scope)
                 enoent = False
                 yield self.this_name, welem, self, nscope
-            if enoent:
+            if enoent and not self._pe_optional:
                 raise ElementNotFound(parent=remote, selector=xpath2)
         else:
             return
@@ -627,6 +635,7 @@ class PeGroupElement(DPageElement):
     _attrs_map = {'slot': ('_dom_slot', None, None),
                   'pe-controller': ('_pe_ctrl', None, None),
                   'pe-ctrl': ('_pe_ctrl', None, None),
+                  'pe-optional': ('_pe_optional', to_bool, None, None),
                   }
 
     def __init__(self, tag, attrs):
@@ -653,12 +662,18 @@ class PeGroupElement(DPageElement):
         nscope = scope
         if self._pe_class is not None:
             nscope = self._pe_class(parent=scope)
-        for ch in self._children:
-            for y4 in ch._locate_in(remote, nscope, xpath_prefix):
-                if y4[0] in seen:
-                    continue
-                ret.append(y4)
-                seen.add(y4[0])
+        try:
+            for ch in self._children:
+                for y4 in ch._locate_in(remote, nscope, xpath_prefix):
+                    if y4[0] in seen:
+                        continue
+                    ret.append(y4)
+                    seen.add(y4[0])
+        except ElementNotFound:
+            if self._pe_optional:
+                return  # ignore 'ret'
+            else:
+                raise
 
         # after this has finished (all located), return them
         for y4 in ret:
