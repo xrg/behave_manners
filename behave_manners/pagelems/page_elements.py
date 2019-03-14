@@ -32,7 +32,6 @@ class DomContainerElement(DPageElement):
 
 
 DomContainerElement._consume_in = (DomContainerElement, )
-DataElement._consume_in += (DomContainerElement,)
 
 
 def _attr_getter(attr):
@@ -227,6 +226,49 @@ class Text2AttrElement(DPageElement):
 
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         yield self._attr_name, xpath_prefix, self._return_elem_text, None
+
+
+class RegexElement(DPageElement):
+    _name = 'tag.pe-regex'
+    _consume_in = (DomContainerElement,)
+    _attrs_map = {'name': ('_attr_name', None, None),
+                 }
+
+    def __init__(self, tag, attrs):
+        super(RegexElement, self).__init__(tag)
+        self._parse_attrs(attrs)
+        self._regex = None
+
+    def consume(self, element):
+        if not isinstance(element, DataElement):
+            raise TypeError("Regex can only contain text")
+        super(RegexElement, self).consume(element)
+
+    def reduce(self, site=None):
+        if self._regex is None:
+            regstr = ''.join([c.data for c in self._children])
+            self._regex = re.compile(regstr)
+        return super(RegexElement, self).reduce(site)
+
+    def __return_elem_text(self, name=None):
+        def __get_text(welem):
+            m = self._regex.match(welem.text or '')
+            if m:
+                if name:
+                    return m.group(name)
+                else:
+                    return m.group()
+            return None
+        return __get_text
+
+    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
+        if self._attr_name:
+            yield self._attr_name, xpath_prefix, self.__return_elem_text(), None
+        for g in self._regex.groupindex:
+            yield g, xpath_prefix, self.__return_elem_text(g), None
+
+
+DataElement._consume_in += (DomContainerElement, RegexElement)
 
 
 class NamedElement(DPageElement):
