@@ -696,7 +696,7 @@ class PeGroupElement(DPageElement):
     _attrs_map = {'slot': ('_dom_slot', None, None),
                   'pe-controller': ('_pe_ctrl', None, None),
                   'pe-ctrl': ('_pe_ctrl', None, None),
-                  'pe-optional': ('_pe_optional', to_bool, None, None),
+                  'pe-optional': ('_pe_optional', to_bool, None),
                   }
 
     def __init__(self, tag, attrs):
