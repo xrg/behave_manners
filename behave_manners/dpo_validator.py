@@ -181,7 +181,7 @@ def cmdline_main():
         if isinstance(exc, KeyError):
             print("    Missing %s inside component %s" % (exc, comp))
             return
-        print("    Missing %s inside %s" % (exc.selector, comp))
+        print("    %s inside %s" % (exc.msg, comp))
 
         e = errors  # transfer from outer to local scope
         e += 1
