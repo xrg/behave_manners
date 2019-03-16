@@ -58,14 +58,33 @@ class AnyElement(DPageElement):
         for k, vs in match_attrs.items():
             if len(vs) > 1:
                 raise NotImplementedError('Dup arg: %s' % k)
-            if vs[0] is True:
-                # only match existence of attribute
-                self._xpath += '[@%s]' % (k,)
-            elif vs[0].startswith('+'):
-                val = vs[0][1:]
-                self._xpath += '[contains(@%s,%s)]' % (k, textescape(val))
-            else:
-                self._xpath += '[@%s=%s]' % (k, textescape(vs[0]))
+            ors = []
+            for v in vs:
+                if v is True:
+                    # only match existence of attribute
+                    ors.append('@%s' % (k,))
+                elif v == '!':
+                    ors.append('not(@%s)' % (k,))
+                elif v.startswith('!+'):
+                    v = v[1:]
+                    ors.append('not('
+                            + ' and '.join(['contains(@%s,%s)' % (k, textescape(w))
+                                            for w in v[1:].split(' ')])
+                            + ')')
+                elif v.startswith('+'):
+                    v = v[1:]
+                    clauses = ['contains(@%s,%s)' % (k, textescape(w))
+                                for w in v.split(' ')]
+                    if len(clauses) > 1:
+                        ors.append('boolean(' + ' and '.join(clauses) + ')')
+                    elif clauses:
+                        ors.append(clauses[0])
+                elif v.startswith('!'):
+                    ors.append('not(@%s=%s)' % (k, textescape(v)))
+                else:
+                    ors.append('@%s=%s' % (k, textescape(v)))
+
+            self._xpath += '[' + ' or '.join(ors) + ']'
         self._xpath_score += self.calc_xpath_score(match_attrs.keys())
 
     def _split_this(self, value, sub=None):
