@@ -753,6 +753,8 @@ class PeGroupElement(DPageElement):
                 locs.append(xloc)
 
         return ''.join(locs)
+
+
 class ConsumeTmplMixin(object):
     """Common between Head and Body elements, temporarily hold templates
     """

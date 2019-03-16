@@ -199,6 +199,5 @@ class ComponentProxy(_SomeProxy):
     def name(self):
         return self._name
 
-#  class EmptyComponent(_SomeProxy): ??
 
 # eof
