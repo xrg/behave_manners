@@ -195,6 +195,9 @@ class ComponentProxy(_SomeProxy):
     def path(self):
         return self._parent.path + (self._name,)
 
+    @property
+    def name(self):
+        return self._name
 
 #  class EmptyComponent(_SomeProxy): ??
 
