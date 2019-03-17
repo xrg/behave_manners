@@ -29,6 +29,11 @@ def dsmb():
     return render_template('smb.html')
 
 
+@app.route('/template', methods=['GET', 'POST'])
+def run_tmpl():
+
+    return render_template('template_test.html')
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)

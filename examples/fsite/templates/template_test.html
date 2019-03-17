@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Mini-application</title>
+</head>
+
+<body>
+{% include 'block_override.html' ignore missing %}
+
+    <div>
+        This is a test: 
+        {% block test %}
+        Default content
+        {% endblock %}
+    </div>
+
+</body>
+
+</html>
