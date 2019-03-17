@@ -6,26 +6,59 @@
   <main id="content">
     <PE-Deep>
         <div id="document-main">
-            <PE-Deep>
-            
-            <article this="article" id="wikiArticle" class='[class]'>
+            <div pe-deep class="+text-content">
+            <article this="article" id="wikiArticle" this="article">
                 <pe-choice>
                     <pe-group>
                         <h2 this="Section_Title">[title]</h2>
                         
-                        <div>
-                            <!-- TODO -->
+                        <table class="standard-table" this="specifications">
+                            <thead>
+                                <tr><th>Specification</th>
+                                    <th>Status</th>
+                                    <th>Comment</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr this="row_%d">
+                                    <td><a rel="noopener" href="[href]">[title]</a></td>
+                                    <td><span class="+spec-">[status]</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <div class="bc-data" this="browser_compatibility">
+                            <table class="+bc-table">
+                                <tbody>
+                                    <pe-choice>
+                                    <tr this="[feature]">
+                                        <th><code pe-deep>[feature]</code></th>
+                                        <pe-repeat this="browsers">
+                                            <td this="[browser]">
+                                                <span class="bc-browser-name">[browser]</span>
+                                                <abbr></abbr>[support]</td>
+                                    </tr>
+                                    <tr this="[feature]">
+                                        <th>[feature]</th>
+                                        <pe-repeat this="browsers">
+                                            <td this="[browser]">
+                                                <span class="bc-browser-name">[browser]</span>
+                                                <abbr></abbr>[support]</td>
+                                    </tr>
+                                    </pe-choice>
+                                </tbody>
+                            </table>
                         </div>
                     </pe-group>
                     <pe-group>
-                        <p class="summary">
+                        <p class="summarys">
                         </p>
                         <div>
                         </div>
                     </pe-group>
                 </pe-choice>
             </article>
-            </PE-Deep>
+            </div>
         </div>
     </PE-Deep>
     </main>

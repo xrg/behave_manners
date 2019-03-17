@@ -31,6 +31,12 @@ def step_impl4(context, elem):
     context.cur_element[elem].click()
 
 
+@then('I check that its color is {color}')
+def step_chk_color(context, color):
+    res = context.cur_element.css['color']
+    assert res == color, "Color is %s" % res
+
+
 @then(u'I am directed to the "{page}"')
 def step_impl5(context, page):
     cur_page = context.site.get_cur_title(context)

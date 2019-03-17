@@ -9,7 +9,7 @@ site:
 browser:        # Technical conf about the browser
     engine: chrome
     launch_on: feature  # or 'scenario' or 'demand'
-    window: 1600x900
+    window: 1000x500
     # more capabilities...
     # headless: true
     headless: false

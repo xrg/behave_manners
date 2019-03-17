@@ -13,10 +13,16 @@
             <div>
                 <nav this="navigation">
                     <ul>
-                        <pe-repeat>
-                            <li this="nav">
-                            </li>
-                        </pe-repeat>
+                        <li this="[title]">
+                            <a href>[title]</a>
+                            <div class="+submenu">
+                                <ul pe-deep>
+                                    <li this="[stitle]">
+                                        <a href="[href]">[stitle]</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
                     </ul>
                 </nav>
             </div>
