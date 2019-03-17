@@ -3,6 +3,7 @@
 import time
 from behave_manners.pagelems import DOMScope
 from behave_manners.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
 
 
 class MatRadioCtrl(DOMScope):
@@ -67,7 +68,7 @@ class MatAutocompleteCtrl(DOMScope):
             # Type (fast) most of the string inside the input
             comp['input'].value = value[:-1]
             # Then, click the last letter to let the dropdown open
-            comp['input'].send_keys(value[-1])
+            comp['input'].send_keys(Keys.END, value[-1])
             dropdown_id = comp['input'].owns
             if not dropdown_id:
                 raise AssertionError("Did not cause drop-down: %s" % comp)
