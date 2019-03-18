@@ -10,21 +10,11 @@
             <input pe-deep this="input"
                    type="text" matinput role="combobox"
                    aria-owns='[owns]'>
-            <pe-root>
-                <div class="cdk-overlay-container" this="overlays">
-                <pe-repeat max="1">
-                    <div>
-                    <div class="+cdk-overlay-pane">
-                        <div class="+mat-autocomplete-panel" this="[id]" id="[id]">
-                            <mat-option this="[text]" role="option">
-                                <span class="mat-option-text">[text]</span>
-                            </mat-option>
-                        </div>
-                    </div>
-                    </div>
-                </pe-repeat>
-                </div>
-            </pe-root>
+            <pe-matchid id="root['input'].owns" this="panel">
+                <mat-option this="[text]" role="option">
+                    <span class="mat-option-text">[text]</span>
+                </mat-option>
+            </pe-matchid>
         </mat-form-field>
         
     </use-template>

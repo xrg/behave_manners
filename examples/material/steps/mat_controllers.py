@@ -65,16 +65,15 @@ class MatAutocompleteCtrl(DOMScope):
                 comp['input'].value = ''
                 return
 
+            # for testing only
+            ActionChains(comp).move_to_element(comp).perform()
+
             # Type (fast) most of the string inside the input
             comp['input'].value = value[:-1]
             # Then, click the last letter to let the dropdown open
             comp['input'].send_keys(Keys.END, value[-1])
-            dropdown_id = comp['input'].owns
-            if not dropdown_id:
-                raise AssertionError("Did not cause drop-down: %s" % comp)
             comp._scope.wait_all('short', welem=comp._remote)
-            dropdown = comp['overlays'][dropdown_id]
-            dropdown[value].click()
+            comp['panel'][value].click()
             comp._scope.wait_all('short', welem=comp._remote)
             assert comp['input'].value == value
         return _set_value
