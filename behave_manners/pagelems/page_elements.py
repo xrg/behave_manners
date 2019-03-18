@@ -30,6 +30,29 @@ class DomContainerElement(DPageElement):
             ret += cls.xpath_score_attrs.get(k, 5)
         return ret
 
+    def reduce(self, site=None):
+        prev = None
+        repls = []
+        for n, c in enumerate(self._children):
+            if isinstance(c, DataElement) and prev is not None:
+                c.set_full(False)
+            elif isinstance(prev, DataElement):
+                prev.set_full(False)
+            elif isinstance(c, Text2AttrElement) and prev is not None:
+                nc = c.consume_after(prev)
+                if nc is not c:
+                    repls.append((n, nc))
+            elif isinstance(prev, Text2AttrElement):
+                nc = prev.consume_before(c)
+                if nc is not prev:
+                    repls.append((n-1, nc))
+            prev = c
+        if repls:
+            for n, c in repls:
+                self._children[n] = c
+
+        return super(DomContainerElement, self).reduce(site)
+
 
 DomContainerElement._consume_in = (DomContainerElement, )
 
@@ -133,7 +156,7 @@ class AnyElement(DPageElement):
                 ret._pe_optional = True
             ret._reset_xpath_locator()
             return ret
-        return self
+        return super(AnyElement, self).reduce(site)
 
     def xpath_locator(self, score, top=False):
         locator = ''
@@ -243,8 +266,79 @@ class Text2AttrElement(DPageElement):
     def consume(self, element):
         raise TypeError('Data cannot consume %r' % element)
 
+    def consume_after(self, element):
+        return PartialText2Attr(self._attr_name, strip=self._do_strip,
+                                after_elem=element)
+
+    def consume_before(self, element):
+        return PartialText2Attr(self._attr_name, strip=self._do_strip,
+                                before_elem=element)
+
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         yield self._attr_name, xpath_prefix, self._return_elem_text, None
+
+
+class PartialText2Attr(DPageElement):
+    _name = 'text2attr-partial'
+    _inherit = 'text2attr'
+
+    def __init__(self, name, strip=False, after_elem=None, before_elem=None):
+        super(PartialText2Attr, self).__init__(name, strip=strip)
+        if isinstance(after_elem, DPageElement):
+            after_elem = self._elem2tag(after_elem)
+        if isinstance(before_elem, DPageElement):
+            before_elem = self._elem2tag(before_elem)
+        self._after_elem = after_elem
+        self._before_elem = before_elem
+
+    def _elem2tag(self, element):
+        """Get the plain tag_name of some pagelement to be reached
+        """
+        if isinstance(element, GenericElement):
+            return element.tag
+        else:
+            return '*'
+
+    def consume_after(self, element):
+        if self._after_elem is None:
+            if isinstance(element, DPageElement):
+                element = self._elem2tag(element)
+            self._after_elem = element
+        return self
+
+    def consume_before(self, element):
+        if self._before_elem is None:
+            if isinstance(element, DPageElement):
+                element = self._elem2tag(element)
+            self._before_elem = element
+        return self
+
+    def _return_elem_text(self, elem):
+        js = 'let cnodes = arguments[0].childNodes;\n' \
+             'let i = 0; let ret = "";\n'
+        if self._after_elem == '*':
+            js += '''
+                for (;i<cnodes.length;i++){
+                    if (cnodes[i].nodeType == 3) break;
+                }
+                '''
+        elif self._after_elem:
+            js += '''
+                for (;i<cnodes.length;i++){
+                    if ((cnodes[i].nodeType == 1) && (cnodes[i].tag_name == arguments[1])) break;
+                }
+                '''
+        js += 'for(;i<cnodes.length; i++){ \n'
+        if self._before_elem == '*':
+            js += '  if (cnodes[i].nodeType == 1) break; '
+        elif self._before_elem:
+            js += '  if ((cnodes[i].nodeType == 1) && (cnodes[i].tag_name == arguments[2])) break;\n'
+        js += '  if (cnodes[i].nodeType == 3) { ret += cnodes[i].nodeValue; }\n}\nreturn ret;'
+
+        ret = elem.parent.execute_script(js, elem, self._after_elem, self._before_elem)
+        if ret and self._do_strip:
+            ret = ret.strip()
+        return ret
 
 
 class RegexElement(DPageElement):
@@ -487,7 +581,7 @@ class DeepContainObj(DPageElement):
             ch._xpath = prepend_xpath('.//', ch._xpath)
             ch._reset_xpath_locator()
             return ch
-        return self
+        return super(DeepContainObj, self).reduce(site)
 
     def iter_items(self, remote, scope, xpath_prefix=''):
         return self._iter_items_cont(remote, scope, xpath_prefix='.//')
@@ -602,7 +696,7 @@ class RepeatObj(DPageElement):
             raise NotImplementedError("Cannot handle siblings in <Repeat>")  # yet
 
         self._reset_xpath_locator()
-        return self
+        return super(RepeatObj, self).reduce(site)
 
     def iter_items(self, remote, scope, xpath_prefix=''):
         ni = 0
@@ -777,7 +871,7 @@ class DHeadElement(ConsumeTmplMixin, DPageElement):
         self._reduce_children(site)
         if not self._children:
             return None
-        return super(DHeadElement, self).reduce()
+        return super(DHeadElement, self).reduce(site)
 
 
 class DBodyElement(ConsumeTmplMixin, DPageElement):
@@ -786,7 +880,7 @@ class DBodyElement(ConsumeTmplMixin, DPageElement):
 
     def reduce(self, site=None):
         self._reduce_children(site)
-        return super(DBodyElement, self).reduce()
+        return super(DBodyElement, self).reduce(site)
 
 
 class ScriptElement(DPageElement):
@@ -925,7 +1019,7 @@ class DHtmlObject(DPageElement):
 
     def reduce(self, site=None):
         self._reduce_children(site)
-        return super(DHtmlObject, self).reduce()
+        return super(DHtmlObject, self).reduce(site)
 
     def iter_items(self, remote, scope, xpath_prefix=''):
             return self._iter_items_cont(remote, scope, xpath_prefix='//')
@@ -997,7 +1091,7 @@ class GHtmlObject(DPageElement):
             site._templates.update(self._templates)
             return None
         else:
-            return super(GHtmlObject, self).reduce()
+            return super(GHtmlObject, self).reduce(site)
 
 
 class DPageObject(DPageElement):
@@ -1064,7 +1158,7 @@ class PageParser(BaseDPOParser):
             return
 
         self._pop_empty()
-        stripped = (sdata == data)
+        stripped = (sdata != data)
 
         if sdata.startswith('[') and sdata.endswith(']'):
             data = sdata[1:-1]
