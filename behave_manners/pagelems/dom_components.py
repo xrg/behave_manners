@@ -64,6 +64,8 @@ class _SomeProxy(object):
         self._pagetmpl = pagetmpl
         self._remote = remote
         self._scope = scope
+        if scope is not None:
+            scope.take_component(self)
 
     @property
     def path(self):

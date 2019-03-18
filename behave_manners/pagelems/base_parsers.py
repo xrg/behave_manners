@@ -380,6 +380,7 @@ class DOMScope(object):
         if templates is None:
             templates = {}
         self._templates = templates
+        self._root_component = None
 
     def child(self):
         """Return a child scope linked to this one
@@ -394,6 +395,14 @@ class DOMScope(object):
                 return self._parent.get_template(key)
             else:
                 raise KeyError("Template id='%s' not found" % key)
+
+    def take_component(self, comp):
+        if self._root_component is None:
+            self._root_component = comp
+
+    @property
+    def root_component(self):
+        return self._root_component
 
     def __getattr__(self, name):
         if self._parent is not None:

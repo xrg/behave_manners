@@ -9,6 +9,7 @@ from .base_parsers import DPageElement, DataElement, BaseDPOParser, \
                           HTMLParseError, DOMScope
 from .site_collection import DSiteCollection
 from .exceptions import ElementNotFound
+from selenium.webdriver.remote.webdriver import WebElement
 from selenium.common.exceptions import NoSuchElementException
 
 
@@ -847,6 +848,94 @@ class PeGroupElement(DPageElement):
                 locs.append(xloc)
 
         return ''.join(locs)
+
+
+class PeMatchIDElement(DPageElement):
+    _name = 'tag.pe-matchid'
+    _inherit = '.domContainer'
+    _attrs_map = {'pe-controller': ('_pe_ctrl', None, None),
+                  'pe-ctrl': ('_pe_ctrl', None, None),
+                  'pe-optional': ('_pe_optional', to_bool, None),
+                  'id': ('attr_id', None, AttributeError),
+                  'this': ('this_name', None, None),
+                  }
+
+    def __init__(self, tag, attrs):
+        super(PeMatchIDElement, self).__init__(tag)
+        self._parse_attrs(attrs)
+        if self._pe_ctrl is None:
+            self._pe_class = None
+        else:
+            self._pe_class = DOMScope.get_class(self._pe_ctrl)
+
+        self._idc = compile(self.attr_id, 'html:pe-matchid', mode='eval')
+
+    def _locate_remote(self, remote, scope):
+        try:
+            id_val = eval(self._idc, {}, {'root': scope.root_component})
+        except (KeyError, AttributeError) as e:
+            if self._pe_optional:
+                return None
+            raise e
+        if not id_val:
+            if self._pe_optional:
+                return None
+            else:
+                raise ElementNotFound(msg='Attribute \'%s\' has no value' % self.attr_id,
+                                        parent=scope.root_component)
+
+        if isinstance(remote, WebElement):
+            remote = remote.parent   # operate at root of DOM, the page
+
+        try:
+            return remote.find_element_by_id(id_val)
+        except NoSuchElementException as e:
+            if not self._pe_optional:
+                raise ElementNotFound(msg=str(e), selector='@id=%s' % id_val)
+            return None
+
+    def _locate_in(self, remote, scope, xpath_prefix):
+        welem = self._locate_remote(remote, scope)
+        if welem is None:
+            return
+
+        if self._pe_class is not None:
+            nscope = self._pe_class(parent=scope)
+        else:
+            nscope = scope
+
+        # only expect a single element (by id) ever
+        if self.this_name:
+            yield self.this_name, welem, self, nscope
+        else:
+            for y4 in self.iter_items(welem, nscope):
+                yield y4
+
+
+    def iter_items(self, remote, scope, xpath_prefix=''):
+        return self._iter_items_cont(remote, scope, xpath_prefix)
+
+    def iter_attrs(self, webelem=None, scope=None, xpath_prefix=''):
+        """Iterate names of possible attributes
+
+            returns iterator of (name, getter, setter)
+        """
+        for ch in self._children:
+            for y4 in ch._locate_attrs(webelem, scope, xpath_prefix):
+                yield y4
+
+    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
+        """Only expose attributes if this is not a named element
+        """
+        if not self.this_name:
+            welem = self._locate_remote(webelem, scope)
+            if welem is not None:
+                if self._pe_class is not None:
+                    nscope = self._pe_class(parent=scope)
+                else:
+                    nscope = scope
+                for y4 in self.iter_attrs(welem, nscope):
+                    yield y4
 
 
 class ConsumeTmplMixin(object):
