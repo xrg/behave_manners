@@ -198,7 +198,7 @@ class ComponentProxy(_SomeProxy):
         return self._parent.path + (self._name,)
 
     @property
-    def name(self):
+    def component_name(self):
         return self._name
 
 
