@@ -38,5 +38,40 @@
         </doc-viewer>
     </material-docs-app>
 </template>
+
+  <template id="example-layout">
+    <material-docs-app>
+        <app-navbar>
+        </app-navbar>
+        <component-page-header pe-deep this="page-header">
+            <h1 pe-deep>[title]</h1>
+        </component-page-header>
+        <app-component-nav pe-deep this="nav-menu">
+            <div>
+            <div class="docs-component-viewer-nav-content">
+                <nav this="nav_%d">
+                    <button class="docs-nav-content-btn">[title]</button>
+                    <ul>
+                        <li this="[title]"><a href="[href]">[title]</a></li>
+                    </ul>
+                </nav>
+            </div>
+            </div>
+        </app-component-nav>
+        <component-examples pe-deep this="examples">
+            <example-viewer this="example_%d">
+                <div pe-deep class="docs-example-viewer-title">
+                    <slot name="title">
+                        <div>[title]</div>
+                    </slot>
+                    <button class="+mat-icon-button"></button>
+                </div>
+                <div pe-deep class="docs-example-viewer-body" this="body">
+                    <slot name="body"></slot>
+                </div>
+            </example-viewer>
+        </component-examples>
+    </material-docs-app>
+</template>
 </body>
 </html>

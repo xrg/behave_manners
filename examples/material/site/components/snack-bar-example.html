@@ -1,0 +1,23 @@
+<html>
+<head>
+    <link rel="import" href="layout.html">
+</head>
+<body>
+    <use-template id="example-layout">
+        <div slot="title">Snack-bar with a custom component</div>
+        <snack-bar-component-example slot="body">
+            <mat-form-field>
+                <input type="number" this="duration" pe-deep>
+            </mat-form-field>
+
+            <button mat-button this="show-btn"></button>
+        </snack-bar-component-example>
+    </use-template>
+    
+    <div class="cdk-overlay-container" pe-optional pe-deep>
+        <snack-bar-container this="snack-bar" pe-deep>
+            <pe-any><span this="message"> [text] </span></pe-any>
+        </snack-bar-container>
+    </div>
+</body>
+</html>
