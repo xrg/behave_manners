@@ -110,6 +110,8 @@ def cmdline_main():
                         help="Capture screenshots in this directory")
     parser.add_argument('--index', metavar='index.html',
                         help="path to 'index.html' file")
+    parser.add_argument('-d', '--max-depth', type=int,
+                        help="Max depth of components to discover")
     parser.add_argument('path', metavar="component", nargs="*",
                         help="Resolve components only under that path")
 
@@ -200,7 +202,8 @@ def cmdline_main():
 
                     for path, elem in page.walk(driver, parent_scope=site_scp,
                                                 on_missing=print_enoent,
-                                                starting_path=args.path):
+                                                starting_path=args.path,
+                                                max_depth=args.max_depth or 1000):
                         print('  ' * len(path), path_str(path), elem)
                         for a in dir(elem):
                             try:
