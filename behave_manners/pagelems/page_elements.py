@@ -1030,11 +1030,70 @@ class DSlotElement(DPageElement):
 
     def _locate_in(self, remote, scope, xpath_prefix):
         this = scope.slots.get(self.this_name, super(DSlotElement, self))
+        scope = scope.child()
+        scope.slot_caller = self
         return this._locate_in(remote, scope, xpath_prefix)
 
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         this = scope.slots.get(self.this_name, super(DSlotElement, self))
+        scope = scope.child()
+        scope.slot_caller = self
         return this._locate_attrs(webelem, scope, xpath_prefix)
+
+    def iter_child_attrs(self, webelem, scope, xpath_prefix=''):
+        for ch in self._children:
+            for y4 in ch._locate_attrs(webelem, scope, xpath_prefix):
+                yield y4
+
+
+class DSlotContentElement(DPageElement):
+    """Jump back to the content of calling '<slot>' element
+
+        Example::
+
+            <div class="slot">
+                <slot name="foo">
+                    <div class="content">
+                    </div>
+                </slot>
+            </div>
+
+            <div slot="foo" class="bar">
+                <middle>
+                    <pe-slotcontent/>
+                </middle>
+            </div>
+
+        Should be equivalent to::
+            <div class="slot">
+                <div class="bar">
+                    <middle>
+                        <div class="content"></div>
+                    </middle>
+                </div>
+            </div>
+
+
+        This is inspired by Jinja2 'caller' concept:
+            http://jinja.pocoo.org/docs/2.10/templates/#call
+    """
+    _name = 'tag.pe-slotcontent'
+    is_empty = True
+    _consume_in = (DomContainerElement,)
+
+    def _locate_in(self, remote, scope, xpath_prefix):
+        try:
+            slot = scope.slot_caller
+        except AttributeError:
+            return
+        return slot._iter_items_cont(remote, scope, xpath_prefix=xpath_prefix)
+
+    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
+        try:
+            slot = scope.slot_caller
+        except AttributeError:
+            return
+        return slot.iter_child_attrs(webelem, scope, xpath_prefix)
 
 
 class DUseTemplateElem(DPageElement):
