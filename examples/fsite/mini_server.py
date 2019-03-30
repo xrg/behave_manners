@@ -35,6 +35,11 @@ def run_tmpl():
     return render_template('template_test.html')
 
 
+@app.route('/two-tables')
+def two_tables():
+    return render_template('two-tables.html')
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     app.run(host='0.0.0.0')

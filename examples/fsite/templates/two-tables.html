@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Mini-application</title>
+
+<style>
+    table {
+        border: 1px solid blue;
+        margin-bottom: 10px;
+    }
+    table th {
+        border: 1px solid black;
+        min-width: 60px;
+    }
+    table td {
+        border: 1px solid black;
+    }
+    div.table {
+        border: 1px solid blue;
+        width: 200px;
+    }
+
+    div.table .head {
+    }
+
+    div.table .head span {
+        border: 1px solid black;
+        display: inline-block;
+        width: 60px;
+        margin-right: 4px;
+        font-weight: bold;
+    }
+
+    div.table .row {
+    }
+    div.table .row .cell {
+        display: inline-block;
+        border: 1px solid black;
+        min-width: 60px;
+    }
+
+</style>
+</head>
+
+<body>
+
+    <div id="table1">
+        <table>
+            <thead><tr><th>Col A</th><th>Col B</th><th>Col C</th></tr></thead>
+            <tbody>
+                <tr><td>Val A1</td><td>Val B1</td><td>Val C1</td></tr>
+                <tr><td>Val A2</td><td>Val B2</td><td>Val C2</td></tr>
+                <tr><td>Val A3</td><td>Val B3</td><td>Val C3</td></tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div id="table2">
+        <div class="table">
+            <div class="head">
+                <span>Col A</span><span>Col B</span><span>Col C</span>
+            </div>
+            <div class="body">
+                <div class="row">
+                    <div class="cell">Val A1</div>
+                    <div class="cell">Val B1</div>
+                    <div class="cell">Val C1</div>
+                </div>
+                <div class="row">
+                    <div class="cell">Val A2</div>
+                    <div class="cell">Val B2</div>
+                    <div class="cell">Val C2</div>
+                </div>
+                <div class="row">
+                    <div class="cell">Val A3</div>
+                    <div class="cell">Val B3</div>
+                    <div class="cell">Val C3</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>
