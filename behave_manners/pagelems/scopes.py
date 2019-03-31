@@ -30,10 +30,20 @@ class WaitScope(DOMScope):
             raise PageNotReady(r)
 
     def isready_all(self, driver):
+        """Signal that all actions are settled, page is ready to contine
+
+            Override this to add any custom logic besides `isready_js()` condition.
+        """
         self.isready_js(driver)
 
     def wait_all(self, timeout='short', welem=None, webdriver=None):
         """Waits for all conditions of `isready_all()`
+        """
+        return self.wait(timeout=timeout, welem=welem, webdriver=webdriver,
+                         ready_fn=self.isready_all)
+
+    def wait(self, timeout='short', ready_fn=None, welem=None, webdriver=None):
+        """Waits until 'ready_fn()` signals completion, times out otherwise
         """
         tstart = time.time()
         tend = tstart + self.resolve_timeout(timeout)
@@ -42,6 +52,9 @@ class WaitScope(DOMScope):
         if webdriver is None:
             webdriver = welem.parent
 
+        if ready_fn is None:
+            ready_fn = self.isready_all
+
         while True:
             tnow = time.time()
             if tnow > tend:
@@ -49,7 +62,7 @@ class WaitScope(DOMScope):
                               (tnow - tstart, lastmsg))
 
             try:
-                self.isready_all(webdriver)
+                ready_fn(webdriver)
                 break
             except PageNotReady as e:
                 lastmsg = e.args[0]
