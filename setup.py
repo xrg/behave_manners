@@ -7,7 +7,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='behave-manners',
-    version="0.1",
+    version="0.2",
     description="web testing extensions to behave",
     long_description="""
     """,
@@ -15,7 +15,7 @@ setup(
     author_email="xrg@pefnos.com",
     url="http://github.com/xrg/behave_manners",
     provides = ["behave_manners"],
-    packages = ["behave_manners"],
+    packages = ["behave_manners", "behave_manners.pagelems", "behave_manners.steplib"],
     entry_points={
         'console_scripts': [
             'behave-test-sitelems=behave_manners.pagelems.main:cmdline_main',
