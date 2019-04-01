@@ -39,6 +39,7 @@
     
 """
 
+from __future__ import absolute_import
 import logging
 from collections import namedtuple
 from selenium.common.exceptions import WebDriverException

@@ -2,6 +2,7 @@
 """ Utilities for browser screenshots, connected to events
     
 """
+from __future__ import absolute_import
 import os
 import os.path
 import logging

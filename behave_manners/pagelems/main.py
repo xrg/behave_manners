@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 from __future__ import print_function
+from __future__ import absolute_import
 import logging
 from behave_manners.pagelems.loaders import FSLoader
 from behave_manners.pagelems.index_elems import DSiteCollection

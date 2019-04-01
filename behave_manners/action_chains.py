@@ -4,6 +4,7 @@
     
 """
 
+from __future__ import absolute_import
 import six
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 from selenium.webdriver.common.action_chains import ActionChains as SeleniumChains

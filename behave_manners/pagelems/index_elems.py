@@ -1,8 +1,10 @@
 # -*- coding: UTF-8 -*-
 
+from __future__ import absolute_import
 import logging
 from .base_parsers import DPageElement, BaseDPOParser, HTMLParseError
 from .site_collection import DSiteCollection
+import six
 
 
 class ISomeObject(DPageElement):
@@ -75,9 +77,9 @@ class IndexHTMLParser(BaseDPOParser):
         self._pop_empty()
         try:
             elem = DPageElement['index.' + tag](tag, attrs)
-        except ValueError, e:
-            raise HTMLParseError(unicode(e), position=self.getpos())
-        except TypeError, e:
+        except ValueError as e:
+            raise HTMLParseError(six.text_type(e), position=self.getpos())
+        except TypeError as e:
             raise HTMLParseError("Element <%s> not allowed in index page" % tag,
                                  position=self.getpos())
         elem.pos = self.getpos()

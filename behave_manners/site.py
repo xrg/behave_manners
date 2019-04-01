@@ -269,9 +269,9 @@ class WebContext(SiteContext):
             self.events.after_step_failed(context, step)
         try:
             self.process_logs(context)
-        except urllib3.exceptions.RequestError, e:
+        except urllib3.exceptions.RequestError as e:
             self._log.warning("Could not fetch logs, browser closed?\n%s", e)
-        except Exception, e:
+        except Exception as e:
             self._log.error("Could not fetch step logs: %s", e)
 
     def process_logs(self, context):
@@ -291,7 +291,7 @@ class WebContext(SiteContext):
                  entry['message'], (), entry.get('exc_info'))
             ct = entry.get('timestamp', time.time())
             rec.created = ct
-            rec.msecs = (ct - long(ct)) * 1000
+            rec.msecs = (ct - int(ct)) * 1000
             log.handle(rec)
 
     def _root_scope(self, context, do_set=True):

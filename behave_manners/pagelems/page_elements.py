@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 
+from __future__ import absolute_import
 import logging
 import re
 from collections import defaultdict
@@ -11,6 +12,7 @@ from .site_collection import DSiteCollection
 from .exceptions import ElementNotFound
 from selenium.webdriver.remote.webdriver import WebElement
 from selenium.common.exceptions import NoSuchElementException
+import six
 
 
 method_re = re.compile(r'\w+\(')
@@ -449,7 +451,7 @@ class NamedElement(DPageElement):
                 else:
                     nscope = scope
                 yield self._this_fn(n, welem, nscope), welem, self, nscope
-            except NoSuchElementException, e:
+            except NoSuchElementException as e:
                 enofound = ElementNotFound(msg=str(e), parent=welem, selector='*')
             n += 1
         if not (n or self._pe_optional):
@@ -1294,8 +1296,8 @@ class PageParser(BaseDPOParser):
             order = ['tag.' + tag, 'any']
         try:
             elem = DPageElement.get_class(order)(tag, attrs)
-        except ValueError, e:
-            raise HTMLParseError(unicode(e), position=self.getpos())
+        except ValueError as e:
+            raise HTMLParseError(six.text_type(e), position=self.getpos())
 
         elem.pos = self.getpos()
         self._dom_stack.append(elem)
@@ -1336,8 +1338,8 @@ class GalleryParser(PageParser):
             # these need to be overriden, only
             try:
                 elem = DPageElement.get_class('gallery.' + tag)(tag, attrs)
-            except ValueError, e:
-                raise HTMLParseError(unicode(e), position=self.getpos())
+            except ValueError as e:
+                raise HTMLParseError(six.text_type(e), position=self.getpos())
             elem.pos = self.getpos()
             self._dom_stack.append(elem)
         else:

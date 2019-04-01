@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*
 from __future__ import print_function
+from __future__ import absolute_import
 import json
 from behave import when, given, then, step
 import logging
@@ -39,7 +40,7 @@ def _wait_browser_forever(context):
         log.warning("Closing by interrupt")
         # Don't need to do anything, just let this step finish
         # and context teardown will close the browser
-    except Exception, e:
+    except Exception as e:
         log.error("Got exception: %s", e)
 
 # eof
