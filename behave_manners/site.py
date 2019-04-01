@@ -92,7 +92,7 @@ class SiteContext(object):
             if pdir:
                 os.chdir(pdir)
             with open(fname, 'rb') as fp:
-                config = yaml.load(fp)
+                config = yaml.safe_load(fp)
             if not config:
                 raise ValueError("Empty config at: %s" % cfname)
             if not isinstance(config, dict):

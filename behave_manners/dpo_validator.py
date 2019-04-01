@@ -123,7 +123,7 @@ def cmdline_main():
     site = DSiteCollection(FSLoader('.'))
     log = logging.getLogger('main')
 
-    with open(args.session_file, 'rb') as fp:
+    with open(args.session_file, 'rt') as fp:
         sdata = json.load(fp)
     if 'url' in sdata and 'session' in sdata:
         driver = ExistingRemote(command_executor=sdata['url'],
@@ -232,8 +232,12 @@ def cmdline_main():
             break
 
     # driver.close()   # should be done by remote
-    log.info("Validation finished, %s errors", errors or 'no')
-    return errors and 1 or 0
+    if errors:
+        log.warning("Validation finished, %s errors", errors or 'no')
+        return 1
+    else:
+        log.info("Validation finished, no errors")
+        return 0
 
 
 if __name__ == '__main__':

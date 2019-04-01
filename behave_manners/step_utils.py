@@ -26,6 +26,10 @@ class _StepImplies(object):
         """
         return self._step_fn.__code__
 
+    @property
+    def __code__(self):
+        return self._step_fn.__code__
+
 
 def implies(step_text):
 

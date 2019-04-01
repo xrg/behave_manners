@@ -30,5 +30,5 @@ class FSLoader(BaseLoader):
         if '..' in fname.split('/'):
             raise IOError(errno.EACCESS, "Parent directory not allowed")
         pathname = os.path.normpath(os.path.join(self.root_dir, fname))
-        return open(pathname, 'rb')
+        return open(pathname, 'rt')
 

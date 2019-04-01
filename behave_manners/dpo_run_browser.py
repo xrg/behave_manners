@@ -39,7 +39,7 @@ def cmdline_main():
         context.site = WebContext(context, config)
         context.site.launch_browser(context)
 
-        with open(args.session_file, 'wb') as fp:
+        with open(args.session_file, 'wt') as fp:
             json.dump({'url': context.browser.command_executor._url,
                        'session': context.browser.session_id,
                        'capabilities': context.browser.capabilities,

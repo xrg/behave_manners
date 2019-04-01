@@ -77,7 +77,7 @@ class Integer(object):
         return str(self._value)
 
     def __bool__(self):
-        return self._value
+        return bool(self._value)
 
     __nonzero__ = __bool__
 
