@@ -5,12 +5,18 @@ import sys
 import os.path
 from setuptools import find_packages, setup
 
+try:
+    with open('README.md', 'rt') as fp:
+        long_description = fp.read()
+except Exception:
+    long_description = ''
+
 setup(
     name='behave-manners',
-    version="0.2",
-    description="web testing extensions to behave",
-    long_description="""
-    """,
+    version="0.3",
+    description="A layer of abstraction on top of `behave` for web-UI testing,"
+                " designed to handle complexity of large sites",
+    long_description=long_description,
     author="Panos Christeas",
     author_email="xrg@pefnos.com",
     url="http://github.com/xrg/behave_manners",
@@ -32,13 +38,13 @@ setup(
     cmdclass = {
     },
     extras_require={
-        'docs': ["sphinx >= 1.6", "sphinx_bootstrap_theme >= 0.6"],
+        # 'docs': ["sphinx >= 1.6", "sphinx_bootstrap_theme >= 0.6"],
         'develop': [
         ],
     },
     license="BSD",
     classifiers=[
-        # "Development Status :: 4 - Beta",
+        "Development Status :: 3 - Alpha",
         "Environment :: Console",
         "Intended Audience :: Developers",
         "Operating System :: OS Independent",
@@ -55,3 +61,4 @@ setup(
 )
 
 
+# eof
