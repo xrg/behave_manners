@@ -61,7 +61,7 @@ class DSiteCollection(DPageElement):
             content = self.file_dir.setdefault(target, None)
             if link.url is not None:
                 link_re = fnmatch.translate(link.url)   # TODO nio-style matching
-                self.urls.add((re.compile(link_re), target))
+                self.urls.add((link.url, re.compile(link_re), target))
             if link.title:
                 self.page_dir[link.title] = target
                 if link.url is not None:
@@ -169,13 +169,13 @@ class DSiteCollection(DPageElement):
 
         # TODO: decode fragments
 
-        for expr, target in self.urls:
+        for fnpat, expr, target in self.urls:
             m = expr.match(url)
             if m:
                 page = self.get_by_file(target)
                 title = None
                 for t, u in self.url_dir.items():
-                    if u == url:
+                    if u == fnpat:
                         title = t
                         break
                 return page, title, m.groups()[1:]
