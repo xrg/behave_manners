@@ -214,7 +214,8 @@ def cmdline_main():
                                 print('  '* len(path), ' ' * 20, a, '= X')
                                 print_enoent(elem, e)
                             except Exception as e:
-                                print('  '* len(path), ' ' * 20, a, ': %s' % (e))
+                                exc_first_line = str(e).split('\n',1)[0]
+                                print('  '* len(path), ' ' * 20, a, ': ' + exc_first_line)
                                 errors += 1
 
                     break
