@@ -82,8 +82,6 @@ class AnyElement(DPageElement):
 
     def _set_match_attrs(self, match_attrs):
         for k, vs in match_attrs.items():
-            if len(vs) > 1:
-                raise NotImplementedError('Dup arg: %s' % k)
             ors = []
             for v in vs:
                 if v is True:
