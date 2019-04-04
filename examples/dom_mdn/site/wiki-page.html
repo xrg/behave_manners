@@ -3,6 +3,25 @@
 
 </head>
 <body>
+    <template id="specs-table">
+        <table class="standard-table" this="specifications">
+            <thead>
+                <tr><th>Specification</th>
+                    <th>Status</th>
+                    <th>Comment</th>
+                </tr>
+            </thead>
+            <tbody>
+                <slot name="row">
+                <tr this="row_%d">
+                    <td><a rel="noopener" href="[href]">[title]</a></td>
+                    <td><span class="+spec-">[status]</span></td>
+                </tr>
+                </slot>
+            </tbody>
+        </table>
+    </template>
+
   <main id="content">
     <PE-Deep>
         <div id="document-main">
@@ -11,22 +30,9 @@
                 <pe-choice>
                     <pe-group>
                         <h2 this="Section_Title">[title]</h2>
-                        
-                        <table class="standard-table" this="specifications">
-                            <thead>
-                                <tr><th>Specification</th>
-                                    <th>Status</th>
-                                    <th>Comment</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr this="row_%d">
-                                    <td><a rel="noopener" href="[href]">[title]</a></td>
-                                    <td><span class="+spec-">[status]</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        
+
+                        <use-template id="specs-table"/>
+
                         <div class="bc-data" this="browser_compatibility">
                             <table class="+bc-table">
                                 <tbody>
