@@ -1029,16 +1029,22 @@ class DSlotElement(DPageElement):
         self._parse_attrs(attrs)
 
     def _locate_in(self, remote, scope, xpath_prefix):
-        this = scope.slots.get(self.this_name, super(DSlotElement, self))
-        scope = scope.child()
-        scope.slot_caller = self
-        return this._locate_in(remote, scope, xpath_prefix)
+        target = scope.slots.get(self.this_name, None)
+        if target is not None:
+            scope = scope.child()
+            scope.slot_caller = self
+            return target._locate_in(remote, scope, xpath_prefix)
+        else:
+            return self._iter_items_cont(remote, scope, xpath_prefix)
 
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
-        this = scope.slots.get(self.this_name, super(DSlotElement, self))
-        scope = scope.child()
-        scope.slot_caller = self
-        return this._locate_attrs(webelem, scope, xpath_prefix)
+        target = scope.slots.get(self.this_name, None)
+        if target is not None:
+            scope = scope.child()
+            scope.slot_caller = self
+            return target._locate_attrs(webelem, scope, xpath_prefix)
+        else:
+            return self.iter_child_attrs(webelem, scope, xpath_prefix)
 
     def iter_child_attrs(self, webelem, scope, xpath_prefix=''):
         for ch in self._children:
