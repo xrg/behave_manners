@@ -296,7 +296,7 @@ class PartialText2Attr(DPageElement):
         """Get the plain tag_name of some pagelement to be reached
         """
         if isinstance(element, GenericElement):
-            return element.tag
+            return element.tag.upper()  # tagName is upper for HTML (not for XHTML)
         else:
             return '*'
 
@@ -326,14 +326,14 @@ class PartialText2Attr(DPageElement):
         elif self._after_elem:
             js += '''
                 for (;i<cnodes.length;i++){
-                    if ((cnodes[i].nodeType == 1) && (cnodes[i].tag_name == arguments[1])) break;
+                    if ((cnodes[i].nodeType == 1) && (cnodes[i].tagName == arguments[1])) break;
                 }
                 '''
         js += 'for(;i<cnodes.length; i++){ \n'
         if self._before_elem == '*':
             js += '  if (cnodes[i].nodeType == 1) break; '
         elif self._before_elem:
-            js += '  if ((cnodes[i].nodeType == 1) && (cnodes[i].tag_name == arguments[2])) break;\n'
+            js += '  if ((cnodes[i].nodeType == 1) && (cnodes[i].tagName == arguments[2])) break;\n'
         js += '  if (cnodes[i].nodeType == 3) { ret += cnodes[i].nodeValue; }\n}\nreturn ret;'
 
         ret = elem.parent.execute_script(js, elem, self._after_elem, self._before_elem)
