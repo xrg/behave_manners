@@ -78,7 +78,10 @@ class SiteContext(object):
         rhooks.clear()
         rhooks.update(self.__orig_hooks)
         self.__orig_hooks.clear()
-        del context.site
+        try:
+            del context.site
+        except AttributeError:
+            pass
 
     @classmethod
     def _load_config(cls, cfname, extra_conf=None):
