@@ -53,6 +53,11 @@ class SiteContext(object):
         self.events.push()
         context.add_cleanup(self.__cleanup_site, context)
         self._collection = None
+        self.output_dir = '.'
+        if 'output' in config and 'dir' in config['output']:
+            self.output_dir = config['output']['dir']\
+                    .format(pid=os.getpid(), timestamp=int(time.time()),
+                            userdata=context.config.userdata)
 
     def __setup_hook(self, htime, hevent, context):
         hkey = htime + '_' + hevent

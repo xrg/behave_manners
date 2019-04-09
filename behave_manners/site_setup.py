@@ -5,6 +5,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 import copy
 import six
+import os.path
 from behave.runner import Context
 from .site import SiteContext, WebContext
 
@@ -24,7 +25,8 @@ def site_setup(context, config=None, extra_conf=None):
         if config['browser'].get('screenshots'):
             from .screenshots import Camera
             shots_cfg = config['browser']['screenshots']
-            camera = context.site_camera = Camera(base_dir=shots_cfg.get('dir', '.'))
+            shots_dir = os.path.join(context.site.output_dir, shots_cfg.get('dir', '.'))
+            camera = context.site_camera = Camera(base_dir=shots_dir)
             events = context.site.events
 
             if shots_cfg.get('on_failure', False):

@@ -36,12 +36,22 @@ class Camera(object):
         if not os.path.isdir(self.base_dir):
             os.makedirs(self.base_dir)
 
+    _name_pattern = 'shot{mode}-{pid}-{num}-{timestamp}.png'
+
     def _make_name(self, mode=''):
+        """Generate name to use for the screenshot file
+        
+            Uses `_name_pattern` and formats it with:
+                mode: the `mode` argument
+                pid: current process id
+                num: incremental counter of shots taken so far (by this process)
+                timestamp: current timestamp, seconds since epoch (integer)
+        """
         if mode:
             mode = '-' + mode
         self.count += 1
-        return 'shot%s-%d-%d-%s.png' % (mode, os.getpid(), self.count,
-                                        int(time.time()))
+        return self._name_pattern.format(mode=mode, pid=os.getpid(),
+                                         num=self.count, timestamp=int(time.time()))
 
     def take_shot(self, context, mode=''):
         fname = self._make_name(mode)
