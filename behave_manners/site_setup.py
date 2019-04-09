@@ -9,7 +9,7 @@ from behave.runner import Context
 from .site import SiteContext, WebContext
 
 
-def site_setup(context, config=None):
+def site_setup(context, config=None, extra_conf=None):
     # context.config.setup_logging() ??
     assert isinstance(context, Context)
     if hasattr(context, 'site'):
@@ -17,7 +17,7 @@ def site_setup(context, config=None):
     if not config:
         return
     if isinstance(config, six.string_types):
-        config = SiteContext._load_config(config)
+        config = SiteContext._load_config(config, extra_conf)
 
     if config.get('browser'):
         context.site = WebContext(context, config)
