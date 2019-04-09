@@ -105,6 +105,9 @@ class PageProxy(_SomeProxy):
     def __dir__(self):
         return []
 
+    def __getstate__(self):
+        return {}
+
     def __repr__(self):
         try:
             return '<Page "%s">' % self._remote.current_url
@@ -158,6 +161,9 @@ class ComponentProxy(_SomeProxy):
             return '<%s class="%s">' % (self._remote.tag_name, self._remote.get_attribute('class'))
         except Exception:
             return '<Component>'
+
+    def __getstate__(self):
+        return {'_name': self._name}
 
     def __getattr__(self, name):
         if name.startswith('_'):
