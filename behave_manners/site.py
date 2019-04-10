@@ -58,6 +58,7 @@ class SiteContext(object):
             self.output_dir = config['output']['dir']\
                     .format(pid=os.getpid(), timestamp=int(time.time()),
                             userdata=context.config.userdata)
+            self._log.info("Storing all output under: %s", self.output_dir)
 
     def __setup_hook(self, htime, hevent, context):
         hkey = htime + '_' + hevent
@@ -171,6 +172,17 @@ class WebContext(SiteContext):
 
         desired_engine = browser_opts.get('engine', 'chrome').lower()
 
+        allow_downloads = False     # on an empty config
+        download_dir = None
+        if 'downloads' in browser_opts:
+            if browser_opts['downloads'].get('allow', True):
+                allow_downloads = True
+                download_dir = os.path.abspath(
+                        os.path.join(self.output_dir,
+                                    browser_opts['downloads'].get('dir', 'downloads')))
+                if not os.path.exists(download_dir):
+                    os.makedirs(download_dir)
+
         if desired_engine == 'chrome':
             options = webdriver.ChromeOptions()
             dcaps = webdriver.DesiredCapabilities.CHROME.copy()
@@ -189,6 +201,15 @@ class WebContext(SiteContext):
             if 'window' in browser_opts:
                 w, h = self._decode_win_size(browser_opts['window'])
                 options.add_argument('window-size=%d,%d' % (w, h))
+
+            if allow_downloads:
+                options.add_experimental_option("prefs", {
+                    "download.default_directory": download_dir,
+                    "download.prompt_for_download": False,
+                    "download.directory_upgrade": True,
+                    "safebrowsing.enabled": True
+                    })
+
             context.browser = webdriver.Chrome(chrome_options=options,
                                                desired_capabilities=dcaps,
                                                service_args=browser_opts\
@@ -202,7 +223,18 @@ class WebContext(SiteContext):
             if 'binary_location' in browser_opts:
                 options.binary_location = browser_opts['binary_location']
             options.headless = browser_opts.get('headless', True)
-            context.browser = webdriver.Firefox(firefox_options=options,
+            profile = webdriver.FirefoxProfile()
+
+            if allow_downloads:
+                profile.set_preference("browser.download.folderList", 2)
+                profile.set_preference("browser.download.manager.showWhenStarting", False)
+                profile.set_preference("browser.download.dir", download_dir)
+                profile.set_preference("browser.download.loglevel", "Info")
+                profile.set_preference("browser.download.forbid_open_with", True)
+                # profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/x-gzip")
+
+            context.browser = webdriver.Firefox(firefox_profile=profile,
+                                                firefox_options=options,
                                                 desired_capabilities=dcaps,
                                                 service_args=browser_opts\
                                                     .get('geckodriver_args', []))
