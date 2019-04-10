@@ -121,18 +121,18 @@ class Camera(object):
 
     def snap_failure(self, context, *args):
         from .pagelems.exceptions import ElementNotFound
-        failed_comp = None
+        failed_comp = failed_elem =  None
         try:
             if args and isinstance(args[0], BasicStatement):
                 exc = getattr(args[0], 'exception', None)
                 if isinstance(exc, ElementNotFound):
-                    failed_comp = exc.parent
+                    failed_elem = exc.parent
                 elif isinstance(exc, WebDriverException):
                     failed_comp = exc.component
         except AttributeError:
             pass
 
-        with self.highlight_element(context, failed_comp):
+        with self.highlight_element(context, failed_comp, failed_elem):
             self.take_shot(context, 'failure')
 
     def capture_missing_elem(self, context, parent, missing_path):
