@@ -567,6 +567,11 @@ class InputElement(DPageElement):
                        self.InputValueSetter(self._xpath))
 
 
+class TextAreaObj(DPageElement):
+    _name = 'tag.textarea'
+    _inherit = 'tag.input'
+
+
 class DeepContainObj(DPageElement):
     _name = 'tag.pe-deep'
     _inherit = '.domContainer'
