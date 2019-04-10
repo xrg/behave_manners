@@ -7,3 +7,5 @@
 /examples/*/screenshots
 dbg-browser.session
 geckodriver.log
+
+/doc/_build
