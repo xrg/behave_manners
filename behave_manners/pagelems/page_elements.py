@@ -492,6 +492,13 @@ class InputElement(DPageElement):
             driver.execute_script("arguments[0].setAttribute('value', arguments[1]);",
                                   self._elem(welem), value)
 
+    class InputValueSetKeys(_InputValueActor):
+        def __init__(self, xpath):
+            self._xpath = xpath
+
+        def __call__(self, welem, value):
+            self._elem(welem).send_keys(value)
+
     def __init__(self, tag, attrs):
         self.this_name = None
         self.name_attr = None
