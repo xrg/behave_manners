@@ -177,11 +177,17 @@ class WebContext(SiteContext):
         if 'downloads' in browser_opts:
             if browser_opts['downloads'].get('allow', True):
                 allow_downloads = True
-                download_dir = os.path.abspath(
-                        os.path.join(self.output_dir,
-                                    browser_opts['downloads'].get('dir', 'downloads')))
-                if not os.path.exists(download_dir):
-                    os.makedirs(download_dir)
+
+                if getattr(context, 'download_dir', None):
+                    # read it FROM the context
+                    download_dir = context.download_dir
+                else:
+                    download_dir = os.path.abspath(
+                            os.path.join(self.output_dir,
+                                        browser_opts['downloads'].get('dir', 'downloads')))
+                    if not os.path.exists(download_dir):
+                        os.makedirs(download_dir)
+                    context.download_dir = download_dir
 
         if desired_engine == 'chrome':
             options = webdriver.ChromeOptions()
