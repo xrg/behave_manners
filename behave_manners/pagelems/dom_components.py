@@ -17,7 +17,7 @@
     of the webpage. Even if the webpage's DOM has been re-built by the JS
     framework of the page (React, Angular, etc.) .
     
-    Example: a table. Using a `<Repeat>` template element, the rows of that
+    Example: a table. Using a `<pe-repeat>` template element, rows of that
     table could be mapped to components. For static tables, path could just
     be the row number of those rows. But this becomes non-deterministic for
     tables that are, say, grids with dynamic sorting or infinite scroll. On
