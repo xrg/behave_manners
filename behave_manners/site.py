@@ -524,6 +524,7 @@ class FakeContext(object):
     class Config(object):
         def setup_logging(self):
             pass
+        userdata = {}
 
     def __init__(self):
         self.browser = None
