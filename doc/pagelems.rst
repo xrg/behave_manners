@@ -162,8 +162,77 @@ Which exposes, say, that second content in python as::
 Templates and Slots
 --------------------
 
-TBD
+Templates are described in HTML5, are a way for the browser to repeat rendering
+some block of HTML in multiple places of the DOM. Likewise, in pagelements, they
+allow blocks of pagelem markup to be re-used across the page or any components.
+
+.. highlight:: html
+
+Example::
+
+    <template id="complete-text-field">
+        <div class="field-container" this="[name]">
+            <div>
+                <label>[field]</label>
+                <input pe-deep type="text" name="[name]" this="input">
+            </div>
+        </div>
+    </template>
+
+then::
+
+    <form this="the-form">
+        <div class="form-container">
+            <!-- matches all text fields, indexes by their `name` -->
+            <use-template id="complete-text-field"/>
+
+            <!-- matches that `name="size"` number field, explicitly -->
+            <div class="field-container" this="the-size">
+                <input pe-deep type="number" name="size" this="input"/>
+            </div>
+        </div>
+    </form>
+
+
+Templates can be defined in the `<head>` of the pagelem html, in the `<body>`
+or in separate *gallery* files, from where they can be re-used.
+
+Templates can have custom content, per call, that will be substitued in the
+pagelem markup::
+
+    <template id="custom-text-field">
+        <div class="field-container" this="[name]">
+            <div>
+                <slot name="label">
+                    <label>[field]</label>
+                </slot>
+                <input pe-deep type="text" name="[name]" this="input">
+            </div>
+        </div>
+    </template>
+
+    <form>
+        <use-template id="custom-text-field">
+            <!-- matches that label only -->
+            <label slot="label">Just this one</label>
+        </use-template>
+
+        <use-template id="custom-text-field">
+            <span slot="label">Odd field</span> <!-- this uses different element -->
+        </use-template>
+    </form>
 
 
 Scopes and Controllers
 -----------------------
+
+Scopes and Controllers are a way to inject extra behaviour onto components, from
+code written in Python. They are able to abstract non-trivial interactions as if
+they were instance methods to the component objects.
+
+Scopes have their own tree (hierarchy) are deliberately *not* 1:1 with components.
+Reason is to keep code minimal, not to mandate extra code per each component.
+In practice, few of the components, only, will ever need their own controller.
+
+
+
