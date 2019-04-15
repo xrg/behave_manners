@@ -18,7 +18,7 @@ from behave.runner_util import exec_file
 from behave_manners.site import FakeContext
 from behave_manners.pagelems.main import DSiteCollection, FSLoader
 from behave_manners.pagelems.exceptions import ElementNotFound
-from behave_manners.pagelems.helpers import Integer
+from behave_manners.pagelems.helpers import Integer, count_calls
 from six.moves.urllib import parse as urlparse
 from behave_manners import screenshots
 
@@ -113,6 +113,8 @@ def cmdline_main():
                         help="path to 'index.html' file")
     parser.add_argument('-d', '--max-depth', type=int,
                         help="Max depth of components to discover")
+    parser.add_argument('--measure-selenium', action='store_true',
+                        help="Count number of selenium commands invoked")
     parser.add_argument('path', metavar="component", nargs="*",
                         help="Resolve components only under that path")
 
@@ -192,11 +194,16 @@ def cmdline_main():
             camera.capture_missing_elem(becontext, exc.parent, exc.selector)
         return True  # want walk() to continue
 
+    if args.measure_selenium:
+        ExistingRemote.execute = count_calls(ExistingRemote.execute)
+
     while True:
         try:
             cur_path = _get_cur_path(driver.current_url)
             if cur_path is not None:
                 try:
+                    if args.measure_selenium:
+                        ExistingRemote.execute.reset_count()
                     site_scp = site.get_root_scope()
                     page, title, page_args = site.get_by_url(cur_path, fragment=None)
                     log.info("Got page %s %r", title, page_args)
@@ -218,6 +225,8 @@ def cmdline_main():
                                 print('  '* len(path), ' ' * 20, a, ': ' + exc_first_line)
                                 errors += 1
 
+                    if args.measure_selenium:
+                        log.info("Used %d calls to walk", ExistingRemote.execute.count)
                     break
                 except KeyError as e:
                     log.warning("URL path not templated. %s: '%s'", e, cur_path)

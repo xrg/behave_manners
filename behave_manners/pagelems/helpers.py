@@ -178,4 +178,15 @@ class Integer(object):
         return self
 
 
+def count_calls(fn):
+    def __fn(*args, **kwargs):
+        __fn.count += 1
+        return fn(*args, **kwargs)
+    __fn.count = 0
+    def _reset():
+        __fn.count = 0
+    __fn.reset_count = _reset
+    return __fn
+
+
 # eof
