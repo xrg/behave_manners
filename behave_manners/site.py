@@ -122,7 +122,9 @@ class SiteContext(object):
                     raise TypeError("Cannot load config: %r" % incl)
             if new_include:
                 config['include'] = new_include
-            if extra_conf:
+            if extra_conf and callable(extra_conf):
+                extra_conf(config)
+            elif extra_conf:
                 merge_dict(config, extra_conf, copy=False)
             return config
         except IOError:
