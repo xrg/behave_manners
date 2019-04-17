@@ -247,28 +247,34 @@ class DPageElement(object):
         self.__xpath = None
 
     # Methods for Component Proxies
-    def iter_items(self, remote, scope, xpath_prefix=''):
+    def iter_items(self, remote, scope, xpath_prefix='', match=None):
         """Iterate possible children components
+        
+            :param remote: remote WebElement to work on
+            :param scope: DOMScope under which to operate
+            :param xpath_prefix: hanging xpath from parent element
+            :param match: if provided, only look for those items
+                currently only a string is expected in `match`
 
             :return: tuple (name, welem, ptmpl, scope)
         """
         return
 
-    def _iter_items_cont(self, remote, scope, xpath_prefix=''):
+    def _iter_items_cont(self, remote, scope, xpath_prefix='', match=None):
         """Standard `iter_items()` implementation for containing components
 
             Returns **one** set of discovered elements
         """
         seen_names = set()
         for ch in self._children:
-            for n, w, p, scp in ch._locate_in(remote, scope, xpath_prefix):
+            for n, w, p, scp in ch._locate_in(remote, scope, xpath_prefix, match):
                 # Suppress duplicate names, only return first match
                 if n in seen_names:
                     break
                 yield n, w, p, scp
                 seen_names.add(n)
 
-    def _locate_in(self, remote, scope, xpath_prefix):
+    def _locate_in(self, remote, scope, xpath_prefix, match):
         """Locate (possibly) this component under 'remote' webelem
 
             Called by the parent component, to resolve this.
