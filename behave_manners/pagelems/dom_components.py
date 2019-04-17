@@ -41,6 +41,7 @@
 
 from __future__ import absolute_import
 import logging
+import inspect
 from collections import namedtuple
 from selenium.common.exceptions import WebDriverException
 from .exceptions import CAttributeError, CKeyError
@@ -140,7 +141,6 @@ class CSSProxy(object):
         raise NotImplementedError
 
 
-
 class ComponentProxy(_SomeProxy):
     """Cross-breed of a Selenium element and DPO page object
 
@@ -170,20 +170,30 @@ class ComponentProxy(_SomeProxy):
         """
         return {'_name': self._name}
 
-    def __getattr__(self, name):
-        if name.startswith('_'):
-            raise AttributeError(name)
-        if name not in self.__descrs:
+    def __getdescr(self, name):
+        """Resolve descriptor
+        """
+        try:
+            # most likely case
+            return self.__descrs[name]
+        except KeyError:
             cwrap = getattr(self._scope, '_cwrap_'+name, None)
             # Found factory of remote element method
             if cwrap is not None:
-                return cwrap(self, name)
-            # TODO: change this
+                if inspect.ismethod(cwrap):
+                    val = cwrap(self, name)
+                    cwrap = property(lambda c: val)
+                self.__descrs[name] = cwrap
+                return cwrap
+            # TODO: new API for scope classes
 
-        descr = self.__descrs.get(name, None)
-        if descr is None:
-            raise CAttributeError(name, component=self)
+        raise CAttributeError(name, component=self)
 
+    def __getattr__(self, name):
+        if name.startswith('_'):
+            raise AttributeError(name)
+
+        descr = self.__getdescr(name)
         return descr.__get__(self)
 
     def __dir__(self):
@@ -192,11 +202,14 @@ class ComponentProxy(_SomeProxy):
     def __setattr__(self, name, value):
         if name.startswith('_') or name in ('css', 'path', 'component_name'):
             return super(ComponentProxy, self).__setattr__(name, value)
-        descr = self.__descrs.get(name, None)
-        if descr is None:
-            raise CAttributeError(name, component=self)
-
+        descr = self.__getdescr(name)
         return descr.__set__(self, value)
+
+    def __delattr__(self, name):
+        if name.startswith('_') or name in ('css', 'path', 'component_name'):
+            raise AttributeError('Attribute %s cannot be deleted' % name)
+        descr = self.__getdescr(name)
+        return descr.__delete__(self)
 
     @property
     def path(self):
