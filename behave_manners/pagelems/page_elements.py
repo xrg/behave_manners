@@ -1284,10 +1284,7 @@ class DHtmlObject(DPageElement):
             try:
                 for p in starting_path:
                     comp = comp[p]
-            except ElementNotFound as e:
-                on_missing(comp, e)
-                return
-            except KeyError as e:
+            except (ElementNotFound, KeyError) as e:
                 on_missing(comp, e)
                 return
 
