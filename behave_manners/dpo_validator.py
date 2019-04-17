@@ -17,7 +17,7 @@ from selenium.webdriver.remote.command import Command
 from behave.runner_util import exec_file
 from behave_manners.site import FakeContext
 from behave_manners.pagelems.main import DSiteCollection, FSLoader
-from behave_manners.pagelems.exceptions import ElementNotFound
+from behave_manners.pagelems.exceptions import ElementNotFound, CKeyError
 from behave_manners.pagelems.helpers import Integer, count_calls
 from six.moves.urllib import parse as urlparse
 from behave_manners import screenshots
@@ -154,7 +154,7 @@ def cmdline_main():
 
     log.info("Site collection contains %d pages, %d files",
              len(site.page_dir), len(site.file_dir))
-    
+
     camera = None
     becontext = FakeContext()
     becontext.browser = driver
@@ -183,15 +183,20 @@ def cmdline_main():
         return '/'.join([str(x) for x in path])
 
     def print_enoent(comp, exc):
-        if isinstance(exc, KeyError):
-            print("    Missing %s inside component %s" % (exc, comp))
-            return
-        print("    %s inside %s" % (exc.msg, comp))
-
         e = errors  # transfer from outer to local scope
         e += 1
-        if camera:
-            camera.capture_missing_elem(becontext, exc.parent, exc.selector)
+        
+        if isinstance(exc, ElementNotFound):
+            print("    %s inside %s" % (exc.msg, comp))
+            if camera:
+                camera.capture_missing_elem(becontext, exc.parent, exc.selector)
+        elif isinstance(exc, CKeyError):
+            print("    Missing %s inside component %s" % (exc, comp))
+            if camera:
+                camera.capture_missing_elem(becontext, exc.component._remote, exc.args[0])
+        elif isinstance(exc, KeyError):
+            print("    Missing '%s' inside component %s" % (exc, comp))
+
         return True  # want walk() to continue
 
     if args.measure_selenium:
