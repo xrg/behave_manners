@@ -1202,15 +1202,17 @@ class DUseTemplateElem(DPageElement):
         self._by_slot = {}
 
     def consume(self, element):
-        if not isinstance(element, AnyElement):
+        dom_slot = getattr(element, '_dom_slot', NotImplemented)
+        if dom_slot is NotImplemented:
             raise ValueError('Use-template cannot consume %s' % (element._name))
-        if not element._dom_slot:
+
+        if not dom_slot:
             raise ValueError('Use-template can only have sub-elements with slot= defined '
                              'Cannot consume a %s' % element)
 
-        if element._dom_slot in self._by_slot:
+        if dom_slot in self._by_slot:
             raise ValueError('Slot "%s" already defined' % element._dom_slot)
-        self._by_slot[element._dom_slot] = element
+        self._by_slot[dom_slot] = element
 
     def iter_items(self, remote, xpath_prefix='', match=None):
         raise RuntimeError('should not be referenced by DOM component')
