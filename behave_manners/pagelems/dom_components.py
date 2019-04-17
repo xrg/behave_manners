@@ -74,7 +74,8 @@ class _SomeProxy(object):
         raise NotImplementedError()
 
     def __getitem__(self, name):
-        for iname, ielem, ptmpl, scp in self._pagetmpl.iter_items(self._remote, self._scope):
+        for iname, ielem, ptmpl, scp in \
+                self._pagetmpl.iter_items(self._remote, self._scope, match=name):
             if name == iname:
                 return scp.component_class(iname, self, ptmpl, ielem, scp)
         raise CKeyError(name, component=self)  # no such element

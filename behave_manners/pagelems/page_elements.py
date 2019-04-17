@@ -476,11 +476,14 @@ class NamedElement(DPageElement):
                 raise NotImplementedError("Cannot parse expression '%s'" % pattern)
 
             self._this_fn = self.__get_pattern_resolver(pattern)
+            self._this_rev = lambda m: True   # TODO
         elif '%s' in pattern or '%d' in pattern:
             self._this_fn = lambda n, x, c: pattern % n
+            self._this_rev = lambda m: True  # TODO
         else:
             # plain name, no iteration
             self._this_fn = lambda *a: pattern
+            self._this_rev = lambda m: m == pattern
 
     def __get_pattern_resolver(self, pattern):
         """Closure for computing item name based on attributes
@@ -513,7 +516,19 @@ class NamedElement(DPageElement):
                 yield i+1, n, prepend_xpath('./',  x)
 
     def _locate_in(self, remote, scope, xpath_prefix, match):
+        if match is None:
+            reverse = True
+        else:
+            # resolve some boolean or xpath to reverse match name looking for
+            reverse = self._this_rev(match)
+
+        if reverse is False:
+            return
+
         xpath = prepend_xpath(xpath_prefix, self.xpath)
+        if reverse is not True:
+            xpath += reverse
+
         n = 0
         enofound = None
         for welem in remote.find_elements_by_xpath(xpath):
@@ -963,6 +978,9 @@ class PeMatchIDElement(DPageElement):
             return None
 
     def _locate_in(self, remote, scope, xpath_prefix, match):
+        if self.this_name and match is not None and match != self.this_name:
+            return
+
         welem = self._locate_remote(remote, scope)
         if welem is None:
             return
