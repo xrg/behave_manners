@@ -103,6 +103,14 @@ class AttrGetter(object):
 
 
 class AnyElement(DPageElement):
+    """Match any HTML element
+    
+        This would match any element in the remote DOM, but also serves as a
+        baseclass for matching particular tags.
+
+        Offers some standard attributes and rich syntax for matching remote
+        DOM element properties.
+    """
     _name = 'tag.pe-any'
     _inherit = '.domContainer'
 
@@ -1131,6 +1139,7 @@ class DSlotContentElement(DPageElement):
             </div>
 
         Should be equivalent to::
+
             <div class="slot">
                 <div class="bar">
                     <middle>

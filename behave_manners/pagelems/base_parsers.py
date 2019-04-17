@@ -285,7 +285,7 @@ class DPageElement(object):
     def iter_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         """Iterate names of possible attributes
 
-            returns iterator of (name, xpath, getter, setter)
+            returns iterator of (name, descriptor)
         """
         return ()
 

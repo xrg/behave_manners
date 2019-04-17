@@ -162,6 +162,11 @@ class ComponentProxy(_SomeProxy):
             return '<Component>'
 
     def __getstate__(self):
+        """Minimal serialization, just for `repr(self)` to work
+
+            A component proxy, by nature, cannot be de-serialized and retain
+            its functionality.
+        """
         return {'_name': self._name}
 
     def __getattr__(self, name):

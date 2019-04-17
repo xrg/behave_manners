@@ -56,12 +56,13 @@ class ILinkObject(DPageElement):
 
 class IndexHTMLParser(BaseDPOParser):
     """Parser only for 'index.html', containing links to other pages
-    
+
         In this pseydo-HTML site language, 'index.html' is only allowed
-        to contain `<link>` elements to other named page object files.
+        to contain ``<link>`` elements to other named page object files.
         This parser restricts any other HTML elements for this file.
-        
+
         Example::
+
             <html>
                 <link rel="next" href="main-page.html" title="Main Page" url="/">
                 <link rel="preload" href="common-components.html">
