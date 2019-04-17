@@ -43,6 +43,7 @@ from __future__ import absolute_import
 import logging
 from collections import namedtuple
 from selenium.common.exceptions import WebDriverException
+from .exceptions import CAttributeError, CKeyError
 
 
 logger = logging.getLogger(__name__)
@@ -76,7 +77,7 @@ class _SomeProxy(object):
         for iname, ielem, ptmpl, scp in self._pagetmpl.iter_items(self._remote, self._scope):
             if name == iname:
                 return scp.component_class(iname, self, ptmpl, ielem, scp)
-        raise KeyError(name)  # no such element
+        raise CKeyError(name, component=self)  # no such element
 
     def keys(self):
         return self.__iter__()
@@ -138,7 +139,6 @@ class CSSProxy(object):
         raise NotImplementedError
 
 
-attrs_fn = namedtuple('attrs_fn', ('xpath', 'getter', 'setter'))
 
 class ComponentProxy(_SomeProxy):
     """Cross-breed of a Selenium element and DPO page object
@@ -152,8 +152,7 @@ class ComponentProxy(_SomeProxy):
         self._name = name
         self._parent = parent
         # Keep list of attributes
-        self.__attrs = { n: attrs_fn(x, g, s)
-                        for n,x,g,s in self._pagetmpl.iter_attrs(webelem, scope) }
+        self.__descrs = dict(self._pagetmpl.iter_attrs(webelem, scope))
         self.css = CSSProxy(self)
 
     def __repr__(self):
@@ -168,37 +167,30 @@ class ComponentProxy(_SomeProxy):
     def __getattr__(self, name):
         if name.startswith('_'):
             raise AttributeError(name)
-        attr = self.__attrs.get(name, None)
-        if attr is None:
+        if name not in self.__descrs:
             cwrap = getattr(self._scope, '_cwrap_'+name, None)
-            if cwrap is None:
-                raise AttributeError(name)
             # Found factory of remote element method
-            return cwrap(self, name)
+            if cwrap is not None:
+                return cwrap(self, name)
+            # TODO: change this
 
-        if attr.getter is None:
-            raise AttributeError('%s is write-only' % name)
-        welem = self._remote
-        if attr.xpath:
-            welem = welem.find_element_by_xpath(attr.xpath)
-        return attr.getter(welem)
+        descr = self.__descrs.get(name, None)
+        if descr is None:
+            raise CAttributeError(name, component=self)
+
+        return descr.__get__(self)
 
     def __dir__(self):
-        return self.__attrs.keys()
+        return self.__descrs.keys()
 
     def __setattr__(self, name, value):
-        if name.startswith('_') or name in ('css',):
+        if name.startswith('_') or name in ('css', 'path', 'component_name'):
             return super(ComponentProxy, self).__setattr__(name, value)
-        attr = self.__attrs.get(name, None)
-        if attr is None:
-            raise AttributeError(name)
-        if attr.setter is None:
-            raise AttributeError('%s is read-only' % name)
+        descr = self.__descrs.get(name, None)
+        if descr is None:
+            raise CAttributeError(name, component=self)
 
-        welem = self._remote
-        if attr.xpath:
-            welem = welem.find_element_by_xpath(attr.xpath)
-        return attr.setter(welem, value)
+        return descr.__set__(self, value)
 
     @property
     def path(self):

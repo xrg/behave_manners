@@ -9,7 +9,7 @@ from .helpers import textescape, prepend_xpath, word_re, to_bool
 from .base_parsers import DPageElement, DataElement, BaseDPOParser, \
                           HTMLParseError, DOMScope
 from .site_collection import DSiteCollection
-from .exceptions import ElementNotFound
+from .exceptions import ElementNotFound, CAttributeError, CKeyError
 from selenium.webdriver.remote.webdriver import WebElement
 from selenium.common.exceptions import NoSuchElementException
 import six
@@ -60,8 +60,46 @@ class DomContainerElement(DPageElement):
 DomContainerElement._consume_in = (DomContainerElement, )
 
 
-def _attr_getter(attr):
-    return lambda w: w.get_attribute(attr)
+class AttrGetter(object):
+    """Descriptor to get some attribute of a `ComponentProxy`
+    """
+    __slots__ = ('xpath', 'name', 'optional')
+    logger = logging.getLogger(__name__ + '.attrs')
+
+    def __init__(self, name, xpath=None, optional=False):
+        self.name = name
+        self.xpath = xpath
+        self.optional = optional
+
+    def _elem(self, comp):
+        """Locate the web element from given component
+        """
+        try:
+            elem = comp._remote
+            if self.xpath:
+                elem = elem.find_element_by_xpath(self.xpath)
+        except NoSuchElementException as e:
+            if self.optional:
+                self.logger.debug("Attribute %r.%s could not be found, returning None",
+                                  comp, self.name)
+                return None
+            else:
+                raise CAttributeError(six.text_type(e), component=comp)
+        return elem
+
+    def __get__(self, comp, type=None):
+        elem = self._elem(comp)
+        if elem is None:
+            return None
+
+        return elem.get_attribute(self.name)
+
+    def __set__(self, comp, value):
+        raise CAttributeError("%s is readonly" % self.name, component=comp)
+
+    def __delete__(self, comp):
+        raise CAttributeError("%s is readonly" % self.name, component=comp)
+
 
 
 class AnyElement(DPageElement):
@@ -137,7 +175,7 @@ class AnyElement(DPageElement):
                 if k in read_attrs:
                     raise ValueError('Attribute defined more than once: %s' % k)
                 v = v[1:-1].strip()
-                read_attrs[v or k] = _attr_getter(k)
+                read_attrs[v or k] = k
             else:
                 assert '.' not in k, k
                 # attribute to match as locator
@@ -218,11 +256,13 @@ class AnyElement(DPageElement):
 
             returns iterator of (name, getter, setter)
         """
-        for k, fn in self.read_attrs.items():
-            yield k, xpath_prefix, fn, None
+        for n, attr in self.read_attrs.items():
+            yield n, AttrGetter(attr, xpath_prefix, optional=self._pe_optional)
         for ch in self._children:
-            for y4 in ch._locate_attrs(webelem, scope, xpath_prefix):
-                yield y4
+            for n, attr in ch._locate_attrs(webelem, scope, xpath_prefix):
+                if self._pe_optional and isinstance(attr, AttrGetter):
+                    attr.optional = True
+                yield n, attr
 
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         return self.iter_attrs(webelem, scope, prepend_xpath(xpath_prefix, self._xpath, '/'))
@@ -246,12 +286,16 @@ class LeafElement(DPageElement):
         raise TypeError('%s cannot consume %r' % (self._name, element))
 
 
-class Text2AttrElement(DPageElement):
-    _name = 'text2attr'
-    is_empty = True
-    _consume_in = (DomContainerElement,)
+class TextAttrGetter(AttrGetter):
+    def __init__(self, xpath, optional=False, do_strip=False):
+        super(TextAttrGetter, self).__init__('text', xpath, optional=optional)
+        self._do_strip = do_strip
 
-    def _return_elem_text(self, elem):
+    def __get__(self, comp, type=None):
+        elem = self._elem(comp)
+        if elem is None:
+            return None
+
         ret = elem.text
         if not ret:
             ret = elem.get_attribute('innerText')
@@ -259,62 +303,17 @@ class Text2AttrElement(DPageElement):
             ret = ret.strip()
         return ret
 
-    def __init__(self, name, strip=False):
-        super(Text2AttrElement, self).__init__()
-        self._attr_name = name
-        self._do_strip = strip
-
-    def consume(self, element):
-        raise TypeError('Data cannot consume %r' % element)
-
-    def consume_after(self, element):
-        return PartialText2Attr(self._attr_name, strip=self._do_strip,
-                                after_elem=element)
-
-    def consume_before(self, element):
-        return PartialText2Attr(self._attr_name, strip=self._do_strip,
-                                before_elem=element)
-
-    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
-        yield self._attr_name, xpath_prefix, self._return_elem_text, None
-
-
-class PartialText2Attr(DPageElement):
-    _name = 'text2attr-partial'
-    _inherit = 'text2attr'
-
-    def __init__(self, name, strip=False, after_elem=None, before_elem=None):
-        super(PartialText2Attr, self).__init__(name, strip=strip)
-        if isinstance(after_elem, DPageElement):
-            after_elem = self._elem2tag(after_elem)
-        if isinstance(before_elem, DPageElement):
-            before_elem = self._elem2tag(before_elem)
+class PartialTextAttrGetter(TextAttrGetter):
+    def __init__(self, xpath, before_elem=None, after_elem=None, **kwargs):
+        super(PartialTextAttrGetter, self).__init__(xpath, **kwargs)
         self._after_elem = after_elem
         self._before_elem = before_elem
 
-    def _elem2tag(self, element):
-        """Get the plain tag_name of some pagelement to be reached
-        """
-        if isinstance(element, GenericElement):
-            return element.tag.upper()  # tagName is upper for HTML (not for XHTML)
-        else:
-            return '*'
+    def __get__(self, comp, type=None):
+        elem = self._elem(comp)
+        if elem is None:
+            return None
 
-    def consume_after(self, element):
-        if self._after_elem is None:
-            if isinstance(element, DPageElement):
-                element = self._elem2tag(element)
-            self._after_elem = element
-        return self
-
-    def consume_before(self, element):
-        if self._before_elem is None:
-            if isinstance(element, DPageElement):
-                element = self._elem2tag(element)
-            self._before_elem = element
-        return self
-
-    def _return_elem_text(self, elem):
         js = 'let cnodes = arguments[0].childNodes;\n' \
              'let i = 0; let ret = "";\n'
         if self._after_elem == '*':
@@ -342,7 +341,83 @@ class PartialText2Attr(DPageElement):
         return ret
 
 
+class Text2AttrElement(DPageElement):
+    _name = 'text2attr'
+    is_empty = True
+    _consume_in = (DomContainerElement,)
+
+    def __init__(self, name, strip=False):
+        super(Text2AttrElement, self).__init__()
+        self._attr_name = name
+        self._getter_class = TextAttrGetter
+        self._getter_kwargs = dict(do_strip=strip)
+
+    def consume(self, element):
+        raise TypeError('Data cannot consume %r' % element)
+
+    def _elem2tag(self, element):
+        """Get the plain tag_name of some pagelement to be reached
+        """
+        if isinstance(element, GenericElement):
+            return element.tag.upper()  # tagName is upper for HTML (not for XHTML)
+        else:
+            return '*'
+
+    def consume_after(self, element):
+        """Turn this into a partial text matcher, after some element tag
+        """
+        if 'after_elem' not in self._getter_kwargs:
+            if isinstance(element, DPageElement):
+                element = self._elem2tag(element)
+            self._getter_kwargs['after_elem'] = element
+            self._getter_class = PartialTextAttrGetter
+        return self
+
+    def consume_before(self, element):
+        """Turn this into a partial text matcher, before some tag
+        """
+        if 'before_elem' not in self._getter_kwargs:
+            if isinstance(element, DPageElement):
+                element = self._elem2tag(element)
+            self._getter_kwargs['before_elem'] = element
+            self._getter_class = PartialTextAttrGetter
+        return self
+
+    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
+        yield self._attr_name, self._getter_class(xpath_prefix, **self._getter_kwargs)
+
+
+class RegexAttrGetter(AttrGetter):
+    def __init__(self, xpath, group=None, optional=False):
+        super(RegexAttrGetter, self).__init__('text', xpath, optional=optional)
+        self._group = group
+
+    def __get__(self, comp, type=None):
+        elem = self._elem(comp)
+        if elem is None:
+            return None
+
+        m = self._regex.match(elem.text or '')
+        if not m:
+            return None
+
+        if self._group:
+            return m.group(self._group)
+        else:
+            return m.group()
+
 class RegexElement(DPageElement):
+    """Match text of remote DOM element, parse with regex into attribute(s)
+
+        If this regex contains ``(?P<name>...)`` named groups, these will be
+        exposed as `name` attributes.
+
+        Otherwise, if `this` attribute is defined, expose *all* matched string
+        under this name.
+
+        .. note :: Beware of html escaping, regex may need named groups writen
+        as ``(?&lt;name&gt;...)`` . Pending improvement
+    """
     _name = 'tag.pe-regex'
     _consume_in = (DomContainerElement,)
     _attrs_map = {'name': ('_attr_name', None, None),
@@ -364,22 +439,11 @@ class RegexElement(DPageElement):
             self._regex = re.compile(regstr)
         return super(RegexElement, self).reduce(site)
 
-    def __return_elem_text(self, name=None):
-        def __get_text(welem):
-            m = self._regex.match(welem.text or '')
-            if m:
-                if name:
-                    return m.group(name)
-                else:
-                    return m.group()
-            return None
-        return __get_text
-
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         if self._attr_name:
-            yield self._attr_name, xpath_prefix, self.__return_elem_text(), None
+            yield self._attr_name, RegexAttrGetter(xpath_prefix)
         for g in self._regex.groupindex:
-            yield g, xpath_prefix, self.__return_elem_text(g), None
+            yield g, RegexAttrGetter(xpath_prefix, group=g)
 
 
 DataElement._consume_in += (DomContainerElement, RegexElement)
@@ -388,6 +452,10 @@ DataElement._consume_in += (DomContainerElement, RegexElement)
 class NamedElement(DPageElement):
     _name = 'named'
     _inherit = 'any'
+
+    class _fakeComp(object):
+        def __init__(self, elem):
+            self._remote = elem
 
     def __init__(self, tag, attrs):
         super(NamedElement, self).__init__(tag, attrs)
@@ -412,11 +480,9 @@ class NamedElement(DPageElement):
             :param pattern: name of attribute to resolve
         """
         def _resolver(n, welem, scope):
-            for name, xpath, getter, s in self.iter_attrs(welem, scope):
+            for name, descr in self.iter_attrs(welem, scope):
                 if name == pattern:
-                    if xpath:
-                        welem = welem.find_element_by_xpath(xpath)
-                    ret = getter(welem)
+                    ret = descr.__get__(self._fakeComp(welem))
                     if ret:
                         return ret.strip()
                     else:
@@ -462,42 +528,29 @@ class NamedElement(DPageElement):
         return ()
 
 
+class InputValueDescr(AttrGetter):
+    def __init__(self, xpath):
+        super(InputValueDescr, self).__init__('value', xpath)
+
+    def __set__(self, comp, value):
+        elem = self._elem(comp)
+        if elem is None:
+            raise CAttributeError("Cannot set value of missing element", component=comp)
+        driver = elem.parent
+        driver.execute_script("arguments[0].value = arguments[1];", elem, value)
+
+    def __delete__(self, comp):
+        elem = self._elem(comp)
+        if elem is None:
+            raise CAttributeError("Cannot set value of missing element", component=comp)
+        elem.clear()
+
+
 class InputElement(DPageElement):
     _name = 'tag.input'
     _inherit = 'any'
     is_empty = True
-
-    class _InputValueActor(object):
-        def __init__(self, xpath):
-            self._xpath = xpath
-
-        def _elem(self, welem):
-            if self._xpath:
-                ielem = welem.find_element_by_xpath(self._xpath)
-            else:
-                ielem = welem
-            return ielem
-
-    class InputValueGetter(_InputValueActor):
-
-        def __call__(self, welem):
-            return self._elem(welem).get_attribute('value')
-
-    class InputValueSetter(_InputValueActor):
-        def __init__(self, xpath):
-            self._xpath = xpath
-
-        def __call__(self, welem, value):
-            driver = welem.parent
-            driver.execute_script("arguments[0].setAttribute('value', arguments[1]);",
-                                  self._elem(welem), value)
-
-    class InputValueSetKeys(_InputValueActor):
-        def __init__(self, xpath):
-            self._xpath = xpath
-
-        def __call__(self, welem, value):
-            self._elem(welem).send_keys(value)
+    descr_class = InputValueDescr
 
     def __init__(self, tag, attrs):
         self.this_name = None
@@ -533,17 +586,15 @@ class InputElement(DPageElement):
         return []
 
     def iter_attrs(self, webelem=None, scope=None, xpath_prefix=''):
-        for y4 in super(InputElement, self).iter_attrs(webelem, scope, xpath_prefix):
-            yield y4
+        for y2 in super(InputElement, self).iter_attrs(webelem, scope, xpath_prefix):
+            yield y2
         if self.this_name:
-            yield ('value', xpath_prefix,
-                       self.InputValueGetter(''),
-                       self.InputValueSetter(''))
+            yield ('value', self.descr_class(xpath_prefix))
 
     def _locate_in(self, remote, scope, xpath_prefix, match):
         if self.this_name:
             enoent = True
-            xpath2 = prepend_xpath(xpath_prefix, self.xpath)
+            xpath2 = prepend_xpath(xpath_prefix, self.xpath, glue='/')
             for welem in remote.find_elements_by_xpath(xpath2):
                 nscope = scope
                 if self._pe_class is not None:
@@ -561,17 +612,13 @@ class InputElement(DPageElement):
             if self.name_attr == '*':
                 # Active remote iteration here, must discover all <input> elements
                 # and yield as many attributes
-                for relem in webelem.find_elements_by_xpath(prepend_xpath(xpath_prefix, self.xpath)):
+                for relem in webelem.find_elements_by_xpath(prepend_xpath(xpath_prefix, self.xpath, glue='/')):
                     rname = relem.get_attribute('name')
                     xpath = self._xpath + "[@name=%s]" % textescape(rname)
-                    yield (rname, xpath_prefix,
-                           self.InputValueGetter(xpath),
-                           self.InputValueGetter(xpath))
+                    yield rname, self.descr_class(prepend_xpath(xpath_prefix, xpath, glue='/'))
             else:
                 # Avoid iteration, yield attribute immediately
-                yield (self.name_attr, xpath_prefix,
-                       self.InputValueGetter(self._xpath),
-                       self.InputValueSetter(self._xpath))
+                yield self.name_attr, self.descr_class(prepend_xpath(xpath_prefix, self._xpath, glue='/'))
 
 
 class TextAreaObj(DPageElement):
@@ -605,11 +652,11 @@ class DeepContainObj(DPageElement):
     def iter_attrs(self, webelem=None, scope=None, xpath_prefix='.//'):
         """Iterate names of possible attributes
 
-            returns iterator of (name, getter, setter)
+            returns iterator of (name, descriptor)
         """
         for ch in self._children:
-            for y4 in ch._locate_attrs(webelem, scope, xpath_prefix):
-                yield y4
+            for y2 in ch._locate_attrs(webelem, scope, xpath_prefix):
+                yield y2
 
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix='.//'):
         return self.iter_attrs(webelem, scope, prepend_xpath(xpath_prefix, self.xpath))
@@ -664,8 +711,8 @@ class RootAgainElem(DPageElement):
             returns iterator of (name, getter, setter)
         """
         for ch in self._children:
-            for y4 in ch._locate_attrs(webelem, scope, xpath_prefix):
-                yield y4
+            for y2 in ch._locate_attrs(webelem, scope, xpath_prefix):
+                yield y2
 
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix='//'):
         return self.iter_attrs(webelem.parent, scope, self.xpath)
@@ -934,8 +981,8 @@ class PeMatchIDElement(DPageElement):
             returns iterator of (name, getter, setter)
         """
         for ch in self._children:
-            for y4 in ch._locate_attrs(webelem, scope, xpath_prefix):
-                yield y4
+            for y2 in ch._locate_attrs(webelem, scope, xpath_prefix):
+                yield y2
 
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         """Only expose attributes if this is not a named element
@@ -947,8 +994,8 @@ class PeMatchIDElement(DPageElement):
                     nscope = self._pe_class(parent=scope)
                 else:
                     nscope = scope
-                for y4 in self.iter_attrs(welem, nscope):
-                    yield y4
+                for y2 in self.iter_attrs(welem, nscope):
+                    yield y2
 
 
 class ConsumeTmplMixin(object):
@@ -1061,8 +1108,8 @@ class DSlotElement(DPageElement):
 
     def iter_child_attrs(self, webelem, scope, xpath_prefix=''):
         for ch in self._children:
-            for y4 in ch._locate_attrs(webelem, scope, xpath_prefix):
-                yield y4
+            for y2 in ch._locate_attrs(webelem, scope, xpath_prefix):
+                yield y2
 
 
 class DSlotContentElement(DPageElement):
