@@ -10,6 +10,7 @@ import time
 from contextlib import contextmanager
 from behave.model_core import Status, BasicStatement
 from selenium.common.exceptions import WebDriverException
+from selenium.webdriver.common.action_chains import ActionChains
 
 
 class Camera(object):
@@ -62,6 +63,17 @@ class Camera(object):
         if args and getattr(args[0], 'status', False) == Status.passed:
             self.take_shot(context, 'success')
 
+    def _get_elem_rect(self, webelem):
+        webdriver = webelem.parent
+        if True:
+            try:
+                rect = webelem.rect.copy()
+            except WebDriverException as e:
+                rect = webelem.location.copy()
+                rect.update(webelem.size)
+
+        return rect
+
     @contextmanager
     def highlight_element(self, context, component=None, webelem=None):
         """Perform some action with an element visually highlighted
@@ -85,13 +97,8 @@ class Camera(object):
 
         try:
             webdriver = webelem.parent   # safer than using 'context.webdriver'
-            # print "display p:", webelem.is_displayed(), webelem.rect
-            # print "display c:", webelem.value_of_css_property('display')
-            try:
-                rect = webelem.rect.copy()
-            except WebDriverException:
-                rect = webelem.location.copy()
-                rect.update(webelem.size)
+            ActionChains(webdriver).move_to_element(webelem).perform()
+            rect = self._get_elem_rect(webelem)
 
             # grow the rectangle to least 30x30 or +2px than original
             dw = 30 - rect['width']
