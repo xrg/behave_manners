@@ -799,7 +799,7 @@ class RepeatObj(DPageElement):
                     break
         except ElementNotFound as e:
             enofound = e
-        if ni < self.min_elems:
+        if match is None and ni < self.min_elems:
             if enofound is None:
                 raise ElementNotFound(parent=remote, selector=xpath_prefix)
             else:
@@ -854,7 +854,7 @@ class PeChoiceElement(DPageElement):
                 if enofound is None:
                     enofound = e
 
-        if not nfound:
+        if match is None and not nfound:
             if enofound is not None:
                 raise enofound
             else:
