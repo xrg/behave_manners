@@ -127,14 +127,14 @@ class Camera(object):
                 self._log.info("Could not remove highlight: %s", e)
 
     def snap_failure(self, context, *args):
-        from .pagelems.exceptions import ElementNotFound
+        from .pagelems.exceptions import ElementNotFound, ComponentException
         failed_comp = failed_elem =  None
         try:
             if args and isinstance(args[0], BasicStatement):
                 exc = getattr(args[0], 'exception', None)
                 if isinstance(exc, ElementNotFound):
                     failed_elem = exc.parent
-                elif isinstance(exc, WebDriverException):
+                elif isinstance(exc, (WebDriverException, ComponentException)):
                     failed_comp = exc.component
         except AttributeError:
             pass
