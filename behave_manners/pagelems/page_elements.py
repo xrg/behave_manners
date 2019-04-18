@@ -396,8 +396,9 @@ class Text2AttrElement(DPageElement):
 
 
 class RegexAttrGetter(AttrGetter):
-    def __init__(self, xpath, group=None, optional=False):
+    def __init__(self, regex, xpath, group=None, optional=False):
         super(RegexAttrGetter, self).__init__('text', xpath, optional=optional)
+        self._regex = regex
         self._group = group
 
     def __get__(self, comp, type=None):
@@ -449,9 +450,9 @@ class RegexElement(DPageElement):
 
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         if self._attr_name:
-            yield self._attr_name, RegexAttrGetter(xpath_prefix)
+            yield self._attr_name, RegexAttrGetter(self._regex, xpath_prefix)
         for g in self._regex.groupindex:
-            yield g, RegexAttrGetter(xpath_prefix, group=g)
+            yield g, RegexAttrGetter(self._regex, xpath_prefix, group=g)
 
 
 DataElement._consume_in += (DomContainerElement, RegexElement)
