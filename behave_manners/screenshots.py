@@ -22,7 +22,7 @@ class Camera(object):
         highlight.setAttribute('style',
             'border: 2px solid red; ' +
             'border-radius: 1px; ' +
-            'background-color: rgba(255, 64, 64, 0.4); ' +
+            'background-color: rgba(255, 64, 64, 0.3); ' +
             'z-index: 9999; ' +
             'position: absolute; ' +
             'left: {x}px; top: {y}px; ' +
