@@ -163,6 +163,9 @@ class TestPElemParser(object):
 
         site = self._set_site({'page.html': h})
         site.load_pagefile('page.html')
+        page = site.file_dir['page.html']
+        assert page._children[0]._children[0]._children[0].xpath == \
+                u"p[contains(text(), 'Hello & have a nice time ð !')]"
 
     def test_tmpl_page_invalid1(self):
         """Test bad HTML syntax
@@ -187,6 +190,22 @@ class TestPElemParser(object):
         site = self._set_site({'page.html': h})
         with pytest.raises(HTMLParseError):
             site.load_pagefile('page.html')
+
+    def test_tmpl_page_valid_re1(self):
+        """Test that less-than or greater-than work in <pe-regex> elements
+        """
+        h = '''
+            <html>
+            <body>
+                <pe-regex>Hello (?P<b>world)!</pe-regex>
+            </body>
+            </html>
+        '''
+
+        site = self._set_site({'page.html': h})
+        site.load_pagefile('page.html')
+        page = site.file_dir['page.html']
+        assert page._children[0]._children[0]._regex.pattern == 'Hello (?P<b>world)!'
 
 
 #eof

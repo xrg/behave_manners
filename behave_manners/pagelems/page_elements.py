@@ -424,8 +424,8 @@ class RegexElement(DPageElement):
         Otherwise, if `this` attribute is defined, expose *all* matched string
         under this name.
 
-        .. note :: Beware of html escaping, regex may need named groups writen
-        as ``(?&lt;name&gt;...)`` . Pending improvement
+        .. note :: text inside this element can contain '<' and '>', no need
+        to escape these.
     """
     _name = 'tag.pe-regex'
     _consume_in = (DomContainerElement,)
@@ -1367,6 +1367,7 @@ DTemplateElement._consume_in += (GHeadElement, GBodyElement)
 
 
 class PageParser(BaseDPOParser):
+    CDATA_CONTENT_ELEMENTS = BaseDPOParser.CDATA_CONTENT_ELEMENTS + ('pe-regex', 'pe-data')
     logger = logging.getLogger(__name__ + '.PageParser')
 
     def __init__(self, root_element):
