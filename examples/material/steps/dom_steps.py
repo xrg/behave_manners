@@ -39,7 +39,7 @@ def use_sub_component(context, comp):
 
 @when(u'I click option value "{value}"')
 def step_impl(context, value):
-    context.cur_element.set_value(value)
+    context.cur_element.value = value
 
 
 @when(u'I click option labelled "{label}"')
@@ -49,19 +49,19 @@ def click_option_lbl(context, label):
 
 @then(u'the selected value is "{value}"')
 def check_option_value(context, value):
-    cur_value = context.cur_element.get_value()
+    cur_value = context.cur_element.value
     assert cur_value == value, '%r != %r' % (cur_value, value)
 
 
 @then(u'the selection is blank')
 def step_blank_selection(context):
-    cur_value = context.cur_element.get_value()
+    cur_value = context.cur_element.value
     assert cur_value == None, '%r != None' % (cur_value, )
 
 
 @when(u'I enter value "{value}"')
 def step_enter_value(context, value):
-    context.cur_element.set_value(value)
+    context.cur_element.value = value
 
 
 # eof
