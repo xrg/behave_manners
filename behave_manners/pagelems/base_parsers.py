@@ -4,9 +4,11 @@ from __future__ import absolute_import
 import six
 from f3utils.service_meta import abstractmethod, _ServiceMeta
 from .helpers import textescape, Integer
+from .dom_meta import DOM_Meta
 
 from six.moves.html_parser import HTMLParser
 from six.moves import html_entities
+from selenium.webdriver.remote.webdriver import WebElement
 from selenium.common.exceptions import WebDriverException
 
 if six.PY2:
@@ -374,7 +376,7 @@ class DBaseLinkElement(DPageElement):
         raise TypeError('%s cannot consume %r' % (self._name, element))
 
 
-@six.add_metaclass(_ServiceMeta)
+@six.add_metaclass(DOM_Meta)
 class DOMScope(object):
     """A simple holder of shared components or variables across DOM levels
     """
@@ -416,29 +418,36 @@ class DOMScope(object):
             return getattr(self._parent, name)
         raise AttributeError(name)
 
-    def _cwrap_simple(self, comp, click):
-        """Make method for component, that would call `click()` on remote
+    class Component(object):
+        def __make_cwrap_simple(name):
+            """Create wrapper function, that will bind to `ComponentProxy` and call `WebElement` equivalent
 
-            Overridable way to expose `component._remote.click()` method,
-            wrapped with context-specific pre/post actions
+            """
+            webelem_fn = getattr(WebElement, name, None)
+            if webelem_fn is None:
+                return None
 
-            *click being any method name
-        """
-        def __fn(*args):
-            try:
-                return getattr(comp._remote, click)(*args)
-            except WebDriverException as e:
-                # Reset traceback to this level, ignore rest of stack
-                e.component = comp
-                raise e
-            except Exception as e:
-                raise e
-        return __fn
+            @six.wraps(webelem_fn)
+            def __fn(self, *args, **kwargs):
+                try:
+                    return getattr(self._remote, name)(*args, **kwargs)
+                except WebDriverException as e:
+                    # Reset traceback to this level, ignore rest of stack
+                    e.component = self
+                    raise e
+                except Exception as e:
+                    raise e
+            return __fn
 
-    # aliases for simple WebElement methods:
-    _cwrap_click = _cwrap_clear = _cwrap_get_attribute = _cwrap_get_property \
-            = _cwrap_is_displayed = _cwrap_is_enabled = _cwrap_is_selected \
-            = _cwrap_send_keys = _cwrap_submit = _cwrap_simple
-
+        # aliases for simple WebElement methods:
+        click = __make_cwrap_simple('click')
+        clear = __make_cwrap_simple('clear')
+        get_attribute = __make_cwrap_simple('get_attribute')
+        get_property = __make_cwrap_simple('get_property')
+        is_displayed = __make_cwrap_simple('is_displayed')
+        is_enabled = __make_cwrap_simple('is_enabled')
+        is_selected = __make_cwrap_simple('is_selected')
+        send_keys = __make_cwrap_simple('send_keys')
+        submit = __make_cwrap_simple('submit')
 
 #eof

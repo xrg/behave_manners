@@ -92,6 +92,14 @@ class WaitScope(DOMScope):
 
 
 class RootDOMScope(DOMScope):
+    """Default scope to be used as parent of all scopes
+    
+        Such one would be the parent of a 'page' scope.
+        
+        Given that scopes can use the attributes of parent ones, this
+        is where global attributes (such as site-wide config) can be
+        set.
+    """
     _name = '.root'
     component_class = ComponentProxy
 
@@ -104,7 +112,11 @@ class RootDOMScope(DOMScope):
 
 class GenericPageScope(DOMScope):
     """Default page scope
-    
+
+        Page scope is the one attached to the remote DOM 'page', ie the <html>
+        element. A good place to define page-wide properties, such as waiting
+        methods.
+
         Wait for JS at least
     """
     _name = 'page'

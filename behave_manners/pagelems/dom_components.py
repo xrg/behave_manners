@@ -42,6 +42,7 @@
 from __future__ import absolute_import
 import logging
 import inspect
+import warnings
 from collections import namedtuple
 from selenium.common.exceptions import WebDriverException
 from .exceptions import CAttributeError, CKeyError
@@ -177,15 +178,21 @@ class ComponentProxy(_SomeProxy):
             # most likely case
             return self.__descrs[name]
         except KeyError:
+            # new API for scope classes
+            descr = self._scope._comp_descriptors.get(name, None)
+            if descr is not None:
+                self.__descrs[name] = descr
+                return descr
+
             cwrap = getattr(self._scope, '_cwrap_'+name, None)
             # Found factory of remote element method
             if cwrap is not None:
+                warnings.warn("cwrap interface will be deprecated", DeprecationWarning)
                 if inspect.ismethod(cwrap):
                     val = cwrap(self, name)
                     cwrap = property(lambda c: val)
                 self.__descrs[name] = cwrap
                 return cwrap
-            # TODO: new API for scope classes
 
         raise CAttributeError(name, component=self)
 
