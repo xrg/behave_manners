@@ -53,8 +53,9 @@ class GContext(object):
 
     def new(self, **kwargs):
         """Return context manager object, new level down current context
-        
+
             Usage::
+
                 my_context.a = 0
                 with my_context.new(a=1) as ctx:
                     ctx.b = 2

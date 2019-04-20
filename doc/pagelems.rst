@@ -1,5 +1,5 @@
-pagelems: Page Elements
-========================
+Introduction to Page Elements
+=============================
 
 Page elements (or pagelems) is a custom html-like language of defining patterns
 for **matching** remote DOM trees. This language is designed to resemble HTML
@@ -53,7 +53,7 @@ Define constructs that modify the way DOM is structured.
    Causes its contents to be matched multiple times, repeated naturally.
 
    .. note:: this is implied if ``this`` has a flexible definition, see below.
-   
+
 ``<pe-choice>``
 
     Attempts to match the first of the contained components. Any of them may
@@ -63,6 +63,12 @@ Define constructs that modify the way DOM is structured.
 
     Matches any html element. Otherwise its attributes and children match
     like any plain element.
+
+``<pe-data>``
+
+    Assigns arbitrary data as an attribute to current component. Like a constant
+    to some programming language. May serve as customization data for re-usable
+    controllers on that component.
 
 ``<pe-regex>``
 
@@ -79,7 +85,7 @@ Define constructs that modify the way DOM is structured.
 
 ``<pe-slotcontent>``
 
-    Points back to the original content of the `slot`. See :ref:`Templates and Slots`
+    Points back to the original content of the `slot`. See :ref:`templates-and-slots`
 
 ``<pe-group>``
 
@@ -102,11 +108,11 @@ Special attributes
 ``pe-ctrl``
 
     Picks an alternate controller, defines a scope at that level.
-    See `Scopes and Controllers`
+    See :ref:`scopes-controllers`
 
 ``slot``
 
-    Defines slot name. See :ref:`Templates and Slots`
+    Defines slot name. See :ref:`templates-and-slots`
 
 
 Special attribute: this
@@ -158,6 +164,9 @@ Which exposes, say, that second content in python as::
 
     root['first-chapter']['Some Title']['par_1'].content
 
+
+
+.. _templates-and-slots:
 
 Templates and Slots
 --------------------
@@ -223,16 +232,6 @@ pagelem markup::
     </form>
 
 
-Scopes and Controllers
------------------------
-
-Scopes and Controllers are a way to inject extra behaviour onto components, from
-code written in Python. They are able to abstract non-trivial interactions as if
-they were instance methods to the component objects.
-
-Scopes have their own tree (hierarchy) are deliberately *not* 1:1 with components.
-Reason is to keep code minimal, not to mandate extra code per each component.
-In practice, few of the components, only, will ever need their own controller.
 
 
 

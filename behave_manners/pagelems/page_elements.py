@@ -262,7 +262,7 @@ class AnyElement(DPageElement):
     def iter_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         """Iterate names of possible attributes
 
-            returns iterator of (name, getter, setter)
+            :return: iterator of (name, descriptor)
         """
         for n, attr in self.read_attrs.items():
             yield n, AttrGetter(attr, xpath_prefix, optional=self._pe_optional)
@@ -425,7 +425,7 @@ class RegexElement(DPageElement):
         under this name.
 
         .. note :: text inside this element can contain '<' and '>', no need
-        to escape these.
+            to escape these.
     """
     _name = 'tag.pe-regex'
     _consume_in = (DomContainerElement,)
@@ -1275,6 +1275,7 @@ class DHtmlObject(DPageElement):
             :param on_missing: function to call like `fn(comp, e)` when ElementNotFound
                                is raised under component=comp
             :param path: list of elements to enter before walking
+
             Iterator, yielding (path, Component) pairs, traversing depth first
         """
         if on_missing is None:

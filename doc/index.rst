@@ -6,10 +6,15 @@
 Welcome to Behave Manners's documentation!
 ==========================================
 
-Contents:
+Topics:
 
 .. toctree::
    :maxdepth: 2
+
+   overview
+   pagelems
+   scopes
+   modules
 
 
 

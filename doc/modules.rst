@@ -1,5 +1,5 @@
-behave_manners
-==============
+manners API: modules
+====================
 
 .. toctree::
    :maxdepth: 4
