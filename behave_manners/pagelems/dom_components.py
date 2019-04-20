@@ -101,6 +101,7 @@ class PageProxy(_SomeProxy):
     """
     def __init__(self, pagetmpl, webdriver, scope):
         super(PageProxy, self).__init__(pagetmpl, webdriver, scope)
+        self.__descrs = dict()
 
     @property
     def path(self):
@@ -119,10 +120,33 @@ class PageProxy(_SomeProxy):
             return '<Page >'
 
     def __getattr__(self, name):
+        if name.startswith('_'):
+            raise AttributeError(name)
+
+        descr = self.__getdescr(name)
+        return descr.__get__(self)
+
+    def __dir__(self):
+        return self.__descrs.keys()
+
+    def __setattr__(self, name, value):
+        if name.startswith('_') or name in ('path', ):
+            return super(PageProxy, self).__setattr__(name, value)
+        descr = self.__getdescr(name)
+        return descr.__set__(self, value)
+
+    def __delattr__(self, name):
+        if name.startswith('_') or name in ('path', ):
+            raise AttributeError('Attribute %s cannot be deleted' % name)
+        descr = self.__getdescr(name)
+        return descr.__delete__(self)
+
+    def __getdescr(self, name):
         if not name.startswith('_'):
-            pwrap = getattr(self._scope, '_pwrap_'+name, None)
-            if pwrap is not None:
-                return pwrap(self, name)
+            descr = self._scope._page_descriptors.get(name, None)
+            if descr is not None:
+                self.__descrs[name] = descr
+                return descr
 
         raise AttributeError(name)
 

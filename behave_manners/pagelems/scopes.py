@@ -83,12 +83,10 @@ class WaitScope(DOMScope):
                 raise KeyError("Unknown timeout '%s'" % timeout)
             return num * factor
 
-    def _pwrap_wait_all(self, comp, name):
-        def __wait_all(timeout):
+    class Page(object):
+        def wait_all(self, timeout):
             # the component itself is not needed
-            self.wait_all(timeout, webdriver=comp._remote)
-
-        return __wait_all
+            self._scope.wait_all(timeout, webdriver=self._remote)
 
 
 class RootDOMScope(DOMScope):
