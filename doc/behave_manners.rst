@@ -21,7 +21,6 @@ Submodules
 
    behave_manners.action_chains
    behave_manners.context
-   behave_manners.dom_pagetemplate
    behave_manners.dpo_run_browser
    behave_manners.dpo_validator
    behave_manners.file_match

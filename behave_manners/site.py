@@ -29,11 +29,13 @@ seconds_re = re.compile(r'([1-9]\d+)(m?)s(?:ec)?$')
 
 class SiteContext(object):
     """Holds (web)site information in a behave context
-    
+
         A SiteContext is attached to behave's context like
             `context.site = SiteContext(...)`
+
         and from there on tests can refer to site-wide attributes
         through that `context.site` object.
+
     """
 
     def __init__(self, context, config=None):

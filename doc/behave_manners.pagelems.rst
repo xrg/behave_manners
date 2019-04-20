@@ -14,6 +14,7 @@ Submodules
    behave_manners.pagelems.actions
    behave_manners.pagelems.base_parsers
    behave_manners.pagelems.dom_components
+   behave_manners.pagelems.dom_meta
    behave_manners.pagelems.exceptions
    behave_manners.pagelems.helpers
    behave_manners.pagelems.index_elems
