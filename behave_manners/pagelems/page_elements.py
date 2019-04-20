@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 import logging
 import re
+import json
 from collections import defaultdict
 
 from .helpers import textescape, prepend_xpath, word_re, to_bool
@@ -1023,6 +1024,51 @@ class PeMatchIDElement(DPageElement):
                     nscope = scope
                 for y2 in self.iter_attrs(welem, nscope):
                     yield y2
+
+
+class PeDataElement(DPageElement):
+    """Define arbitrary data as a component attribute
+
+        This supports two modes: with a `value=` attribute or
+        using inner JSON data.
+
+        When using the `value=` attribute, the data will be a
+        plain string.
+        When using inner JSON, it can be any of the simple types
+        that JSON supports.
+    """
+    _name = 'tag.pe-data'
+    _attrs_map = {'slot': ('_dom_slot', None, None),
+                'name': ('_attr_name', None, AttributeError),
+                'value': ('_attr_value', None, NotImplemented),
+                         # Using NotImplemented as sentinel, because None is valid JSON
+                }
+    is_empty = True
+    _consume_in = (DomContainerElement, )
+
+    def __init__(self, tag, attrs):
+        super(PeDataElement, self).__init__(tag)
+        self._parse_attrs(attrs)
+
+    def consume(self, element):
+        if not isinstance(element, DataElement):
+            raise TypeError("pe-data can only contain text")
+        if self._attr_value is not NotImplemented:
+            raise ValueError("<pe-data> cannot have both value and inner data")
+        super(PeDataElement, self).consume(element)
+
+    def reduce(self, site=None):
+        if self._attr_value is NotImplemented:
+            self._attr_value = json.loads(''.join([c.data for c in self._children]))
+            self._children = []
+        if self._attr_value is NotImplemented:
+            raise ValueError("<pe-data> has no data")
+        return super(PeDataElement, self).reduce(site)
+
+    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
+        """Irrespective of webelem or scope, return the value
+        """
+        yield self._attr_name, property(lambda *c: self._attr_value)
 
 
 class ConsumeTmplMixin(object):
