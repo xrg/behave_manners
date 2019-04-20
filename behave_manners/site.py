@@ -220,6 +220,11 @@ class WebContext(SiteContext):
                     "safebrowsing.enabled": True
                     })
 
+            for opt in ('auth-server-whitelist',):
+                val = browser_opts.get(opt.replace('-', '_'), None)
+                if val is not None:
+                    options.add_argument('%s=%s' % (opt, val))
+
             context.browser = webdriver.Chrome(chrome_options=options,
                                                desired_capabilities=dcaps,
                                                service_args=browser_opts\
