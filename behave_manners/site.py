@@ -3,17 +3,20 @@
 """
 
 from __future__ import absolute_import, print_function
-import time
-from selenium import webdriver
+import errno
+import logging
 import os
-import yaml
-import six
-from f3utils.dict_tools import merge_dict
 import os.path
 import re
-from behave.model_core import Status
-import logging
+import six
+import time
+import yaml
 import urllib3.exceptions
+
+from f3utils.dict_tools import merge_dict
+
+from selenium import webdriver
+from behave.model_core import Status
 # from six.moves.urllib import parse as urlparse
 from .context import EventContext
 
@@ -92,47 +95,48 @@ class SiteContext(object):
             pass
 
     @classmethod
-    def _load_config(cls, cfname, extra_conf=None):
-        # TODO: use glob on cfname
-        try:
-            # Change directory to that of cfname, so that all mentioned
-            # includes are searched relative to this one
-            old_cwd = os.getcwd()
-            pdir, fname = os.path.split(cfname)
+    def _load_config(cls, cfnames, loader, extra_conf=None):
+        """Load one (or more) configuration files into a dict
 
-            if pdir:
-                os.chdir(pdir)
-            with open(fname, 'rb') as fp:
+            :param cfnames: string or list of config filenames
+                in order from least to most significant (override)
+            :param loader: a BaseLoader to open the files
+            :param extra_conf: dict, extra configuration to apply at the end
+
+        """
+        if isinstance(cfnames, six.string_types):
+            cfnames = [cfnames,]
+        elif isinstance(cfnames, (tuple, list)):
+            pass
+        else:
+            raise TypeError(type(cfnames))
+
+        result = {}
+
+        nloaded = 0
+        for cfname_pat in cfnames:
+            for cfname, fp in loader.multi_open(cfname_pat, mode='rb'):
+                nloaded += 1
                 config = yaml.safe_load(fp)
-            if not config:
-                raise ValueError("Empty config at: %s" % cfname)
-            if not isinstance(config, dict):
-                raise TypeError("Config file \"%s\" does not have a dict root" % cfname)
-            includes = config.pop('include', [])
-            new_include = []
-            for incl in includes:
-                if isinstance(incl, dict):
-                    new_cfg = cls._load_config(incl['file'])
-                    if incl.get('when'):
-                        new_include.append((incl['when'], new_cfg))
-                    else:
-                        merge_dict(config, new_cfg, copy=False)
-                elif isinstance(incl, six.string_types):
-                    sub_conf = cls._load_config(incl)
-                    merge_dict(config, sub_conf, copy=False)
-                else:
-                    raise TypeError("Cannot load config: %r" % incl)
-            if new_include:
-                config['include'] = new_include
-            if extra_conf and callable(extra_conf):
-                extra_conf(config)
-            elif extra_conf:
-                merge_dict(config, extra_conf, copy=False)
-            return config
-        except IOError:
-            raise
-        finally:
-            os.chdir(old_cwd)
+                if not config:
+                    raise ValueError("Empty config at: %s" % cfname)
+                if not isinstance(config, dict):
+                    raise TypeError("Config file \"%s\" does not have a dict root" % cfname)
+
+                includes = config.pop('include', [])
+                if includes:
+                    res = cls._load_config(includes, loader)
+                    merge_dict(result, res, copy=False)
+                merge_dict(result, config, copy=False)
+
+        if not nloaded:
+            raise IOError(errno.ENOENT, "No config file found")
+        if extra_conf and callable(extra_conf):
+            extra_conf(config)
+        elif extra_conf:
+            merge_dict(config, extra_conf, copy=False)
+
+        return result
 
     @property
     def base_url(self):

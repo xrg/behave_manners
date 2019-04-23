@@ -10,15 +10,24 @@ from behave.runner import Context
 from .site import SiteContext, WebContext
 
 
-def site_setup(context, config=None, extra_conf=None):
+def site_setup(context, config=None, extra_conf=None, loader=None):
+    """Load a config file and prepare site for operation
+
+        Follow the config for site, browser and page elements settings,
+        store them in :py:class:`behave.Context` .
+    """
     # context.config.setup_logging() ??
+    from .pagelems import FSLoader
+
     assert isinstance(context, Context)
     if hasattr(context, 'site'):
         raise RuntimeError("Site cannot be setup twice in same context")
     if not config:
         return
-    if isinstance(config, six.string_types):
-        config = SiteContext._load_config(config, extra_conf)
+    if isinstance(config, (six.string_types, list, tuple)):
+        if loader is None:
+            loader = FSLoader('.')
+        config = SiteContext._load_config(config, loader, extra_conf)
 
     if config.get('browser'):
         context.site = WebContext(context, config)
