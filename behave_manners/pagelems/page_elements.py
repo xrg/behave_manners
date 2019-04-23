@@ -456,9 +456,6 @@ class RegexElement(DPageElement):
             yield g, RegexAttrGetter(self._regex, xpath_prefix, group=g)
 
 
-DataElement._consume_in += (DomContainerElement, RegexElement)
-
-
 class NamedElement(DPageElement):
     _name = 'named'
     _inherit = 'any'
@@ -1043,7 +1040,6 @@ class PeDataElement(DPageElement):
                 'value': ('_attr_value', None, NotImplemented),
                          # Using NotImplemented as sentinel, because None is valid JSON
                 }
-    is_empty = True
     _consume_in = (DomContainerElement, )
 
     def __init__(self, tag, attrs):
@@ -1411,6 +1407,7 @@ class GBodyElement(ConsumeTmplMixin, DPageElement):
 
 
 DTemplateElement._consume_in += (GHeadElement, GBodyElement)
+DataElement._consume_in += (DomContainerElement, RegexElement, PeDataElement)
 
 
 class PageParser(BaseDPOParser):
