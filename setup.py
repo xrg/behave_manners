@@ -13,7 +13,7 @@ except Exception:
 
 setup(
     name='behave-manners',
-    version="0.3",
+    version="0.4",
     description="A layer of abstraction on top of `behave` for web-UI testing,"
                 " designed to handle complexity of large sites",
     long_description=long_description,
