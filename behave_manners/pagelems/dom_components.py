@@ -43,7 +43,6 @@ from __future__ import absolute_import
 import logging
 import inspect
 import warnings
-from collections import namedtuple
 from selenium.common.exceptions import WebDriverException
 from .exceptions import CAttributeError, CKeyError
 
@@ -106,9 +105,6 @@ class PageProxy(_SomeProxy):
     @property
     def path(self):
         return ()
-
-    def __dir__(self):
-        return []
 
     def __getstate__(self):
         return {}
@@ -228,7 +224,7 @@ class ComponentProxy(_SomeProxy):
         return descr.__get__(self)
 
     def __dir__(self):
-        return self.__descrs.keys()
+        return list(self.__descrs.keys())
 
     def __setattr__(self, name, value):
         if name.startswith('_') or name in ('css', 'path', 'component_name'):
