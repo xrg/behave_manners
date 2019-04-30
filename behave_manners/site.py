@@ -183,6 +183,7 @@ class WebContext(SiteContext):
         allow_downloads = False     # on an empty config
         download_dir = None
         if 'downloads' in browser_opts:
+            from .downloads import DownloadManager
             if browser_opts['downloads'].get('allow', True):
                 allow_downloads = True
 
@@ -196,6 +197,7 @@ class WebContext(SiteContext):
                     if not os.path.exists(download_dir):
                         os.makedirs(download_dir)
                     context.download_dir = download_dir
+                context.downloads = DownloadManager(context.download_dir)
 
         if desired_engine == 'chrome':
             options = webdriver.ChromeOptions()
