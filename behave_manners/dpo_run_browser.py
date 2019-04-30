@@ -11,6 +11,7 @@ import logging
 import json
 import time
 from behave_manners.site import SiteContext, WebContext, FakeContext
+from behave_manners.pagelems import FSLoader
 from selenium.common.exceptions import WebDriverException
 
 
@@ -32,7 +33,7 @@ def cmdline_main():
 
     context = FakeContext()
     try:
-        config = SiteContext._load_config(args.config)
+        config = SiteContext._load_config(args.config, loader=FSLoader('.'))
         if not config.get('browser'):
             raise RuntimeError("Supplied config must specify browser settings")
 
