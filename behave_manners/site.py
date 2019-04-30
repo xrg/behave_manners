@@ -314,6 +314,7 @@ class WebContext(SiteContext):
         context.browser.quit()
 
     def _event_before_feature(self, context, feature):
+        # parent_fn(context, None, feature)  must be __noop_fn
         browser_launch = self._config['browser'].get('launch_on', False)
         if browser_launch == 'feature' or \
                 (browser_launch == 'scenario' and 'serial' in feature.tags):
@@ -323,6 +324,9 @@ class WebContext(SiteContext):
         browser_launch = self._config['browser'].get('launch_on', False)
         if browser_launch == 'scenario' and 'serial' not in scenario.feature.tags:
             self.launch_browser(context)
+        if hasattr(context, 'downloads'):
+            self._log.debug("Resetting downloads")
+            context.downloads.reset()
 
     def _event_after_step(self, context, step):
         if step.status == Status.failed:

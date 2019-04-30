@@ -9,6 +9,7 @@ import logging
 import time
 import errno
 import fnmatch
+from .pagelems.exceptions import Timeout
 
 
 logger = logging.getLogger(__name__)
@@ -40,10 +41,32 @@ class DownloadManager(object):
             self._past_files.add(path)   # even if it is a directory
         self._cur_files.clear()
 
-    def wait(self, timeout=10.0, expect='*'):
+    def wait_for(self, pattern='*', timeout=10.0):
         """Waits for known temporary files patterns, browser to finish downloads
         """
-        NotImplemented
+        deadline = time.time() + timeout
+        pending = set()
+        last_pending = 0.0
+        while time.time() < deadline:
+            found = False
+            for path in os.listdir(self._dir):
+                if path in self._past_files:
+                    continue
+                if fnmatch.fnmatch(path, pattern):
+                    fullpath = os.path.join(self._dir, path)
+                    if os.path.isfile(fullpath):
+                        return path, fullpath
+                elif path.endswith('.crdownload'):
+                    if path not in pending or (time.time() - last_pending) >= 5.0:
+                        last_pending = time.time()
+                        logger.info("Download in progress: %s", path[:-11])
+                        pending.add(path)
+
+            if found:
+                break
+            time.sleep(1.0)
+
+        raise Timeout("No file found within %.1fsec" % timeout)
 
     def look_for(self, pattern='*', files_only=True):
         """Look for downloaded file matching pattern, since last reset
