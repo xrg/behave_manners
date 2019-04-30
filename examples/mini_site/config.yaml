@@ -18,6 +18,9 @@ browser:        # Technical conf about the browser
         dir: screenshots
         on_failure: true
 
+    downloads:
+        allow: True
+
 page_objects:
     index: site/index.html
     # root_controller: .root
