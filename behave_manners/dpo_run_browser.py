@@ -25,6 +25,8 @@ def cmdline_main():
                         help='Site config file')
     parser.add_argument('-s', '--session-file', default='dbg-browser.session',
                         help="Path to file with saved Remote session")
+    parser.add_argument('url', nargs='?',
+                        help="Initial URL to load on the browser")
 
     args = parser.parse_args()
 
@@ -49,7 +51,18 @@ def cmdline_main():
                        'page_objects': config.get('page_objects', {})
                     }, fp)
         log.info("Entering main phase, waiting for browser to close")
-        
+        if args.url:
+            if args.url == '.':
+                url = context.site.base_url
+            elif args.url.startswith('/'):
+                url = context.site.base_url
+                if url.endswith('/'):
+                    url = url[:-1]
+                url += args.url
+            else:
+                url = args.url
+            context.browser.get(url)
+
         last_title = None
         while True:
             time.sleep(0.5)
