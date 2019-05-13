@@ -550,22 +550,31 @@ class NamedElement(DPageElement):
         return ()
 
 
-class InputValueDescr(AttrGetter):
+class InputCompatDescr(AttrGetter):
     def __init__(self, xpath):
-        super(InputValueDescr, self).__init__('value', xpath)
-
-    def __set__(self, comp, value):
-        elem = self._elem(comp)
-        if elem is None:
-            raise CAttributeError("Cannot set value of missing element", component=comp)
-        driver = elem.parent
-        driver.execute_script("arguments[0].value = arguments[1];", elem, value)
+        super(InputCompatDescr, self).__init__('value', xpath)
 
     def __delete__(self, comp):
         elem = self._elem(comp)
         if elem is None:
             raise CAttributeError("Cannot set value of missing element", component=comp)
         elem.clear()
+
+    def __set__(self, comp, value):
+        elem = self._elem(comp)
+        if elem is None:
+            raise CAttributeError("Cannot set value of missing element", component=comp)
+        elem.clear()
+        elem.send_keys(value)
+
+
+class InputValueDescr(InputCompatDescr):
+    def __set__(self, comp, value):
+        elem = self._elem(comp)
+        if elem is None:
+            raise CAttributeError("Cannot set value of missing element", component=comp)
+        driver = elem.parent
+        driver.execute_script("arguments[0].value = arguments[1];", elem, value)
 
 
 class InputElement(DPageElement):
