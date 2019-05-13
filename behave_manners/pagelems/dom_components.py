@@ -88,6 +88,13 @@ class _SomeProxy(object):
         for name, welem, ptmpl, scp in self._pagetmpl.iter_items(self._remote, self._scope):
             yield name
 
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        if (self._scope is not other._scope) or (self._pagetmpl is not other._pagetmpl):
+            return False
+        return self._remote == other._remote
+
     def items(self):
         for iname, ielem, ptmpl, scp in self._pagetmpl.iter_items(self._remote, self._scope):
             yield iname, scp.component_class(iname, self, ptmpl, ielem, scp)
@@ -182,6 +189,12 @@ class ComponentProxy(_SomeProxy):
             return '<%s class="%s">' % (self._remote.tag_name, self._remote.get_attribute('class'))
         except Exception:
             return '<Component>'
+
+    def __eq__(self, other):
+        if not super(ComponentProxy, self).__eq__(other):
+            return False
+        return self._name == other._name  # has to match, too
+        # but parent may differ
 
     def __getstate__(self):
         """Minimal serialization, just for `repr(self)` to work
