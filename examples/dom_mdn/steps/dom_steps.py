@@ -8,6 +8,8 @@ import time
 
 @given(u'I am at the "{page}"')
 def step_impl1(context, page):
+    """Navigates to some page
+    """
     context.site.navigate_by_title(context, page)
 
 

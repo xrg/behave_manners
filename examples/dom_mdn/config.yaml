@@ -6,6 +6,9 @@ site:
     base_url: https://developer.mozilla.org/en-US/docs/Web
     element_timeout: 1000ms
 
+output:
+    dir: out/run_{pid}
+
 browser:        # Technical conf about the browser
     engine: chrome
     launch_on: feature  # or 'scenario' or 'demand'
@@ -19,5 +22,18 @@ browser:        # Technical conf about the browser
         on_failure: true
         on_success: true
 
+    downloads:              # if present, at all, allow downloads
+        dir: downloads      # relative to 'output/dir'
+        allow: true         # default, switch to 'false' to explicitly forbid
+
 page_objects:
     index: site/index.html
+
+
+context:
+    name: foo
+    users:
+        - User 1
+        - User 2
+        - User 3
+        

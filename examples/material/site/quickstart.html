@@ -7,7 +7,14 @@
         </div>
         <doc-viewer pe-deep this="doc">
           <div>
-            <h3 this="chapter_%d" class="docs-header-link">[title]</h3>
+            <h3 this="chapter_%d" class="docs-header-link">
+                <pe-regex name="full-title">Step (?P&lt;step&gt;\d+): *(?P&lt;title&gt;.*)$</pe-regex>
+            </h3>
+            <pre>
+                <code class="language-ts" this="ts-example" pe-optional>
+                    [text]
+                </code>
+            </pre>
           </div>
         </doc-viewer>
     </guide-viewer>
