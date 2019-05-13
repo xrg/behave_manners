@@ -128,6 +128,7 @@ class AngularJSApp(DOMScope):
     _inherit = 'wait.base'
 
     wait_js_conditions = [
+        "if (!angular) { return 'angularjs-startup'; }",
         "if (angular.element(document).injector().get('$http').pendingRequests.length > 0)"
         " { return 'angularjs';}"
         ]
@@ -140,6 +141,7 @@ class Angular5App(DOMScope):
     _inherit = 'wait.base'
 
     wait_js_conditions = [
+        "if(!window.getAllAngularTestabilities) { return 'angular-startup';}",
         "if(window.getAllAngularTestabilities().findIndex(function(x) { return !x.isStable(); }) >= 0)"
         " {return 'angular';}"
         ]
