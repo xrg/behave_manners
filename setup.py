@@ -6,17 +6,28 @@ import os.path
 from setuptools import find_packages, setup
 
 try:
-    with open('README.md', 'rt') as fp:
+    with open('README.txt', 'rt') as fp:
         long_description = fp.read()
 except Exception:
     long_description = ''
 
+try:
+    import subprocess
+    if os.path.exists(os.path.join(os.path.dirname(__file__), '.git')):
+        git_ver = subprocess.check_output(['git', 'describe', '--tags',
+                                           '--match', r'v[0-9]*\.[0-9]*'])
+        version = git_ver[1:].strip().split('-', 2)[0]
+except Exception as e:
+    print("Could not get version: %s" % e)
+    version = '0.5'
+
 setup(
     name='behave-manners',
-    version="0.5",
-    description="A layer of abstraction on top of `behave` for web-UI testing,"
+    version=version,
+    description="A layer of abstraction on top of behave for web-UI testing,"
                 " designed to handle complexity of large sites",
     long_description=long_description,
+    long_description_content_type="text/markdown",
     author="Panos Christeas",
     author_email="xrg@pefnos.com",
     url="http://github.com/xrg/behave_manners",
