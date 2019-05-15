@@ -287,7 +287,8 @@ class GenericElement(DPageElement):
 
 
 class LeafElement(DPageElement):
-    # TODO
+    """Generic element, that has no sub-elements
+    """
     _name = '.leaf'
     _inherit = 'any'
 
@@ -296,6 +297,8 @@ class LeafElement(DPageElement):
 
 
 class TextAttrGetter(AttrGetter):
+    """Descriptor that returns the text of some DOM element
+    """
     def __init__(self, xpath, optional=False, do_strip=False):
         super(TextAttrGetter, self).__init__('text', xpath, optional=optional)
         self._do_strip = do_strip
@@ -313,6 +316,8 @@ class TextAttrGetter(AttrGetter):
         return ret
 
 class PartialTextAttrGetter(TextAttrGetter):
+    """Obtain the text of some DOM element, excluding text of sub-elements
+    """
     def __init__(self, xpath, before_elem=None, after_elem=None, **kwargs):
         super(PartialTextAttrGetter, self).__init__(xpath, **kwargs)
         self._after_elem = after_elem
@@ -351,6 +356,11 @@ class PartialTextAttrGetter(TextAttrGetter):
 
 
 class Text2AttrElement(DPageElement):
+    """Internal pagelem node that retrieves text as an attribute to DOM component
+
+        This is instantiated when template has eg. `<div>[text]</div>` . The text
+        is not asserted, but rather appointed to an attribute of parent component.
+    """
     _name = 'text2attr'
     is_empty = True
     _consume_in = (DomContainerElement,)
@@ -397,6 +407,8 @@ class Text2AttrElement(DPageElement):
 
 
 class RegexAttrGetter(AttrGetter):
+    """Obtain text, resolve it with regular expression into attribute
+    """
     def __init__(self, regex, xpath, group=None, optional=False):
         super(RegexAttrGetter, self).__init__('text', xpath, optional=optional)
         self._regex = regex
@@ -457,6 +469,8 @@ class RegexElement(DPageElement):
 
 
 class NamedElement(DPageElement):
+    """Generic element, defining DOM component through 'this' attribute
+    """
     _name = 'named'
     _inherit = 'any'
 
@@ -551,6 +565,8 @@ class NamedElement(DPageElement):
 
 
 class InputCompatDescr(AttrGetter):
+    """Get/set the value of `<input>` element. Use 'send_keys()' for the setter
+    """
     def __init__(self, xpath):
         super(InputCompatDescr, self).__init__('value', xpath)
 
@@ -569,6 +585,11 @@ class InputCompatDescr(AttrGetter):
 
 
 class InputValueDescr(InputCompatDescr):
+    """Get/set the value of input. Use direct JS setter
+
+        This is way more efficient than `send_keys()`, but known to have issues
+        with elements that have JS validators etc.
+    """
     def __set__(self, comp, value):
         elem = self._elem(comp)
         if elem is None:

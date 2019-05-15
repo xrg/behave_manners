@@ -179,6 +179,8 @@ class Integer(object):
 
 
 def count_calls(fn):
+    """Wrapper for function, keeping a count of fn's calls
+    """
     def __fn(*args, **kwargs):
         __fn.count += 1
         return fn(*args, **kwargs)

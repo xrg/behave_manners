@@ -3,6 +3,14 @@
 from __future__ import absolute_import
 from selenium.common.exceptions import NoSuchElementException
 
+"""
+    Exceptions tailored to pagelems/behave usage.
+
+    Most of these classes just subclass known exceptions, but also keep a
+    reference to the component/web-element that caused the failure.
+
+"""
+
 
 class ElementNotFound(NoSuchElementException):
     """Raised when a `WebElement` cannot locate a child, refers to that parent
@@ -34,10 +42,14 @@ class ElementNotFound(NoSuchElementException):
 
 
 class PageNotReady(AssertionError):
+    """Raised when browser has not finished rendering/settled the page
+    """
     pass
 
 
 class Timeout(AssertionError):
+    """Raised when any action or element fails to respond in time
+    """
     pass
 
 

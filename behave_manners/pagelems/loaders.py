@@ -10,6 +10,7 @@ from os.path import normpath, join
 class BaseLoader(object):
     """Abstract base for loading DPO html files off some storage
 
+        Subclass this to enable loading from any kind of storage.
     """
     def __init__(self):
         pass
@@ -30,6 +31,8 @@ class BaseLoader(object):
 
 
 class FSLoader(BaseLoader):
+    """Trivial filesystem-based loader of files
+    """
 
     def __init__(self, root_dir):
         super(FSLoader, self).__init__()
