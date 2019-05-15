@@ -67,8 +67,6 @@ class _SomeProxy(object):
         self._pagetmpl = pagetmpl
         self._remote = remote
         self._scope = scope
-        if scope is not None:
-            scope.take_component(self)
 
     @property
     def path(self):
@@ -78,7 +76,10 @@ class _SomeProxy(object):
         for iname, ielem, ptmpl, scp in \
                 self._pagetmpl.iter_items(self._remote, self._scope, match=name):
             if name == iname:
-                return scp.component_class(iname, self, ptmpl, ielem, scp)
+                comp = scp.component_class(iname, self, ptmpl, ielem, scp)
+                scp.take_component(comp)
+                return comp
+
         raise CKeyError(name, component=self)  # no such element
 
     def keys(self):
@@ -97,7 +98,9 @@ class _SomeProxy(object):
 
     def items(self):
         for iname, ielem, ptmpl, scp in self._pagetmpl.iter_items(self._remote, self._scope):
-            yield iname, scp.component_class(iname, self, ptmpl, ielem, scp)
+            comp = scp.component_class(iname, self, ptmpl, ielem, scp)
+            scp.take_component(comp)
+            yield iname, comp
 
 
 class PageProxy(_SomeProxy):
