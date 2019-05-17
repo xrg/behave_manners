@@ -47,7 +47,7 @@ def site_setup(context, config=None, extra_conf=None, loader=None):
         context.site = SiteContext(context, config)
 
     if config.get('page_objects'):
-        context.site.init_collection()
+        context.site.init_collection(loader=loader)
 
     if config.get('context'):
         if not isinstance(config['context'], dict):

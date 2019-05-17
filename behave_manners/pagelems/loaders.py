@@ -53,7 +53,7 @@ class FSLoader(BaseLoader):
         old_cwd = os.getcwd()
         fp = None
         try:
-            for fname in glob.glob(normpath(join(filepattern))):
+            for fname in glob.glob(normpath(join(self.root_dir, filepattern))):
                 pdir, fname2 = os.path.split(fname)
                 if pdir:
                     os.chdir(pdir)

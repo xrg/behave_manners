@@ -142,13 +142,15 @@ class SiteContext(object):
     def base_url(self):
         return self._config['site']['base_url']
 
-    def init_collection(self):
+    def init_collection(self, loader=None):
         if self._collection is not None:
             return
         from .pagelems import FSLoader, DSiteCollection
+        if loader is None:
+            loader = FSLoader('.')
 
         po_config = self._config['page_objects']
-        self._collection = DSiteCollection(FSLoader('.'), po_config)
+        self._collection = DSiteCollection(loader, po_config)
         index = po_config.get('index', 'index.html')
         log.debug("Loading index from %s", index)
         self._collection.load_index(index)
