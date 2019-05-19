@@ -1099,6 +1099,23 @@ class PeDataElement(DPageElement):
         yield self._attr_name, property(lambda *c: data)  # deep copy?
 
 
+class PEScopeDataElement(DPageElement):
+    """Attach arbitrary data as a scope attribute
+    
+        WARNING: this data will only work if the component containing this tag
+        is 'discovered', ie. attached to that scope.
+    """
+    _name = 'tag.pe-scopedata'
+    _inherit = 'tag.pe-data'
+
+    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
+        if scope is None:
+            return ()
+        data = deepcopy(self._attr_value)
+        setattr(scope, self._attr_name, data)
+        return ()
+
+
 class ConsumeTmplMixin(object):
     """Common between Head and Body elements, temporarily hold templates
     """
@@ -1443,7 +1460,8 @@ DataElement._consume_in += (DomContainerElement, RegexElement, PeDataElement)
 
 
 class PageParser(BaseDPOParser):
-    CDATA_CONTENT_ELEMENTS = BaseDPOParser.CDATA_CONTENT_ELEMENTS + ('pe-regex', 'pe-data')
+    CDATA_CONTENT_ELEMENTS = BaseDPOParser.CDATA_CONTENT_ELEMENTS + \
+                            ('pe-regex', 'pe-data', 'pe-scopedata')
     logger = logging.getLogger(__name__ + '.PageParser')
 
     def __init__(self, root_element):
