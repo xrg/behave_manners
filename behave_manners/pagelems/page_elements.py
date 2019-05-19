@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import logging
 import re
 import json
+from copy import deepcopy
 from collections import defaultdict
 
 from .helpers import textescape, prepend_xpath, word_re, to_bool
@@ -1094,7 +1095,8 @@ class PeDataElement(DPageElement):
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         """Irrespective of webelem or scope, return the value
         """
-        yield self._attr_name, property(lambda *c: self._attr_value)
+        data = deepcopy(self._attr_value)
+        yield self._attr_name, property(lambda *c: data)  # deep copy?
 
 
 class ConsumeTmplMixin(object):
