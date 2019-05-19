@@ -158,6 +158,8 @@ class SiteContext(object):
 
 
 class WebContext(SiteContext):
+    """Site context when a browser needs to be launched
+    """
     _log = logging.getLogger('behave.site.webcontext')
 
     def __init__(self, context, config=None):
@@ -175,6 +177,9 @@ class WebContext(SiteContext):
         context.add_cleanup(self.events.pop)
 
     def launch_browser(self, context):
+        """Launch a browser, attach it to `context.browser`
+
+        """
         browser_opts = self._config['browser']
         caps = {}
         caps['record_network'] = 'true'
@@ -342,6 +347,8 @@ class WebContext(SiteContext):
             self._log.error("Could not fetch step logs: %s", e)
 
     def process_logs(self, context):
+        """Fetch logs from browser and process them
+        """
         for lt in self._browser_log_types:
             self._push_log_entries(lt, context.browser.get_log(lt), _cleanup_logentry)
 
@@ -393,6 +400,8 @@ class WebContext(SiteContext):
         context.cur_page.wait_all('medium')
 
     def get_cur_title(self, context):
+        """Return pretty title of page currently loaded on the browser
+        """
         #up = urlparse.urlparse()
         cur_url = context.browser.current_url
         if cur_url.startswith(self.base_url):

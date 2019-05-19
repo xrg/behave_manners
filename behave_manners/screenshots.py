@@ -15,6 +15,10 @@ from selenium.webdriver.common.action_chains import ActionChains
 
 class Camera(object):
     """A camera takes screenshots (or element shots) of the browser view
+    
+        An instance will be attached to the behave context. Configured by
+        site configuration. Then triggered each time a step explicitly
+        wants a screenshot, or the hooks implicitly catching some failure.
     """
     _log = logging.getLogger('behave.site')
     highlight_js = '''
@@ -55,6 +59,8 @@ class Camera(object):
                                          num=self.count, timestamp=int(time.time()))
 
     def take_shot(self, context, mode=''):
+        """Capture the full browser viewport.
+        """
         fname = self._make_name(mode)
         self._log.warning("Taking screenshot to \"%s\"", fname)
         context.browser.get_screenshot_as_file(os.path.join(self.base_dir, fname))

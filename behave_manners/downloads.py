@@ -11,6 +11,8 @@ import errno
 import fnmatch
 from .pagelems.exceptions import Timeout
 
+"""Implicit tracking of browser downloads
+"""
 
 logger = logging.getLogger(__name__)
 
