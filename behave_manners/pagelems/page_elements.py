@@ -1404,7 +1404,9 @@ class DHtmlObject(DPageElement):
         else:
             klsname = 'page'
         new_scope = DOMScope[klsname](parent=parent_scope, templates=self._templates)
-        return PageProxy(self, webdriver, scope=new_scope)
+        comp = PageProxy(self, webdriver, scope=new_scope)
+        new_scope.take_component(comp)
+        return comp
 
 
 class GHtmlObject(DPageElement):
