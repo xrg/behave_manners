@@ -337,7 +337,12 @@ class WebContext(SiteContext):
 
     def _event_after_step(self, context, step):
         if step.status == Status.failed:
-            self._log.warning("Step: \"%s\" failed.\n%s", step.name, step.exception or "no exception")
+            try:
+                msg_url = "Browser currently at: %s\n" % context.browser.current_url
+            except Exception:
+                msg_url = ''
+            self._log.warning("Step: \"%s\" failed.\n%s%s", step.name,
+                              msg_url, step.exception or "no exception")
             self.events.after_step_failed(context, step)
         try:
             self.process_logs(context)
