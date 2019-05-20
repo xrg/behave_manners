@@ -14,6 +14,8 @@ def cmdline_main():
     parser = argparse.ArgumentParser(description='check validity of DPO template files')
     parser.add_argument('-N', '--no-preloads', action='store_true',
                         help='check only the index file')
+    parser.add_argument('-A', '--load-all', action='store_true',
+                        help="Force load all template files")
     parser.add_argument('index', metavar='index.html',
                         help="path to 'index.html' file")
     parser.add_argument('inputs', metavar='page.html', nargs='*',
@@ -33,16 +35,18 @@ def cmdline_main():
     for pfile in args.inputs:
         site.load_pagefile(pfile)
 
-    if not args.no_preloads:
+    if args.load_all:
+        site.load_all()
+    elif not args.no_preloads:
         site.load_preloads()
-        
+
     log.info("Site collection contains %d pages, %d files",
              len(site.page_dir), len(site.file_dir))
-    
+
     print("Site files:")
     for trg, content in site.file_dir.items():
         print("    ", trg, content and '*' or '')
-    
+
     print("\nSite pages:")
     for page, trg in site.page_dir.items():
         print("    %s: %s" % (page, trg))

@@ -118,8 +118,7 @@ class DSiteCollection(DPageElement):
 
             Used for forced scan of their content
         """
-        raise NotImplementedError
-        pending = 1
+        self.load_preloads()
         while True:
             pending = [ pname for pname, cnt in self.file_dir.items() if cnt is None]
             if not pending:
