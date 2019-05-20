@@ -386,7 +386,7 @@ class WebContext(SiteContext):
                 context.pagelems_scope = new_scope
             return new_scope
 
-    def navigate_by_title(self, context, title, force=False):
+    def navigate_by_title(self, context, title, force=False, soft=None):
         """Open a URL, by pretty title
         """
         url = self.base_url
@@ -398,8 +398,37 @@ class WebContext(SiteContext):
         url = url + purl
         self._log.debug("Navigating to %s", url)
         # TODO: up = urlparse.urlparse(driver.current_url)
-        if force or context.browser.current_url != url:
-            context.browser.get(url)
+        self._load_url(context, page, url, force=force, soft=soft)
+
+    def _load_url(self, context, page, url, force=False, soft=None):
+        """Tell the browser to navigate to some URL
+
+            It may not always work: some race conditions with pending scripts
+            also trying to set the location may contend with this one.
+            So, perform a few retries to do that.
+        """
+        if soft is None:
+            soft = self._config['browser'].get('soft_change', False)
+
+        if force:
+            cur_url = False
+        else:
+            cur_url = context.browser.current_url
+
+        for x in range(self._config['browser'].get('change_retries', 3)):
+            if cur_url == url:
+                break
+            if soft:
+                context.browser.execute_script('window.location = arguments[0];', url)
+            else:
+                context.browser.get(url)
+            old_url = cur_url
+            cur_url = context.browser.current_url
+            if cur_url != old_url:
+                # something changed, may still not be `url`
+                break
+            time.sleep(0.5)
+
         scp = self._root_scope(context)
         context.cur_page = page.get_root(context.browser, parent_scope=scp)
         context.cur_page.wait_all('medium')
@@ -422,7 +451,7 @@ class WebContext(SiteContext):
             self._log.warning("No match for url: %s", cur_url)
             return None
 
-    def navigate_by_url(self, context, url, force=False):
+    def navigate_by_url(self, context, url, force=False, soft=None):
         # TODO: up = urlparse.urlparse(driver.current_url)
         curl = url.split('?', 1)[0]
         page, title, params = self._collection.get_by_url(curl)
@@ -431,11 +460,7 @@ class WebContext(SiteContext):
         else:
             url = self.base_url + url
         self._log.debug("Navigating to %s", url)
-        if force or context.browser.current_url != url:
-            context.browser.get(url)
-        scp = self._root_scope(context)
-        context.cur_page = page.get_root(context.browser, parent_scope=scp)
-        context.cur_page.wait_all('medium')
+        self._load_url(context, page, url, force=force, soft=soft)
 
     def validate_cur_page(self, context, max_depth=10000):
         """Validates current browser page against pagelem template

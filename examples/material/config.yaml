@@ -8,6 +8,8 @@ site:
 browser:        # Technical conf about the browser
     engine: chrome
     launch_on: feature  # or 'scenario' or 'demand'
+    soft_change: true
+    # change_retries: 3
     window: 1000x500
     # more capabilities...
     # headless: true
