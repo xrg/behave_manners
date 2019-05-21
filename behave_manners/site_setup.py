@@ -7,7 +7,7 @@ import copy
 import six
 import os.path
 from behave.runner import Context
-from .site import SiteContext, WebContext
+from .site import SiteContext
 
 
 def site_setup(context, config=None, extra_conf=None, loader=None):
@@ -30,21 +30,26 @@ def site_setup(context, config=None, extra_conf=None, loader=None):
         config = SiteContext._load_config(config, loader, extra_conf)
 
     if config.get('browser'):
-        context.site = WebContext(context, config)
-        if config['browser'].get('screenshots'):
-            from .screenshots import Camera
-            shots_cfg = config['browser']['screenshots']
-            shots_dir = os.path.join(context.site.output_dir, shots_cfg.get('dir', '.'))
-            camera = context.site_camera = Camera(base_dir=shots_dir)
-            events = context.site.events
-
-            if shots_cfg.get('on_failure', False):
-                events.after_step_failed = camera.snap_failure
-            if shots_cfg.get('on_success', False):
-                events.after_scenario = camera.snap_success
-            events.on_missing_element = camera.capture_missing_elem
+        site_class = ['browser.generic']
+        if config['browser'].get('engine'):
+            site_class.insert(0, 'browser.%s' % config['browser']['engine'].lower())
     else:
-        context.site = SiteContext(context, config)
+        site_class = '*'
+
+    context.site = SiteContext.get_class(site_class)(context,config)
+
+    if config.get('browser', {}).get('screenshots'):
+        from .screenshots import Camera
+        shots_cfg = config['browser']['screenshots']
+        shots_dir = os.path.join(context.site.output_dir, shots_cfg.get('dir', '.'))
+        camera = context.site_camera = Camera(base_dir=shots_dir)
+        events = context.site.events
+
+        if shots_cfg.get('on_failure', False):
+            events.after_step_failed = camera.snap_failure
+        if shots_cfg.get('on_success', False):
+            events.after_scenario = camera.snap_success
+        events.on_missing_element = camera.capture_missing_elem
 
     if config.get('page_objects'):
         context.site.init_collection(loader=loader)

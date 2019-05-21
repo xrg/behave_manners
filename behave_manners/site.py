@@ -14,6 +14,7 @@ import yaml
 import urllib3.exceptions
 
 from f3utils.dict_tools import merge_dict
+from f3utils.service_meta import abstractmethod, _ServiceMeta
 
 from selenium import webdriver
 from behave.model_core import Status
@@ -29,7 +30,7 @@ def _noop_fn(context, *args):
 
 seconds_re = re.compile(r'([1-9]\d+)(m?)s(?:ec)?$')
 
-
+@six.add_metaclass(_ServiceMeta)
 class SiteContext(object):
     """Holds (web)site information in a behave context
 
@@ -160,6 +161,7 @@ class SiteContext(object):
 class WebContext(SiteContext):
     """Site context when a browser needs to be launched
     """
+    _name = 'browser'
     _log = logging.getLogger('behave.site.webcontext')
 
     def __init__(self, context, config=None):
@@ -176,23 +178,11 @@ class WebContext(SiteContext):
         self._implicit_sec = 0
         context.add_cleanup(self.events.pop)
 
-    def launch_browser(self, context):
-        """Launch a browser, attach it to `context.browser`
-
-        """
+    def _setup_downloads(self, context):
         browser_opts = self._config['browser']
-        caps = {}
-        caps['record_network'] = 'true'
-        caps['take_snapshot'] = 'true'
-
-        desired_engine = browser_opts.get('engine', 'chrome').lower()
-
-        allow_downloads = False     # on an empty config
-        download_dir = None
         if 'downloads' in browser_opts:
             from .downloads import DownloadManager
             if browser_opts['downloads'].get('allow', True):
-                allow_downloads = True
 
                 if getattr(context, 'download_dir', None):
                     # read it FROM the context
@@ -205,85 +195,21 @@ class WebContext(SiteContext):
                         os.makedirs(download_dir)
                     context.download_dir = download_dir
                 context.downloads = DownloadManager(context.download_dir)
+                return download_dir
+        return None
 
-        if desired_engine == 'chrome':
-            options = webdriver.ChromeOptions()
-            dcaps = webdriver.DesiredCapabilities.CHROME.copy()
-            dcaps['loggingPrefs'] = {'driver': 'WARNING', 'browser': 'ALL'}
-            if browser_opts.get('log_performance', False):
-                dcaps['loggingPrefs']['performance'] = 'ALL'
-                dcaps['perfLoggingPrefs'] = {'enableNetwork': True, 'enablePage': True}
-            dcaps.update(caps)
-            if 'binary_location' in browser_opts:
-                options.binary_location = browser_opts['binary_location']
-            if browser_opts.get('headless', True):
-                options.add_argument('headless')
-            options.add_argument('disable-infobars')
-            if browser_opts.get('no_automation', False):
-                options.add_experimental_option('useAutomationExtension', False)
-            if 'window' in browser_opts:
-                w, h = self._decode_win_size(browser_opts['window'])
-                options.add_argument('window-size=%d,%d' % (w, h))
+    def launch_browser(self, context):
+        """Launch a browser, attach it to `context.browser`
 
-            if allow_downloads:
-                options.add_experimental_option("prefs", {
-                    "download.default_directory": download_dir,
-                    "download.prompt_for_download": False,
-                    "download.directory_upgrade": True,
-                    "safebrowsing.enabled": True
-                    })
+        """
+        browser_opts = self._config['browser']
+        caps = {}
+        caps['record_network'] = 'true'
+        caps['take_snapshot'] = 'true'
 
-            for opt in ('auth-server-whitelist',):
-                val = browser_opts.get(opt.replace('-', '_'), None)
-                if val is not None:
-                    options.add_argument('%s=%s' % (opt, val))
-
-            context.browser = webdriver.Chrome(chrome_options=options,
-                                               desired_capabilities=dcaps,
-                                               service_args=browser_opts\
-                                                   .get('chromedriver_args', []))
-            self._browser_log_types = context.browser.log_types
-
-        elif desired_engine == 'firefox':
-            options = webdriver.FirefoxOptions()
-            dcaps = webdriver.DesiredCapabilities.FIREFOX.copy()
-            dcaps.update(caps)
-            if 'binary_location' in browser_opts:
-                options.binary_location = browser_opts['binary_location']
-            options.headless = browser_opts.get('headless', True)
-            profile = webdriver.FirefoxProfile()
-
-            if allow_downloads:
-                profile.set_preference("browser.download.folderList", 2)
-                profile.set_preference("browser.download.manager.showWhenStarting", False)
-                profile.set_preference("browser.download.dir", download_dir)
-                profile.set_preference("browser.download.loglevel", "Info")
-                profile.set_preference("browser.download.forbid_open_with", True)
-                # profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/x-gzip")
-
-            context.browser = webdriver.Firefox(firefox_profile=profile,
-                                                firefox_options=options,
-                                                desired_capabilities=dcaps,
-                                                service_args=browser_opts\
-                                                    .get('geckodriver_args', []))
-            if 'window' in browser_opts:
-                w, h = self._decode_win_size(browser_opts['window'])
-                context.browser.set_window_size(w,h)
-            self._browser_log_types = []   # ['browser', 'driver', 'client', 'server']
-        elif desired_engine == 'iexplorer':
-            options = webdriver.IeOptions()
-            dcaps = webdriver.DesiredCapabilities.INTERNETEXPLORER.copy()
-            dcaps.update(caps)
-            if 'binary_location' in browser_opts:
-                options.binary_location = browser_opts['binary_location']
-            context.browser = webdriver.Ie(ie_options=options,
-                                           desired_capabilities=dcaps)
-            if 'window' in browser_opts:
-                w, h = self._decode_win_size(browser_opts['window'])
-                context.browser.set_window_size(w,h)
-            self._browser_log_types = []
-        else:
-            raise NotImplementedError('Unsupported engine: %s' % desired_engine)
+        dwdir = self._setup_downloads(context)
+        context.browser = self._launch_browser2(caps, download_dir=dwdir)
+        context.add_cleanup(self._release_browser, context)
 
         if browser_opts.get('implicit_wait'):
             m = seconds_re.match(browser_opts['implicit_wait'])
@@ -297,7 +223,10 @@ class WebContext(SiteContext):
             else:
                 raise ValueError("Unknown multiplier: %s" % m.group(2))
             context.browser.implicitly_wait(self._implicit_sec)
-        context.add_cleanup(self._release_browser, context)
+
+    @abstractmethod
+    def _launch_browser2(self, caps):
+        raise NotImplementedError('Unsupported engine')
 
     _pixel_size_re = re.compile(r'(\d+)x(\d+)$')
 
@@ -554,6 +483,138 @@ class WebContext(SiteContext):
         context.cur_page = page.get_root(context.browser, parent_scope=scp)
         context.cur_page.wait_all('medium')
         return title
+
+
+class GenericWebContext(SiteContext):
+    _name = 'browser.generic'
+    _inherit = 'browser'
+
+    def _launch_browser2(self, caps, download_dir):
+        return webdriver.Remote(desired_capabilities=caps)
+
+
+class ChromeWebContext(SiteContext):
+    """Web context for Chromium browser
+    """
+    _name = 'browser.chrome'
+    _inherit = 'browser'
+
+    def _launch_browser2(self, caps, download_dir):
+        """Prepare options for Chromium and call `_launch_browser3()` to start it
+        """
+        browser_opts = self._config['browser']
+        options = webdriver.ChromeOptions()
+        dcaps = webdriver.DesiredCapabilities.CHROME.copy()
+        dcaps['loggingPrefs'] = {'driver': 'WARNING', 'browser': 'ALL'}
+        if browser_opts.get('log_performance', False):
+            dcaps['loggingPrefs']['performance'] = 'ALL'
+            dcaps['perfLoggingPrefs'] = {'enableNetwork': True, 'enablePage': True}
+        dcaps.update(caps)
+        if 'binary_location' in browser_opts:
+            options.binary_location = browser_opts['binary_location']
+        if browser_opts.get('headless', True):
+            options.add_argument('headless')
+        options.add_argument('disable-infobars')
+        if browser_opts.get('no_automation', False):
+            options.add_experimental_option('useAutomationExtension', False)
+        if 'window' in browser_opts:
+            w, h = self._decode_win_size(browser_opts['window'])
+            options.add_argument('window-size=%d,%d' % (w, h))
+
+        if download_dir is not None:
+            options.add_experimental_option("prefs", {
+                "download.default_directory": download_dir,
+                "download.prompt_for_download": False,
+                "download.directory_upgrade": True,
+                "safebrowsing.enabled": True
+                })
+
+        for opt in ('auth-server-whitelist',):
+            val = browser_opts.get(opt.replace('-', '_'), None)
+            if val is not None:
+                options.add_argument('%s=%s' % (opt, val))
+
+        browser = self._launch_browser_chrome(
+                        options, dcaps,
+                        service_args=browser_opts.get('chromedriver_args', [])
+                        )
+        self._browser_log_types = browser.log_types
+        return browser
+
+    def _launch_browser_chrome(self, options, dcaps, **kwargs):
+        """Launch the browser with specified options, desired_capabilities
+
+            Hook point for last minute or after-launch setup
+        """
+        return webdriver.Chrome(chrome_options=options,
+                                desired_capabilities=dcaps,
+                                **kwargs)
+
+
+class FirefoxWebContext(SiteContext):
+    """Web context for Chromium browser
+    """
+    _name = 'browser.firefox'
+    _inherit = 'browser'
+
+    def _launch_browser2(self, caps, download_dir):
+        browser_opts = self._config['browser']
+        options = webdriver.FirefoxOptions()
+        dcaps = webdriver.DesiredCapabilities.FIREFOX.copy()
+        dcaps.update(caps)
+        if 'binary_location' in browser_opts:
+            options.binary_location = browser_opts['binary_location']
+        options.headless = browser_opts.get('headless', True)
+        profile = webdriver.FirefoxProfile()
+
+        if download_dir is not None:
+            profile.set_preference("browser.download.folderList", 2)
+            profile.set_preference("browser.download.manager.showWhenStarting", False)
+            profile.set_preference("browser.download.dir", download_dir)
+            profile.set_preference("browser.download.loglevel", "Info")
+            profile.set_preference("browser.download.forbid_open_with", True)
+            # profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/x-gzip")
+
+        browser = self._launch_browser_ff(profile, options, dcaps,
+                                          service_args=browser_opts.get('geckodriver_args', []))
+        if 'window' in browser_opts:
+            w, h = self._decode_win_size(browser_opts['window'])
+            browser.set_window_size(w,h)
+        self._browser_log_types = []   # ['browser', 'driver', 'client', 'server']
+        return browser
+
+    def _launch_browser_ff(self, profile, options, dcaps, **kwargs):
+        browser = webdriver.Firefox(firefox_profile=profile,
+                                    firefox_options=options,
+                                    desired_capabilities=dcaps,
+                                    **kwargs)
+        return browser
+
+
+class IExploderWebContext(SiteContext):
+    """Web context for Chromium browser
+    """
+    _name = 'browser.iexplorer'
+    _inherit = 'browser'
+
+    def _launch_browser2(self, caps, download_dir):
+        browser_opts = self._config['browser']
+        options = webdriver.IeOptions()
+        dcaps = webdriver.DesiredCapabilities.INTERNETEXPLORER.copy()
+        dcaps.update(caps)
+        if 'binary_location' in browser_opts:
+            options.binary_location = browser_opts['binary_location']
+        self._browser_log_types = []
+        browser = self._launch_browser_ie(options, dcaps)
+        if 'window' in browser_opts:
+            w, h = self._decode_win_size(browser_opts['window'])
+            browser.set_window_size(w,h)
+        return browser
+
+    def _launch_browser_ie(self, context, options, dcaps, **kwargs):
+        return webdriver.Ie(ie_options=options,
+                            desired_capabilities=dcaps,
+                            **kwargs)
 
 
 _wd_loglevels = {'INFO': logging.INFO, 'WARN': logging.WARNING,
