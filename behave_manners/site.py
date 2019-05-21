@@ -538,7 +538,14 @@ class ChromeWebContext(SiteContext):
                         options, dcaps,
                         service_args=browser_opts.get('chromedriver_args', [])
                         )
-        self._browser_log_types = browser.log_types
+        # add missing support for chrome "send_command"  to selenium webdriver
+        browser.command_executor._commands["send_command"] = \
+                ("POST", '/session/$sessionId/chromium/send_command')
+
+        if download_dir is not None and browser_opts.get('headless', True):
+            params = {'cmd': 'Page.setDownloadBehavior',
+                      'params': {'behavior': 'allow', 'downloadPath': download_dir}}
+            browser.execute("send_command", params)
         return browser
 
     def _launch_browser_chrome(self, options, dcaps, **kwargs):
