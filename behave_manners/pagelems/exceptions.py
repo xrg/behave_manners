@@ -41,6 +41,10 @@ class ElementNotFound(NoSuchElementException):
             return repr(self.parent)
 
 
+class UnwantedElement(NoSuchElementException):
+    pass
+
+
 class PageNotReady(AssertionError):
     """Raised when browser has not finished rendering/settled the page
     """

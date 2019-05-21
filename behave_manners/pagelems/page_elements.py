@@ -7,11 +7,12 @@ import json
 from copy import deepcopy
 from collections import defaultdict
 
-from .helpers import textescape, prepend_xpath, word_re, to_bool
+from .helpers import textescape, prepend_xpath, word_re, to_bool, Integer
 from .base_parsers import DPageElement, DataElement, BaseDPOParser, \
                           HTMLParseError, DOMScope
 from .site_collection import DSiteCollection
-from .exceptions import ElementNotFound, CAttributeError, CKeyError
+from .exceptions import ElementNotFound, CAttributeError, CKeyError, \
+                        UnwantedElement
 from selenium.webdriver.remote.webdriver import WebElement
 from selenium.common.exceptions import NoSuchElementException
 import six
@@ -295,6 +296,77 @@ class LeafElement(DPageElement):
 
     def consume(self, element):
         raise TypeError('%s cannot consume %r' % (self._name, element))
+
+
+class PeNotElement(DPageElement):
+    """Negative-match element: check that element does NOT contain others
+
+        Negative-match will invert the meaning of contained matches, thus
+        not selecting parents that contain specified patterns.
+
+        Example::
+
+            <div class="eggs">
+                <pe-not><div class="spam"></div>
+                </pe-not>
+            </div>
+
+        Meaning that it will match a `div@class=eggs` that does NOT contain
+        a spam `div` .
+
+        When multiple children elements are specified inside pe-not, then
+        *all* of them should be present for parent to mis-match. Having any
+        of the children but not all, will allow the parent to match.
+
+        The other logic, failing the parent if any children exist, is possible
+        by using multiple `<pe-not>` elements.
+
+        Do not use named elements (with `this`) or logic of `pe-choice`,
+        `pe-repeat` or pe-optional elements inside a `pe-not`. As it will never
+        create components, such logic is pointless.
+    """
+    _name = 'tag.pe-not'
+    _inherit = '.domContainer'
+
+    def reduce(self, site=None):
+        n = super(PeNotElement, self).reduce(site)
+        if n is self and not self._children:
+            raise ValueError("<pe-not> must have children")
+        return n
+
+    def xpath_locator(self, score, top=False):
+        """Force that this will not match a narrow locator of its contents
+        
+        """
+        score2 = Integer(1000)
+        child_locs = []
+        for c in self._children:
+            cloc = c.xpath_locator(score2)
+            if cloc and cloc != '*':
+                child_locs.append(cloc)
+
+        locator = ' and '.join(child_locs)
+        if top:
+            return '*[' + locator + ']'
+        else:
+            return 'not(%s)' % locator
+
+    def _locate_in(self, remote, scope, xpath_prefix, match):
+        if (not xpath_prefix):
+            xpath2 = 'self::' + self.xpath
+        else:
+            xpath2 = prepend_xpath(xpath_prefix, self.xpath)
+        if remote.find_elements_by_xpath(xpath2):
+            raise UnwantedElement(parent=remote, selector=xpath2)
+        return ()
+
+    def iter_items(self, remote, scope, xpath_prefix='', match=None):
+        """This element should never participate as a component
+        """
+        raise RuntimeError("<pe-not> found materialized")
+
+    def iter_attrs(self, webelem=None, scope=None, xpath_prefix=''):
+        raise RuntimeError("<pe-not> found materialized")
 
 
 class TextAttrGetter(AttrGetter):
@@ -879,6 +951,8 @@ class PeChoiceElement(DPageElement):
                     seen.add(welem)
                     yield n, welem, p, scp
                     nfound += 1
+            except UnwantedElement:
+                pass
             except ElementNotFound as e:
                 if enofound is None:
                     enofound = e
