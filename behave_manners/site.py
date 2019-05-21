@@ -246,7 +246,7 @@ class WebContext(SiteContext):
     def _release_browser(self, context):
         """Release or destroy the browser after context has finished with it
         """
-        self._log.info("cleanup browser")
+        self._log.debug("cleanup browser")
         context.browser.quit()
 
     def _event_before_feature(self, context, feature):

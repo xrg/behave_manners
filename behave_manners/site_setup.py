@@ -16,7 +16,7 @@ def site_setup(context, config=None, extra_conf=None, loader=None):
         Follow the config for site, browser and page elements settings,
         store them in :py:class:`behave.Context` .
     """
-    # context.config.setup_logging() ??
+    context.config.setup_logging()
     from .pagelems import FSLoader
 
     assert isinstance(context, Context)
