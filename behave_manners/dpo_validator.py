@@ -164,7 +164,7 @@ def cmdline_main():
     def _get_cur_path(cur_url):
         if sdata.get('base_url'):
             if cur_url.startswith(sdata['base_url']):
-                return cur_url[len(sdata['base_url']):]
+                return cur_url[len(sdata['base_url']):].split('?', 1)[0]
             else:
                 log.warning("Current url not under base_url")
                 return None
