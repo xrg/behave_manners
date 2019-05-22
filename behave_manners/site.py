@@ -315,7 +315,7 @@ class WebContext(SiteContext):
                 context.pagelems_scope = new_scope
             return new_scope
 
-    def navigate_by_title(self, context, title, force=False, soft=None):
+    def navigate_by_title(self, context, title, **kwargs):
         """Open a URL, by pretty title
         """
         url = self.base_url
@@ -327,9 +327,9 @@ class WebContext(SiteContext):
         url = url + purl
         self._log.debug("Navigating to %s", url)
         # TODO: up = urlparse.urlparse(driver.current_url)
-        self._load_url(context, page, url, force=force, soft=soft)
+        self._load_url(context, page, url, **kwargs)
 
-    def _load_url(self, context, page, url, force=False, soft=None):
+    def _load_url(self, context, page, url, force=False, soft=None, wait='medium'):
         """Tell the browser to navigate to some URL
 
             It may not always work: some race conditions with pending scripts
@@ -360,7 +360,8 @@ class WebContext(SiteContext):
 
         scp = self._root_scope(context)
         context.cur_page = page.get_root(context.browser, parent_scope=scp)
-        context.cur_page.wait_all('medium')
+        if wait:
+            context.cur_page.wait_all(wait)
 
     def get_cur_title(self, context):
         """Return pretty title of page currently loaded on the browser
@@ -380,7 +381,7 @@ class WebContext(SiteContext):
             self._log.warning("No match for url: %s", cur_url)
             return None
 
-    def navigate_by_url(self, context, url, force=False, soft=None):
+    def navigate_by_url(self, context, url, **kwargs):
         # TODO: up = urlparse.urlparse(driver.current_url)
         curl = url.split('?', 1)[0]
         page, title, params = self._collection.get_by_url(curl)
@@ -389,7 +390,7 @@ class WebContext(SiteContext):
         else:
             url = self.base_url + url
         self._log.debug("Navigating to %s", url)
-        self._load_url(context, page, url, force=force, soft=soft)
+        self._load_url(context, page, url, **kwargs)
 
     def validate_cur_page(self, context, max_depth=10000):
         """Validates current browser page against pagelem template
