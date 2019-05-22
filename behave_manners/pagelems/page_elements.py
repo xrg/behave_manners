@@ -1426,6 +1426,15 @@ class DHtmlObject(DPageElement):
     _name = 'tag.html'
     _inherit = '.basehtml'
 
+    _attrs_map = {'pe-controller': ('_pe_ctrl', None, None),
+                  'pe-ctrl': ('_pe_ctrl', None, None),
+                  'lang': ('_lang', None, None),
+                  }
+
+    def __init__(self, tag, attrs):
+        super(DHtmlObject, self).__init__(tag, attrs)
+        self._parse_attrs(attrs)
+
     def reduce(self, site=None):
         self._reduce_children(site)
         return super(DHtmlObject, self).reduce(site)
@@ -1473,7 +1482,9 @@ class DHtmlObject(DPageElement):
         """Obtain a proxy to the root DOM of remote WebDriver, bound to this template
         """
         from .dom_components import PageProxy
-        if parent_scope is not None:
+        if self._pe_ctrl:
+            klsname = self._pe_ctrl
+        elif parent_scope is not None:
             klsname = parent_scope.site_config.get('page_controller', 'page')
         else:
             klsname = 'page'
