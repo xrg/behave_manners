@@ -17,6 +17,8 @@ try:
         git_ver = subprocess.check_output(['git', 'describe', '--tags',
                                            '--match', r'v[0-9]*\.[0-9]*'])
         version = git_ver[1:].strip().split('-', 2)[0]
+    else:
+        version = '0.5'
 except Exception as e:
     print("Could not get version: %s" % e)
     version = '0.5'
