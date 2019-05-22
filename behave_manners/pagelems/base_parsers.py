@@ -171,7 +171,7 @@ class DPageElement(object):
             if d is AttributeError:
                 raise ValueError('Missing mandatory attribute in <%s %s=??>'
                                  % (self.tag, k))
-            else:
+            elif not hasattr(self, py):
                 setattr(self, py, d)
 
     def consume(self, element):
