@@ -1,7 +1,7 @@
 .. _tutorial1:
 
-Tutorial
-=========
+Tutorial 1: Get started
+=======================
 
 A short tutorial on how to get started (from scratch) using `behave_manners`.
 
