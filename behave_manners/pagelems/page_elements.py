@@ -1359,7 +1359,8 @@ class DUseTemplateElem(DPageElement):
     _name = 'tag.use-template'
     _inherit = '.domContainer'
 
-    _attrs_map = { 'id': ('template_id', str, AttributeError),
+    _attrs_map = {'id': ('template_id', str, AttributeError),
+                  'pass-slots': ('_pass_slots', to_bool, None),
                  }
 
     def __init__(self, tag, attrs):
@@ -1390,13 +1391,21 @@ class DUseTemplateElem(DPageElement):
         # Proxy to actual template. Locate that one and iterate that
         tmpl = scope.get_template(self.template_id)
         scp2 = DOMScope.new(parent=scope)
-        scp2.slots = self._by_slot
+        if self._pass_slots:
+            scp2.slots = scope.slots.copy()
+            scp2.slots.update(self._by_slot)
+        else:
+            scp2.slots = self._by_slot
         return tmpl.iter_items(remote, scp2, xpath_prefix, match)
 
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         tmpl = scope.get_template(self.template_id)
         scp2 = DOMScope.new(parent=scope)
-        scp2.slots = self._by_slot
+        if self._pass_slots:
+            scp2.slots = scope.slots.copy()
+            scp2.slots.update(self._by_slot)
+        else:
+            scp2.slots = self._by_slot
         return tmpl.iter_attrs(webelem, scp2, xpath_prefix)
 
 
