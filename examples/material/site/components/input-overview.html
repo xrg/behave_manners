@@ -1,0 +1,22 @@
+<html>
+<head>
+    <link rel="import" href="layout.html">
+</head>
+<body>
+    <use-template id="layout">
+        <div slot="title">Basic Inputs</div>
+        <input-overview-example slot="body">
+            <form>
+                <mat-form-field this="[placeholder]">
+                    <pe-any matinput pe-deep placeholder="[placeholder]"/>
+                    <pe-choice>
+                        <input pe-deep matinput this="input">
+                        <textarea pe-deep matinput this="input">
+                    </pe-choice>
+                </mat-form-field>
+            </form>
+        </input-overview-example>
+    </use-template>
+
+</body>
+</html>

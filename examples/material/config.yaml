@@ -13,7 +13,7 @@ browser:        # Technical conf about the browser
     window: 1000x500
     # more capabilities...
     # headless: true
-    headless: false
+    # headless: false
     implicit_wait: 500ms
 
     screenshots:

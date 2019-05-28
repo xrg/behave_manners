@@ -69,6 +69,30 @@ def step_blank_field(context):
 def step_enter_value(context, value):
     context.cur_element.value = value
 
+@given(u'I have loaded a long text file')
+def read_long_text(context):
+    with open("/usr/share/common-licenses/Artistic", 'rt') as fp:
+        context.long_text = fp.read()
+
+
+@when(u'I paste the long text in')
+def type_long_text(context):
+    context.cur_element['input'].value = context.long_text
+
+
+@when(u'I type the long text in')
+def type_long_text(context):
+    inp = context.cur_element['input']._remote
+    inp.click()
+    inp.clear()
+    inp.send_keys(context.long_text)
+
+
+@then(u'I can read the long text back')
+def validate_long_text(context):
+    assert context.cur_element['input'].value == context.long_text, \
+            "value is only %s..." % context.cur_element['input'].value[:100]
+
 
 @given(u'the material version is "{version}"')
 def set_mat_version(context, version):
