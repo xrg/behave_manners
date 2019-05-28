@@ -1,0 +1,45 @@
+<html>
+<head>
+    <link rel="import" href="layout.html">
+</head>
+<body>
+    <use-template id="layout">
+        <div slot="title">Dialog Overview</div>
+        <dialog-overview-example slot="body">
+            <ol>
+                <li>
+                    <mat-form-field this="name-input" pe-ctrl="mat-input">
+                        <input pe-deep matinput this="input">
+                    </mat-form-field>
+                </li>
+                <li>
+                    <button this="Pick one">
+                        <span>Pick one</span>
+                    </button>
+                </li>
+            </ol>
+            <pe-root>
+                <div class="cdk-overlay-container">
+                    <div><div class="cdk-overlay-pane">
+                        <dialog-overview-example-dialog pe-deep this="dialog" pe-optional>
+                            <h1> Hi</h1>
+                            <div class="mat-dialog-content">
+                                <p>[question]</p>
+                                <mat-form-field>
+                                    <input pe-deep matinput this="input">
+                                </mat-form-field>
+                            </div>
+                            <div mat-dialog-actions>
+                                <button mat-button this="[text]">
+                                    <span class="mat-button-wrapper">[text]</span>
+                                </button>
+                            </div>
+                        </dialog-overview-example-dialog>
+                    </div></div>
+                </div>
+            </pe-root>
+        </dialog-overview-example>
+    </use-template>
+
+</body>
+</html>

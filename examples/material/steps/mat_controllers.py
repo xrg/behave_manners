@@ -115,5 +115,18 @@ class MaterialVersionCtrl(DOMScope):
     class ChildComponent(object):
         pass
 
+class MatInputCtrl(DOMScope):
+    _name = 'mat-input'
+
+    class Component(object):
+        @property
+        def value(self):
+            return self['input'].value
+
+        @value.setter
+        def value(self, val):
+            self['input'].value = val
+
+
 
 #eof
