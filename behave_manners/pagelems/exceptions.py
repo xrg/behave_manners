@@ -79,9 +79,25 @@ class CAttributeError(AttributeError, ComponentException):
         ComponentException.__init__(self, msg=msg, component=component)
 
 
+class CAttributeNoElementError(CAttributeError):
+    """Raised when component attribute cannot be retrieved because of missing element
+
+        Special case of `CAttributeError`, may need to be handled explicitly.
+        Implies `NoSuchElementException` from remote DOM.
+    """
+    pass
+
+
 class CAssertionError(AssertionError, ComponentException):
     def __init__(self, arg, component=None):
         AssertionError.__init__(self, arg)
         ComponentException.__init__(self, component=component)
+
+
+class CValueError(ValueError, ComponentException):
+    def __init__(self, arg, component=None):
+        ValueError.__init__(self, arg)
+        ComponentException.__init__(self, component=component)
+
 
 #eof

@@ -12,7 +12,7 @@ from .base_parsers import DPageElement, DataElement, BaseDPOParser, \
                           HTMLParseError, DOMScope
 from .site_collection import DSiteCollection
 from .exceptions import ElementNotFound, CAttributeError, CKeyError, \
-                        UnwantedElement
+                        UnwantedElement, CAttributeNoElementError
 from selenium.webdriver.remote.webdriver import WebElement
 from selenium.common.exceptions import NoSuchElementException
 import six
@@ -87,7 +87,7 @@ class AttrGetter(object):
                                   comp, self.name)
                 return None
             else:
-                raise CAttributeError(six.text_type(e), component=comp)
+                raise CAttributeNoElementError(six.text_type(e), component=comp)
         return elem
 
     def __get__(self, comp, type=None):
@@ -624,6 +624,9 @@ class NamedElement(DPageElement):
                 else:
                     nscope = scope
                 yield self._this_fn(n, welem, nscope), welem, self, nscope
+            except CAttributeNoElementError as e:
+                blame = getattr(e.component, '_remote', None) or welem
+                enofound = ElementNotFound(msg=str(e), parent=blame)
             except NoSuchElementException as e:
                 enofound = ElementNotFound(msg=str(e), parent=welem, selector='*')
             n += 1
