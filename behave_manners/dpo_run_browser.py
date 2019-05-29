@@ -25,6 +25,8 @@ def cmdline_main():
                         help='Site config file')
     parser.add_argument('-s', '--session-file', default='dbg-browser.session',
                         help="Path to file with saved Remote session")
+    parser.add_argument('--headless', default=False, action='store_true',
+                        help="Force headless mode; default is headed regardless of config")
     parser.add_argument('url', nargs='?',
                         help="Initial URL to load on the browser")
 
@@ -38,6 +40,8 @@ def cmdline_main():
         config = SiteContext._load_config(args.config, loader=FSLoader('.'))
         if not config.get('browser'):
             raise RuntimeError("Supplied config must specify browser settings")
+
+        config['browser']['headless'] = args.headless
 
         browser_cls = 'browser.%s' % config['browser'].get('engine', 'generic')
         context.site = SiteContext[browser_cls](context, config)
