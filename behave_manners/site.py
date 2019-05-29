@@ -224,6 +224,14 @@ class WebContext(SiteContext):
                 raise ValueError("Unknown multiplier: %s" % m.group(2))
             context.browser.implicitly_wait(self._implicit_sec)
 
+        if browser_opts.get('startup_url'):
+            url = browser_opts['startup_url']
+            if not url.startswith(('about:', 'http:', 'https:')):
+                if url.startswith('/') and self.base_url.endswith('/'):
+                    url = url[1:]
+                url = self.base_url + url
+            context.browser.get(url)
+
     @abstractmethod
     def _launch_browser2(self, caps):
         raise NotImplementedError('Unsupported engine')
