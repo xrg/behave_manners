@@ -116,7 +116,7 @@ class SiteContext(object):
 
         nloaded = 0
         for cfname_pat in cfnames:
-            for cfname, fp in loader.multi_open(cfname_pat, mode='rb'):
+            for cfname, fp in loader.multi_open(cfname_pat, mode='rt'):
                 nloaded += 1
                 config = yaml.safe_load(fp)
                 if not config:

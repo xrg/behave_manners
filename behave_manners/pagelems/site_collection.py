@@ -80,7 +80,7 @@ class DSiteCollection(DPageElement):
         return len(self._children)
 
     def _feed_parser(self, parser, pname, ptype):
-        with self._loader.open(pname) as fp:
+        with self._loader.open(pname, mode='rt') as fp:
             while True:
                 chunk = fp.read(65536)
                 if not chunk:

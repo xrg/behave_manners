@@ -16,14 +16,14 @@ class BaseLoader(object):
         pass
 
     @abstractmethod
-    def open(self, fname, directory=''):
+    def open(self, fname, directory='', mode='rb'):
         """Open file at `fname` path for reading.
         
             Return a context manager file object
         """
 
     @abstractmethod
-    def multi_open(self, filepattern, directory=''):
+    def multi_open(self, filepattern, directory='', mode='rb'):
         """Open a set of files (by glob pattern) for reading
         
            :return: iterator of open files
