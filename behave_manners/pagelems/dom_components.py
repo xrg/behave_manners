@@ -43,7 +43,7 @@ from __future__ import absolute_import
 import logging
 import inspect
 import warnings
-from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import WebDriverException, StaleElementReferenceException
 from .exceptions import CAttributeError, CKeyError
 
 
@@ -101,6 +101,13 @@ class _SomeProxy(object):
             comp = scp.component_class(iname, self, ptmpl, ielem, scp)
             scp.take_component(comp)
             yield iname, comp
+
+    def _recover_stale(self):
+        """Update self after point to stale remote element
+
+            This one cannot recover, see `ComponentProxy._recover_stale()`
+        """
+        return False
 
 
 class PageProxy(_SomeProxy):
@@ -249,6 +256,28 @@ class ComponentProxy(_SomeProxy):
     @property
     def component_name(self):
         return self._name
+
+    def _recover_stale(self):
+        """Return new webelement to amend stale component
+
+            :return: whether a new element has been located to recover this
+        """
+        parent = self._parent
+        if not (parent and getattr(parent._scope, 'recover_stale', True)):
+            return False
+
+        for r in (0, 1):
+            try:
+                for iname, ielem, p, s in \
+                        parent._pagetmpl.iter_items(parent._remote, parent._scope,
+                                                    match=self._name):
+                    if iname == self._name:
+                        self._remote = ielem
+                        return True
+            except StaleElementReferenceException:
+                if r or not parent._recover_stale():
+                    raise
+        return False
 
 
 # eof
