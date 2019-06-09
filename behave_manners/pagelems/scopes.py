@@ -6,6 +6,7 @@ import time
 from .base_parsers import DOMScope
 from .dom_components import ComponentProxy
 from .exceptions import PageNotReady, Timeout
+from selenium.webdriver.remote.webdriver import WebElement
 
 
 class WaitScope(DOMScope):
@@ -50,7 +51,12 @@ class WaitScope(DOMScope):
         lastmsg = 'all'
         pause = 0.05
         if webdriver is None:
-            webdriver = welem.parent
+            if welem is None:
+                webdriver = self._root_component._remote
+                if isinstance(webdriver, WebElement):
+                    webdriver = webdriver.parent
+            else:
+                webdriver = welem.parent
 
         if ready_fn is None:
             ready_fn = self.isready_all
