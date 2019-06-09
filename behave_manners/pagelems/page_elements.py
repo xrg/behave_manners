@@ -15,6 +15,7 @@ from .exceptions import ElementNotFound, CAttributeError, CKeyError, \
                         UnwantedElement, CAttributeNoElementError
 from selenium.webdriver.remote.webdriver import WebElement
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.keys import Keys
 import six
 
 
@@ -672,6 +673,17 @@ class InputValueDescr(InputCompatDescr):
             raise CAttributeError("Cannot set value of missing element", component=comp)
         driver = elem.parent
         driver.execute_script("arguments[0].value = arguments[1];", elem, value)
+
+class InputCombiDescr(InputCompatDescr):
+    def __set__(self, comp, value):
+        elem = self._elem(comp)
+        if elem is None:
+            raise CAttributeError("Cannot set value of missing element", component=comp)
+        driver = elem.parent
+        driver.execute_script("arguments[0].focus(); "
+                              "arguments[0].value = arguments[1];",
+                              elem, value[:-1])
+        elem.send_keys(Keys.END, value[-1])
 
 
 class InputElement(DPageElement):
