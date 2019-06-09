@@ -66,4 +66,22 @@ class MatAutocompleteCtrl(DOMScope):
             assert self['input'].value == val
 
 
+class MaterialVersionCtrl(DOMScope):
+    _name = 'mat-version-picker'
+
+    class Component(object):
+        @property
+        def value(self):
+            return self['button'].version
+
+        def set_version(self, value):
+            button = self['button']
+            if button.version == value:
+                return
+            if not button.expanded:
+                button.click()
+                self._scope.wait_all('short')
+            self['menu'][value].click()
+            self._scope.wait_all('short')
+
 #eof

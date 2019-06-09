@@ -64,4 +64,9 @@ def step_enter_value(context, value):
     context.cur_element.value = value
 
 
+@given(u'the material version is "{version}"')
+def set_mat_version(context, version):
+    context.cur_page['version'].set_version(version)  # does DRY apply to names??
+
+
 # eof

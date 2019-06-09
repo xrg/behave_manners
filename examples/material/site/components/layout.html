@@ -42,6 +42,25 @@
   <template id="example-layout">
     <material-docs-app>
         <app-navbar>
+            <version-picker this="version" pe-deep pe-ctrl="mat-version-picker">
+                <button aria-haspopup="true" this="button" mat-button aria-expanded="[expanded]">
+                    <span class="mat-button-wrapper"> [version] <mat-icon/>
+                    </span>
+                </button>
+                <pe-root>
+                    <div class="cdk-overlay-container">
+                        <div><div class="+cdk-overlay-pane">
+                            <div class="+mat-menu-panel" role="menu" this="menu" pe-optional>
+                                <div class="mat-menu-content">
+                                    <button mat-menu-item this="[title]"> 
+                                        [title] <div/>
+                                    </button>
+                                </div>
+                            </div>
+                        </div></div>
+                    </div>
+                </pe-root>
+            </version-picker>
         </app-navbar>
         <component-page-header pe-deep this="page-header">
             <h1 pe-deep>[title]</h1>
