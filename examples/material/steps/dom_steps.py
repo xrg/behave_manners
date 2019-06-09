@@ -59,6 +59,12 @@ def step_blank_selection(context):
     assert cur_value == None, '%r != None' % (cur_value, )
 
 
+@then(u'the field has no value')
+def step_blank_field(context):
+    cur_value = context.cur_element.value
+    assert not cur_value , 'Value: %r' % (cur_value, )
+
+
 @when(u'I enter value "{value}"')
 def step_enter_value(context, value):
     context.cur_element.value = value

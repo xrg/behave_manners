@@ -1,0 +1,27 @@
+<html>
+<head>
+    <link rel="import" href="layout.html">
+</head>
+<body>
+    <use-template id="example-layout">
+        <mat-form-field pe-deep slot="body" this="[label]" pe-ctrl="mat-input-field">
+            <div pe-deep class="+mat-form-field-infix">
+                <pe-choice>
+                    <input this="input" matinput placeholder="[placeholder]">
+                    <textarea this="input" matinput placeholder="[placeholder]">
+                </pe-choice>
+                <span>
+                    <label class="+mat-form-field-label">[label]
+                    </label>
+                </span>
+            </div>
+            <div pe-deep class="+mat-form-field-subscript-wrapper">
+                <mat-error pe-deep pe-optional this="error" role="[role]">
+                    [message]
+                </mat-error>
+            </div>
+        </mat-form-field>
+    </use-template>
+
+</body>
+</html>

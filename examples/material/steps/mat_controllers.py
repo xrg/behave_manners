@@ -6,6 +6,24 @@ from behave_manners.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
 
+class MatInputFieldCtrl(DOMScope):
+    _name = "mat-input-field"
+
+    class Component(object):
+        @property
+        def value(self):
+            return self['input'].value
+
+        @value.setter
+        def value(self, val):
+            self['input'].value = val
+
+        @property
+        def error_message(self):
+            return self['error'].message
+
+
+
 class MatRadioCtrl(DOMScope):
     _name = 'mat-radio'
 
