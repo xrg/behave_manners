@@ -19,6 +19,7 @@ from behave_manners.site import FakeContext
 from behave_manners.pagelems.main import DSiteCollection, FSLoader
 from behave_manners.pagelems.exceptions import ElementNotFound, CKeyError
 from behave_manners.pagelems.helpers import Integer, count_calls
+from behave_manners.pagelems.dom_components import ComponentProxy
 from six.moves.urllib import parse as urlparse
 from behave_manners import screenshots
 
@@ -115,6 +116,8 @@ def cmdline_main():
                         help="Max depth of components to discover")
     parser.add_argument('--measure-selenium', action='store_true',
                         help="Count number of selenium commands invoked")
+    parser.add_argument('--pollute-data', action='store_true',
+                        help="Set component names as data property on remote DOM")
     parser.add_argument('path', metavar="component", nargs="*",
                         help="Resolve components only under that path")
 
@@ -212,12 +215,26 @@ def cmdline_main():
                     site_scp = site.get_root_scope()
                     page, title, page_args = site.get_by_url(cur_path, fragment=None)
                     log.info("Got page %s %r", title, page_args)
+                    if args.pollute_data:
+                        pelems = driver.find_elements_by_xpath('//*[@data-manners-component]')
+                        log.debug("Cleaning %d elements from previous pollution", len(pelems))
+                        if pelems:
+                            driver.execute_script(
+                                "arguments[0].forEach(function(e) { "
+                                "    e.removeAttribute('data-manners-component');"
+                                " });", pelems)
 
                     for path, elem in page.walk(driver, parent_scope=site_scp,
                                                 on_missing=print_enoent,
                                                 starting_path=args.path,
                                                 max_depth=args.max_depth or 1000):
                         print('  ' * len(path), path_str(path), elem)
+                        if args.pollute_data and isinstance(elem, ComponentProxy):
+                            driver.execute_script(
+                                "arguments[0].setAttribute('data-manners-component',"
+                                                           "arguments[1]);",
+                                elem._remote, elem.component_name);
+
                         for a in dir(elem):
                             try:
                                 print('  '* len(path), ' ' * 20, a, 
