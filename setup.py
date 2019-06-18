@@ -16,6 +16,7 @@ try:
     if os.path.exists(os.path.join(os.path.dirname(__file__), '.git')):
         git_ver = subprocess.check_output(['git', 'describe', '--tags',
                                            '--match', r'v[0-9]*\.[0-9]*'])
+        git_ver = git_ver.decode()
         version = git_ver[1:].strip().split('-', 2)[0]
     else:
         version = '0.5'
