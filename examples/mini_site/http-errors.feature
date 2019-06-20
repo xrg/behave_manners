@@ -19,3 +19,11 @@ Feature: Check behavior of error pages
 
         When I try to load "Broken page"
         Then I get a 500 error
+
+    Scenario: Page with bad link
+        When I try to load "Bad-link page"
+        Then the page loads
+
+    Scenario: Page with bad JS
+        When I try to load "Bad-js page"
+        Then the page loads

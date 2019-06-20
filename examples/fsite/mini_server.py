@@ -77,6 +77,16 @@ def wont_work():
     raise Exception("Iz broken")
 
 
+@app.route('/bad-link')
+def run_tmpl2():
+
+    return render_template('bad-link.html')
+
+@app.route('/bad-js')
+def run_tmpl3():
+    return render_template('bad-js.html')
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     app.run(host='0.0.0.0')
