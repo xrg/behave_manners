@@ -163,6 +163,7 @@ class WebContext(SiteContext):
     """
     _name = 'browser'
     _log = logging.getLogger('behave.site.webcontext')
+    _browser_log_types = ()
 
     def __init__(self, context, config=None):
         super(WebContext, self).__init__(context, config)
@@ -174,7 +175,6 @@ class WebContext(SiteContext):
                            on_missing_element=None)
         self.events.push()
         self._config.setdefault('browser', {})
-        self._browser_log_types = []
         self._implicit_sec = 0
         context.add_cleanup(self.events.pop)
 
@@ -507,6 +507,7 @@ class ChromeWebContext(SiteContext):
     """
     _name = 'browser.chrome'
     _inherit = 'browser'
+    _browser_log_types = ('browser', 'driver')
 
     def _launch_browser2(self, caps, download_dir):
         """Prepare options for Chromium and call `_launch_browser3()` to start it
@@ -553,6 +554,11 @@ class ChromeWebContext(SiteContext):
                         options, dcaps,
                         service_args=service_args
                         )
+        try:
+            self._browser_log_types = browser.log_types
+        except Exception as e:
+            self._log.warning("Could not retrieve browser log types: %s", e)
+
         # add missing support for chrome "send_command"  to selenium webdriver
         browser.command_executor._commands["send_command"] = \
                 ("POST", '/session/$sessionId/chromium/send_command')
@@ -602,7 +608,13 @@ class FirefoxWebContext(SiteContext):
         if 'window' in browser_opts:
             w, h = self._decode_win_size(browser_opts['window'])
             browser.set_window_size(w,h)
-        self._browser_log_types = []   # ['browser', 'driver', 'client', 'server']
+
+        ''' not yet implemented for geckodriver:
+        try:
+            self._browser_log_types = browser.log_types
+        except Exception as e:
+            self._log.warning("Could not retrieve browser log types: %s", e)
+        '''
         return browser
 
     def _launch_browser_ff(self, profile, options, dcaps, **kwargs):
@@ -626,7 +638,6 @@ class IExploderWebContext(SiteContext):
         dcaps.update(caps)
         if 'binary_location' in browser_opts:
             options.binary_location = browser_opts['binary_location']
-        self._browser_log_types = []
         browser = self._launch_browser_ie(options, dcaps)
         if 'window' in browser_opts:
             w, h = self._decode_win_size(browser_opts['window'])
