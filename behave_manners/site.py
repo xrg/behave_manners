@@ -543,9 +543,15 @@ class ChromeWebContext(SiteContext):
             if val is not None:
                 options.add_argument('%s=%s' % (opt, val))
 
+        service_args = browser_opts.get('chromedriver_args', [])
+        if browser_opts.get('debug', False):
+            service_args.append('--verbose')
+            service_args.append('--append-log')
+            service_args.append('--log-path=%s/chromedriver.log' % (self.output_dir,))
+
         browser = self._launch_browser_chrome(
                         options, dcaps,
-                        service_args=browser_opts.get('chromedriver_args', [])
+                        service_args=service_args
                         )
         # add missing support for chrome "send_command"  to selenium webdriver
         browser.command_executor._commands["send_command"] = \
