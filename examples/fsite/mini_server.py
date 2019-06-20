@@ -4,7 +4,7 @@ import datetime
 import logging
 import os.path
 import time
-from flask import Flask, session, request, render_template, Response
+from flask import Flask, session, request, render_template, Response, abort
 from server_sessions import ManagedSessionInterface, CachingSessionManager, FileBackedSessionManager
 
 app = Flask(__name__)
@@ -65,6 +65,16 @@ def download_target():
     ret = Response(chunks(), mimetype='application/data')
     ret.headers['Content-disposition'] = 'attachment; filename="test-%d.data"' % time.time()
     return ret
+
+
+@app.route('/private')
+def no_login():
+    abort(403)
+
+
+@app.route('/broken')
+def wont_work():
+    raise Exception("Iz broken")
 
 
 if __name__ == '__main__':

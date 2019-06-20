@@ -3,6 +3,7 @@ from __future__ import print_function
 from behave import given, when, then, step
 from behave_manners.step_utils import implies
 from behave_manners.pagelems.scopes import DOMScope
+from behave_manners.site import RemoteNetworkError
 import time
 
 
@@ -62,6 +63,25 @@ def step_blank_selection(context):
 @when(u'I enter value "{value}"')
 def step_enter_value(context, value):
     context.cur_element.set_value(value)
+
+
+@when(u'I try to load "{page}"')
+def try_navigate(context, page):
+    context.last_error = None
+    try:
+        context.site.navigate_by_title(context, page)
+    except RemoteNetworkError as e:
+        context.last_error = e
+
+
+@then(u'the page loads')
+def page_is_loaded(context):
+    assert context.last_error is None, context.last_error
+
+
+@then(u'I get a {status:d} error')
+def page_not_loaded(context, status):
+    assert context.last_error and context.last_error.status == str(status), context.last_error
 
 
 # eof
