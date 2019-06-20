@@ -30,6 +30,19 @@ def _noop_fn(context, *args):
 
 seconds_re = re.compile(r'([1-9]\d+)(m?)s(?:ec)?$')
 
+
+class RemoteSiteError(Exception):
+    """Raised on errors detected at remote (browser) side
+    """
+    def __init__(self, message, **kwargs):
+        Exception.__init__(self, message)
+        self.__dict__.update(kwargs)
+
+
+class RemoteNetworkError(RemoteSiteError):
+    pass
+
+
 @six.add_metaclass(_ServiceMeta)
 class SiteContext(object):
     """Holds (web)site information in a behave context
@@ -165,6 +178,13 @@ class WebContext(SiteContext):
     _log = logging.getLogger('behave.site.webcontext')
     _browser_log_types = ()
 
+    _wd_loglevels = {'INFO': logging.INFO, 'WARN': logging.WARNING,
+                    'SEVERE': logging.ERROR, 'CRITICAL': logging.CRITICAL
+                    }
+
+    fourOfours = ('/favicon.ico',)  # paths where a 404 is expected
+
+
     def __init__(self, context, config=None):
         super(WebContext, self).__init__(context, config)
         # install hooks
@@ -288,27 +308,51 @@ class WebContext(SiteContext):
         except Exception as e:
             self._log.error("Could not fetch step logs: %s", e)
 
-    def process_logs(self, context):
+    def process_logs(self, context, consumer=None):
         """Fetch logs from browser and process them
+
+            :param silent: suppress exceptions arising from logs
         """
+        if consumer is None:
+            consumer = self._consume_log
+        for rec in self._get_log_entries(context):
+           consumer(rec)
+
+    def _get_log_entries(self, context):
         for lt in self._browser_log_types:
-            self._push_log_entries(lt, context.browser.get_log(lt), _cleanup_logentry)
+            for entry in context.browser.get_log(lt):
+                if 'source' in entry:
+                    log_name = '%s.%s' % (lt, entry['source'])
+                else:
+                    log_name =  lt
+                level = self._wd_loglevels.get(entry.get('level', ''), logging.INFO)
+                rec = logging.LogRecord(log_name, level, __file__, 0,
+                                        entry['message'], (), entry.get('exc_info'))
 
-    def _push_log_entries(self, logname, entries, fmt_func=None):
-        """Push a bunch of collected log entries under some logger
+                if 'timestamp' in entry:
+                    ct = entry['timestamp'] / 1000.0
+                else:
+                    ct = time.time()
+                rec.created = ct
+                rec.msecs = (ct - int(ct)) * 1000
 
+                patterns = self._log_decoders.get(log_name, {}).get(level, [])
+                for pat in patterns:
+                    # decode fields of that message into extra log-record attributes
+                    m = pat.match(entry['message'])
+                    if m:
+                        rec.__dict__.update(m.groupdict())
+                yield rec
+
+    def _consume_log(self, rec):
+        """Handle some log record emitted by the browser
+
+            Override this to affect state of the browser according to log
+            messages received.
         """
-        if fmt_func is not None:
-            entries = map(fmt_func, entries)
-
-        log = logging.getLogger('behave.site.' + logname)
-        for entry in entries:
-            rec = logging.LogRecord(log.name, entry['level'], __file__, 0,
-                 entry['message'], (), entry.get('exc_info'))
-            ct = entry.get('timestamp', time.time())
-            rec.created = ct
-            rec.msecs = (ct - int(ct)) * 1000
-            log.handle(rec)
+        rec.name = 'behave.site.' + rec.name
+        log = logging.getLogger(rec.name)
+        log.handle(rec)
 
     def _root_scope(self, context, do_set=True):
         """Return root-level scope, initializing if needed
@@ -352,13 +396,24 @@ class WebContext(SiteContext):
         else:
             cur_url = context.browser.current_url
 
+        def consume_message(rec):
+            if rec.name == 'browser.network' and rec.levelno == logging.ERROR:
+                if getattr(rec, 'url', None) == url:
+                    raise RemoteNetworkError(rec.message, url=rec.url,
+                                            status=getattr(rec, 'status', None))
+                elif getattr(rec, 'url', '').endswith(self.fourOfours):
+                    return
+            self._consume_log(rec)
+
         for x in range(self._config['browser'].get('change_retries', 3)):
             if cur_url == url:
                 break
             if soft:
-                context.browser.execute_script('window.location = arguments[0];', url)
+                r = context.browser.execute_script('window.location = arguments[0];', url)
             else:
-                context.browser.get(url)
+                r = context.browser.get(url)
+            self._log.debug("Load url response: %r", r)
+            self.process_logs(context, consumer=consume_message)
             old_url = cur_url
             cur_url = context.browser.current_url
             if cur_url != old_url:
@@ -578,6 +633,16 @@ class ChromeWebContext(SiteContext):
                                 desired_capabilities=dcaps,
                                 **kwargs)
 
+    _log_decoders = {
+        'browser.network': { logging.ERROR: [
+            re.compile(r'(?P<url>.+?) - (?P<message>Failed to load resource: '
+                       r'the server responded with a status of (?P<status>\d{3}) .*)$'),
+            re.compile(r'(?P<url>.+?) - (?P<message>.*)$'),  # generic
+            ],
+        },
+        # TODO: performance events
+    }
+
 
 class FirefoxWebContext(SiteContext):
     """Web context for Chromium browser
@@ -649,18 +714,6 @@ class IExploderWebContext(SiteContext):
                             desired_capabilities=dcaps,
                             **kwargs)
 
-
-_wd_loglevels = {'INFO': logging.INFO, 'WARN': logging.WARNING,
-                 'SEVERE': logging.ERROR, 'CRITICAL': logging.CRITICAL
-                 }
-
-def _cleanup_logentry(rec):
-    if 'timestamp' in rec:
-        rec['timestamp'] /= 1000.0
-
-    rec['level'] = _wd_loglevels.get(rec.get('level', 'INFO'), logging.INFO)
-
-    return rec
 
 
 class FakeContext(object):
