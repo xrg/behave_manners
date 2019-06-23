@@ -12,6 +12,7 @@ import json
 import time
 import sys
 import os.path
+import six
 from selenium import webdriver
 from selenium.webdriver.remote.command import Command
 from behave.runner_util import exec_file
@@ -62,6 +63,8 @@ class ExistingRemote(webdriver.Remote):
 
 def shorten_txt(txt, maxlen):
     if not txt:
+        return txt
+    if not isinstance(txt, six.string_types):
         return txt
     txt = txt.split('\n', 1)[0]
     if len(txt) > maxlen:
