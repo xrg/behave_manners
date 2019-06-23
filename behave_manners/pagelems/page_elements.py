@@ -686,15 +686,61 @@ class InputCombiDescr(InputCompatDescr):
         elem.send_keys(Keys.END, value[-1])
 
 
+class InputFileDescr(InputCompatDescr):
+    class File(object):
+        def __init__(self, name, **kwargs):
+            self.name = name
+            self.__dict__.update(kwargs)
+
+        def __str__(self):
+            return self.name
+
+        def __repr__(self):
+            return "<File: %s>" % self.name
+
+        def __eq__(self, other):
+            if isinstance(other, six.string_types):
+                return self.name == other
+            elif isinstance(other, InputFileDescr.File):
+                return self.name == other.name
+            else:
+                return False
+
+    def __get__(self, comp):
+        elem = self._elem(comp)
+        if elem is None:
+            return None
+
+        return [InputFileDescr.File(**f) for f in elem.get_property('files')]
+
+
 class InputElement(DPageElement):
+    """Model an <input> element
+
+        Inputs are special and a bit weird. They are points of interaction
+        with the remote side, also volatile, so must be exposed into DOM
+        components. When `this` is specified, inputs become components as
+        usual. Otherwise *they become attributes* of the parent components.
+
+        Therefore `<input>` elements MUST have `this`, an `id` or a `name`.
+
+        When 'type' is specified at this pagelem node, it helps choose the
+        right descriptor class for the value of this input. If not, it may
+        be auto-detected IF `this` is used OR `name='*'` performs wildcard
+        detection of input elements.
+    """
     _name = 'tag.input'
     _inherit = 'any'
     is_empty = True
     descr_class = InputValueDescr
+    descr_bytype = {   # Plug type-specific descriptor classes
+            'file': InputFileDescr,
+            }
 
     def __init__(self, tag, attrs):
         self.this_name = None
         self.name_attr = None
+        self.type_attr = []
         super(InputElement, self).__init__(tag, attrs)
 
     def _split_this(self, value, sub=None):
@@ -714,9 +760,22 @@ class InputElement(DPageElement):
         else:
             self.name_attr = vs[0]
 
-        # TODO: per type
+        if 'type' in match_attrs:
+            self.type_attr = [t for t in match_attrs['type'] if word_re.match(t)]
 
         super(InputElement, self)._set_match_attrs(match_attrs)
+
+    def _get_descr_cls(self, webelem):
+        """Retrieve descriptor class for `value`, considering element's type
+        """
+        if len(self.type_attr) == 1:
+            typ = self.type_attr[0]
+        elif webelem:
+            typ = webelem.get_attribute('type')
+        else:
+            typ = None
+        return self.descr_bytype.get(typ, self.descr_class)
+
 
     def consume(self, element):
         raise TypeError('Input cannot consume %r' % element)
@@ -729,7 +788,8 @@ class InputElement(DPageElement):
         for y2 in super(InputElement, self).iter_attrs(webelem, scope, xpath_prefix):
             yield y2
         if self.this_name:
-            yield ('value', self.descr_class(xpath_prefix))
+            descr_cls = self._get_descr_cls(webelem)
+            yield ('value', descr_cls(xpath_prefix))
 
     def _locate_in(self, remote, scope, xpath_prefix, match):
         if self.this_name:
@@ -755,10 +815,12 @@ class InputElement(DPageElement):
                 for relem in webelem.find_elements_by_xpath(prepend_xpath(xpath_prefix, self.xpath, glue='/')):
                     rname = relem.get_attribute('name')
                     xpath = self._xpath + "[@name=%s]" % textescape(rname)
-                    yield rname, self.descr_class(prepend_xpath(xpath_prefix, xpath, glue='/'))
+                    descr_cls = self._get_descr_cls(relem)
+                    yield rname, descr_cls(prepend_xpath(xpath_prefix, xpath, glue='/'))
             else:
                 # Avoid iteration, yield attribute immediately
-                yield self.name_attr, self.descr_class(prepend_xpath(xpath_prefix, self._xpath, glue='/'))
+                descr_cls = self._get_descr_cls(None)
+                yield self.name_attr, descr_cls(prepend_xpath(xpath_prefix, self._xpath, glue='/'))
 
 
 class TextAreaObj(DPageElement):
