@@ -1,7 +1,14 @@
 # -*-coding: UTF-8 -*-
 
 from __future__ import absolute_import
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, WebDriverException
+import six
+
+if six.PY2:
+    import copy_reg as copyreg
+else:
+    import copyreg
+
 
 """
     Exceptions tailored to pagelems/behave usage.
@@ -59,12 +66,17 @@ class Timeout(AssertionError):
 
 class ComponentException(object):
     """Mixin for exceptions that can refer to faulty component
-    
+
         The component would be an instance of `ComponentProxy`
     """
     def __init__(self, component=None, msg=None):
         self.component = component
         self.msg = msg
+
+    def __getstate__(self):
+        return {'component': self.component,
+                'msg': '%s' % self.msg,      # render to string, py3 compatible
+                }
 
 
 class CKeyError(KeyError, ComponentException):
@@ -98,6 +110,21 @@ class CValueError(ValueError, ComponentException):
     def __init__(self, arg, component=None):
         ValueError.__init__(self, arg)
         ComponentException.__init__(self, component=component)
+
+
+def _pickle_wdexception(wde):
+    """Pickle exception with bare information
+    """
+    return wde.__class__, (wde.msg, None, wde.stacktrace)
+
+
+def _pickle_enotfound_exception(e):
+    return e.__class__, ('%s' % e.msg, None, e.stacktrace,
+                         None, e.selector, '%s' % e.pagelem_name)
+
+
+copyreg.pickle(WebDriverException, _pickle_wdexception)
+copyreg.pickle(ElementNotFound, _pickle_enotfound_exception)
 
 
 #eof
