@@ -66,6 +66,26 @@ def download_target():
     ret.headers['Content-disposition'] = 'attachment; filename="test-%d.data"' % time.time()
     return ret
 
+@app.route('/upload', methods=['GET', 'POST'])
+def upload_page():
+    logger = logging.getLogger('upload')
+    if request.method == 'GET':
+        return render_template('upload.html')
+
+    # POST, consume uploaded file
+
+    if 'file' not in request.files:
+        logger.warning("Uploaded form did not contain 'file'")
+        return render_template('upload.html')
+    ufile = request.files['file']
+    if not ufile.filename:
+        logger.warning("No file selected")
+        return render_template('upload.html')
+    payload = ufile.read(200)
+    ufile.close()
+    logger.info("Got a file %s(%d): %s", ufile.filename, len(payload), ufile.mimetype)
+    return render_template('upload-ok.html', file=ufile, payload=payload)
+
 
 @app.route('/private')
 def no_login():
