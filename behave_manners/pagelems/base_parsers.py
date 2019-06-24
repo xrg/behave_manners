@@ -358,6 +358,7 @@ class DBaseLinkElement(DPageElement):
     _attrs_map = {'rel': ('rel', None, AttributeError),
                   'href': ('href', None, AttributeError),
                   'title': ('title', None, None),
+                  'pattern': ('pattern', None, None),
                   'url': ('url', None, None),
                  }
 
