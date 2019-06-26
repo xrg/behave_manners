@@ -9,6 +9,7 @@ import os
 import os.path
 import re
 import six
+import shutil
 import time
 import yaml
 import urllib3.exceptions
@@ -73,11 +74,22 @@ class SiteContext(object):
         context.add_cleanup(self.__cleanup_site, context)
         self._collection = None
         self.output_dir = '.'
-        if 'output' in config and 'dir' in config['output']:
-            self.output_dir = config['output']['dir']\
-                    .format(pid=os.getpid(), timestamp=int(time.time()),
-                            userdata=context.config.userdata)
-            self._log.info("Storing all output under: %s", self.output_dir)
+        self.tempdir = None
+        if 'output' in config:
+            if 'dir' in config['output']:
+                self.output_dir = config['output']['dir']\
+                        .format(pid=os.getpid(), timestamp=int(time.time()),
+                                userdata=context.config.userdata)
+                self._log.info("Storing all output under: %s", self.output_dir)
+            if 'tempdir' in config['output']:
+                self.tempdir = config['output']['tempdir']\
+                        .format(pid=os.getpid(), timestamp=int(time.time()),
+                                userdata=context.config.userdata)
+                self._log.debug("Using temporary dir: %s", self.output_dir)
+                self.tempdir = os.path.abspath(self.tempdir)
+                if os.path.exists(self.tempdir):
+                    raise IOError(errno.EEXIST, "Temporary directory already exists: %s" % self.tempdir)
+                os.makedirs(self.tempdir)
 
     def __setup_hook(self, htime, hevent, context):
         hkey = htime + '_' + hevent
@@ -103,6 +115,11 @@ class SiteContext(object):
         rhooks.clear()
         rhooks.update(self.__orig_hooks)
         self.__orig_hooks.clear()
+        try:
+            if self.tempdir:
+                shutil.rmtree(self.tempdir)
+        except Exception as e:
+            self._log.warning("Could not cleanup tempdir: %s", e)
         try:
             del context.site
         except AttributeError:
