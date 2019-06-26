@@ -532,6 +532,20 @@ class InputElement(DPageElement):
         right descriptor class for the value of this input. If not, it may
         be auto-detected IF `this` is used OR `name='*'` performs wildcard
         detection of input elements.
+
+        If 'pe-name' attribute is specified, it overrides the 'name' one as
+        the name to be used under the component, but does NOT need to match
+        remote attribute(s).
+
+        Example:
+
+            <input pe-name="submit" type="submit">
+
+        will match any submit button and assign it to 'submit' name, even
+        if the remote `<input>` element has no more attributes.
+
+        Note that setting both 'this' and 'pe-name' makes no sense, since
+        a component-ized `<input>` element will not need a name.
     """
     _name = 'tag.input'
     _inherit = 'any'
@@ -554,15 +568,19 @@ class InputElement(DPageElement):
 
     def _set_match_attrs(self, match_attrs):
         vs = match_attrs.get('name', None)
+        pe_name = match_attrs.pop('pe-name', None)
+        if pe_name:
+            pe_name = pe_name[0]
+
         if vs is None:
-            self.name_attr = '*'
-            if ('id' not in match_attrs) and not self.this_name:
+            self.name_attr = pe_name or '*'
+            if not (pe_name or 'id' in match_attrs or self.this_name):
                 raise ValueError("An input element must be identified by 'id' or 'name'")
         elif vs == ['*']:
             del match_attrs['name']
-            self.name_attr = '*'
+            self.name_attr = pe_name or '*'
         else:
-            self.name_attr = vs[0]
+            self.name_attr = pe_name or vs[0]
 
         if 'type' in match_attrs:
             self.type_attr = [t for t in match_attrs['type'] if word_re.match(t)]
