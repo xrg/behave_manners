@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import logging
 from abc import abstractmethod
 from .exceptions import CAttributeError, CAttributeNoElementError
+from .actions import Action
 # from selenium.webdriver.remote.webdriver import WebElement
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.keys import Keys
@@ -60,6 +61,11 @@ class AttrGetter(DomDescriptor):
         return elem.get_attribute(self.name)
 
     def __set__(self, comp, value):
+        if isinstance(value, Action):
+            elem = self._elem(comp)
+            if elem is None:
+                raise CAttributeError("Cannot set value of missing element", component=comp)
+            return value.act_on_descriptor(self, elem)
         raise CAttributeError("%s is readonly" % self.name, component=comp)
 
     def __delete__(self, comp):
@@ -165,6 +171,8 @@ class InputCompatDescr(AttrGetter):
         elem = self._elem(comp)
         if elem is None:
             raise CAttributeError("Cannot set value of missing element", component=comp)
+        if isinstance(value, Action):
+            return value.act_on_descriptor(self, elem)
         elem.clear()
         elem.send_keys(value)
 
@@ -179,6 +187,8 @@ class InputValueDescr(InputCompatDescr):
         elem = self._elem(comp)
         if elem is None:
             raise CAttributeError("Cannot set value of missing element", component=comp)
+        if isinstance(value, Action):
+            return value.act_on_descriptor(self, elem)
         driver = elem.parent
         driver.execute_script("arguments[0].value = arguments[1];", elem, value)
 
@@ -188,6 +198,8 @@ class InputCombiDescr(InputCompatDescr):
         elem = self._elem(comp)
         if elem is None:
             raise CAttributeError("Cannot set value of missing element", component=comp)
+        if isinstance(value, Action):
+            return value.act_on_descriptor(self, elem)
         driver = elem.parent
         driver.execute_script("arguments[0].focus(); "
                               "arguments[0].value = arguments[1];",
