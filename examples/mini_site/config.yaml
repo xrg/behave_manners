@@ -5,6 +5,10 @@ site:
     # global parameters on the site (assuming single main site)
     base_url: http://localhost:5000
 
+output:
+    dir: out/run_{pid}
+    tempdir: out/run_{pid}/tmp
+
 browser:        # Technical conf about the browser
     engine: chrome
     launch_on: feature  # or 'scenario' or 'demand'
@@ -12,7 +16,7 @@ browser:        # Technical conf about the browser
     # more capabilities...
     # headless: true
     headless: false
-    implicit_wait: 500ms
+    # implicit_wait: 500ms
 
     screenshots:
         dir: screenshots

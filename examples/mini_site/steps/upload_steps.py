@@ -5,6 +5,7 @@ import tempfile
 import logging
 import os
 from behave_manners.pagelems.exceptions import CAssertionError
+from behave_manners.pagelems.actions import click
 
 
 logger = logging.getLogger('upload-steps')
@@ -12,7 +13,8 @@ logger = logging.getLogger('upload-steps')
 
 @when('I upload some random file')
 def upload_tmp_file(context):
-    fd, path = tempfile.mkstemp(dir=context.site.output_dir)
+    assert context.site.tempdir
+    fd, path = tempfile.mkstemp(dir=context.site.tempdir)
     try:
         fp = os.fdopen(fd, 'w')
         fp.write('foo bar')
@@ -25,7 +27,7 @@ def upload_tmp_file(context):
     logger.info("Uploading file from: %s", path)
     context.cur_element.file = path   # this is where file is passed to browser!
     logger.info("Files now have: %r", context.cur_element.file)
-    context.cur_element['submit'].click()
+    context.cur_element.submit = click()
 
     context.cur_page.wait_all('medium')
     context.cur_element = None  # upload area should be gone
