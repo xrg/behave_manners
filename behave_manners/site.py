@@ -650,12 +650,22 @@ class ChromeWebContext(SiteContext):
                                 desired_capabilities=dcaps,
                                 **kwargs)
 
+    _log_console_regex =  [
+        re.compile(r'(?P<url>http(:?s?)://.+?) (?P<lineno>\d+):(?P<linecol>\d+) "(?P<message>.*)"$'),
+        re.compile(r'(?P<url>http(:?s?)://.+?) (?P<lineno>\d+):(?P<linecol>\d+) (?P<message>[^"].*)$'),
+        ]
+
     _log_decoders = {
         'browser.network': { logging.ERROR: [
             re.compile(r'(?P<url>.+?) - (?P<message>Failed to load resource: '
                        r'the server responded with a status of (?P<status>\d{3}) .*)$'),
             re.compile(r'(?P<url>.+?) - (?P<message>.*)$'),  # generic
             ],
+        },
+        'browser.console-api': {
+            logging.INFO: _log_console_regex,
+            logging.WARNING: _log_console_regex,
+            logging.ERROR: _log_console_regex,
         },
         # TODO: performance events
     }
