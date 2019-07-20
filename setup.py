@@ -56,7 +56,7 @@ setup(
         'develop': [
         ],
     },
-    license="BSD",
+    license="BSD-2-Clause",
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Console",
