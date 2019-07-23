@@ -15,7 +15,9 @@ class DOM_Meta(_ServiceMeta):
     def __new__(mcls, name, bases, namespace):
         namespace.setdefault('_page_descriptors', {})
         namespace.setdefault('_comp_descriptors', {})
+        namespace.setdefault('_comp2_descriptors', {})
         comp_cls = namespace.get('Component', None)
+        comp2_cls = namespace.get('ChildComponent', None)
         page_cls = namespace.get('Page', None)
 
         # here, _ServiceMeta will juggle with baseclasses etc.:
@@ -27,8 +29,12 @@ class DOM_Meta(_ServiceMeta):
                 newcls._page_descriptors.update(baseclass._page_descriptors)
             if hasattr(baseclass, '_comp_descriptors'):
                 newcls._comp_descriptors.update(baseclass._comp_descriptors)
+            if hasattr(baseclass, '_comp2_descriptors'):
+                newcls._comp2_descriptors[True] = True   # mark dict as non-empty
+                newcls._comp2_descriptors.update(baseclass._comp2_descriptors)
 
         for dcls, ddir in [(comp_cls, newcls._comp_descriptors),
+                           (comp2_cls, newcls._comp2_descriptors),
                            (page_cls, newcls._page_descriptors)]:
             if dcls is None or type(dcls) is not type:
                 # namespace does not have 'Component' or 'Page' *class*
@@ -41,6 +47,11 @@ class DOM_Meta(_ServiceMeta):
                     # not a descriptor, may be a static value or anything
                     descr = staticmethod(descr)     # works for anything, converts to descriptor
                 ddir[k] = descr
+
+        if comp2_cls is None and not newcls._comp2_descriptors:
+            del newcls._comp2_descriptors
+        else:
+            newcls._comp2_descriptors.pop(True, None)
 
         return newcls
 

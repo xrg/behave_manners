@@ -240,8 +240,10 @@ def cmdline_main():
 
                         for a in dir(elem):
                             try:
-                                print('  '* len(path), ' ' * 20, a, 
-                                      '= %s' % shorten_txt(getattr(elem, a), 40))
+                                val = getattr(elem, a)
+                                if not callable(val):
+                                    print('  '* len(path), ' ' * 20, a,
+                                          '= %s' % shorten_txt(val, 40))
                             except ElementNotFound as e:
                                 print('  '* len(path), ' ' * 20, a, '= X')
                                 print_enoent(elem, e)

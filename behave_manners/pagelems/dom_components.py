@@ -110,7 +110,7 @@ class PageProxy(_SomeProxy):
     """
     def __init__(self, pagetmpl, webdriver, scope):
         super(PageProxy, self).__init__(pagetmpl, webdriver, scope)
-        self.__descrs = dict()
+        self.__descrs = self._scope._page_descriptors.copy()
 
     @property
     def path(self):
@@ -148,13 +148,10 @@ class PageProxy(_SomeProxy):
         return descr.__delete__(self)
 
     def __getdescr(self, name):
-        if not name.startswith('_'):
-            descr = self._scope._page_descriptors.get(name, None)
-            if descr is not None:
-                self.__descrs[name] = descr
-                return descr
-
-        raise AttributeError(name)
+        try:
+            return self.__descrs[name]
+        except KeyError:
+            raise AttributeError(name)
 
 
 class CSSProxy(object):
@@ -183,8 +180,15 @@ class ComponentProxy(_SomeProxy):
         assert isinstance(parent, _SomeProxy)
         self._name = name
         self._parent = parent
-        # Keep list of attributes
-        self.__descrs = dict(self._pagetmpl.iter_attrs(webelem, scope))
+        # Prepare list of attributes
+        # assume that `_pe_class` in some pageelement means that
+        # the controller is root for that component.
+        if getattr(pagetmpl, '_pe_class', None) is None \
+                and getattr(scope, '_comp2_descriptors', None) is not None:
+            self.__descrs = scope._comp2_descriptors.copy()
+        else:
+            self.__descrs = scope._comp_descriptors.copy()
+        self.__descrs.update(self._pagetmpl.iter_attrs(webelem, scope))
         self.css = CSSProxy(self)
 
     def __repr__(self):
@@ -214,23 +218,7 @@ class ComponentProxy(_SomeProxy):
             # most likely case
             return self.__descrs[name]
         except KeyError:
-            # new API for scope classes
-            descr = self._scope._comp_descriptors.get(name, None)
-            if descr is not None:
-                self.__descrs[name] = descr
-                return descr
-
-            cwrap = getattr(self._scope, '_cwrap_'+name, None)
-            # Found factory of remote element method
-            if cwrap is not None:
-                warnings.warn("cwrap interface will be deprecated", DeprecationWarning)
-                if inspect.ismethod(cwrap):
-                    val = cwrap(self, name)
-                    cwrap = property(lambda c: val)
-                self.__descrs[name] = cwrap
-                return cwrap
-
-        raise CAttributeError(name, component=self)
+            raise CAttributeError(name, component=self)
 
     def __getattr__(self, name):
         if name.startswith('_'):
