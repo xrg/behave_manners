@@ -602,7 +602,7 @@ class InputElement(DPageElement):
     def consume(self, element):
         raise TypeError('Input cannot consume %r' % element)
 
-    def iter_items(self, remote, xpath_prefix=''):
+    def iter_items(self, remote, xpath_prefix='', match=None):
         # no children, nothing to return
         return []
 
