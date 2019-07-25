@@ -32,6 +32,8 @@ class DOM_Meta(_ServiceMeta):
             if hasattr(baseclass, '_comp2_descriptors'):
                 newcls._comp2_descriptors[True] = True   # mark dict as non-empty
                 newcls._comp2_descriptors.update(baseclass._comp2_descriptors)
+            elif comp2_cls is not None and hasattr(baseclass, '_comp_descriptors'):
+                newcls._comp2_descriptors.update(baseclass._comp_descriptors)
 
         for dcls, ddir in [(comp_cls, newcls._comp_descriptors),
                            (comp2_cls, newcls._comp2_descriptors),
