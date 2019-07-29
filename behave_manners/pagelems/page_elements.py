@@ -78,6 +78,12 @@ class AnyElement(DPageElement):
 
     _attr_expressions = [    # Decode attributes to AttrGetter-derived classes
             (dom_descriptors.AttrGetter, re.compile(r'\[(?P<attr_name>[\w\.]+)\]$')),
+            (dom_descriptors.AttrEqualsGetter,
+                re.compile(r'\[(?P<attr_name>[\w\.]+)\]:(?P<token>\w.*)$')),
+            (dom_descriptors.AttrContainsGetter,
+                re.compile(r'\[(?P<attr_name>[\w\.]+)\]:\+(?P<token>\w.*)$')),
+            (dom_descriptors.AttrAnyChoiceGetter,
+                re.compile(r'\[(?P<attr_name>[\w\.]+)\]:\{(?P<tokens>\w.*)\}$')),
             ]
 
     def __init__(self, tag, attrs, any_tag='*'):
