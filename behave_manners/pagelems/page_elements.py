@@ -76,6 +76,10 @@ class AnyElement(DPageElement):
     _name = 'tag.pe-any'
     _inherit = '.domContainer'
 
+    _attr_expressions = [    # Decode attributes to AttrGetter-derived classes
+            (dom_descriptors.AttrGetter, re.compile(r'\[(?P<attr_name>[\w\.]*)\]$')),
+            ]
+
     def __init__(self, tag, attrs, any_tag='*'):
         super(AnyElement, self).__init__(tag)
         match_attrs = defaultdict(list)
@@ -139,17 +143,38 @@ class AnyElement(DPageElement):
             elif v is None:
                 assert '.' not in k, k
                 match_attrs[k].append(True)
-            elif v.startswith('[') and v.endswith(']'):
+            elif v.startswith('[') and ']' in v:
                 assert '.' not in k, k   # TODO
-                # attribute to read value from
-                if k in read_attrs:
-                    raise ValueError('Attribute defined more than once: %s' % k)
-                v = v[1:-1].strip()
-                read_attrs[v or k] = k
+
+                for Cls, regex in self._attr_expressions:
+                    m = regex.match(v)
+                    if not m:
+                        continue
+
+                    gd = m.groupdict()
+                    attr_name = gd.pop('attr_name', False)
+                    if not attr_name:
+                        attr_name = k
+                    elif '.' in attr_name:
+                        raise NotImplementedError("composite names not supported: %s" % m.group('name'))
+
+                    # attribute to read value from
+                    if attr_name in read_attrs:
+                        raise ValueError('Attribute defined more than once: %s' % attr_name)
+                    read_attrs[attr_name] = Cls(name=k, **gd)
+                    break
+                else:
+                    raise ValueError("Invalid attribute expression: %r" % v)
+
             else:
                 assert '.' not in k, k
                 # attribute to match as locator
                 match_attrs[k].append(v)
+
+        if self._pe_optional:
+            # set all attributes to optional
+            for ra in self.read_attrs.values():
+                ra.optional = True
 
     def reduce(self, site=None):
         if len(self._children) == 1 \
@@ -227,11 +252,11 @@ class AnyElement(DPageElement):
             :return: iterator of (name, descriptor)
         """
         for n, attr in self.read_attrs.items():
-            yield n, dom_descriptors.AttrGetter(attr, xpath_prefix, optional=self._pe_optional)
+            yield n, attr.for_xpath(xpath_prefix)
         for ch in self._children:
             for n, attr in ch._locate_attrs(webelem, scope, xpath_prefix):
                 if self._pe_optional and isinstance(attr, dom_descriptors.AttrGetter):
-                    attr.optional = True
+                    attr = attr.for_optional()
                 yield n, attr
 
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):

@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 import logging
 from abc import abstractmethod
+import copy
 from .exceptions import CAttributeError, CAttributeNoElementError
 from .actions import Action
 # from selenium.webdriver.remote.webdriver import WebElement
@@ -36,6 +37,28 @@ class AttrGetter(DomDescriptor):
         super(AttrGetter, self).__init__(name)
         self.xpath = xpath
         self.optional = optional
+
+    def for_xpath(self, xpath):
+        """Return a copy of this descriptor, for a given xpath
+
+            If `xpath` is same as ours, return `self`
+        """
+        if xpath == self.xpath:
+            return self
+        else:
+            c = copy.copy(self)
+            c.xpath = xpath
+            return c
+
+    def for_optional(self):
+        """Return copy of self with `optional` set
+        """
+        if self.optional:
+            return self
+        else:
+            c = copy.copy(self)
+            c.optional = True
+            return c
 
     def _elem(self, comp):
         """Locate the web element from given component
