@@ -95,6 +95,92 @@ class AttrGetter(DomDescriptor):
         raise CAttributeError("%s is readonly" % self.name, component=comp)
 
 
+class AttrEqualsGetter(AttrGetter):
+    """Finds a word inside remote attribute, as boolean local
+
+        Example::
+
+            <a class="[is_blue]:blue">
+
+        will set `component.is_blue = True` if anchor is like `<a class="blue">`
+
+    """
+
+    __slots__ = ('xpath', 'name', 'optional', 'token')
+
+    def __init__(self, name, token='', xpath=None, optional=False):
+        super(AttrEqualsGetter, self).__init__(name, xpath=xpath, optional=optional)
+        self.token = token
+
+    def __get__(self, comp, type=None):
+        elem = self._elem(comp)
+        if elem is None:
+            return None
+
+        return elem.get_attribute(self.name) == self.token
+
+    def __set__(self, comp, value):
+        raise CAttributeError("%s is readonly" % self.name, component=comp)
+
+
+class AttrContainsGetter(AttrEqualsGetter):
+    """Finds a word inside remote attribute, as boolean local
+
+        Example::
+
+            <a class="[is_blue]:+blue">
+
+        will set `component.is_blue = True` if anchor is like `<a class="foo blue bar">`
+
+    """
+
+    def __get__(self, comp, type=None):
+        elem = self._elem(comp)
+        if elem is None:
+            return None
+
+        value = elem.get_attribute(self.name)
+        return value and (self.token in value.split(' '))
+
+
+class AttrAnyChoiceGetter(AttrGetter):
+    """Finds any of given words inside remote attribute, as a single local word
+
+        Example::
+
+            <a class="[color]:{blue|red|green|magenta}">
+
+        will set `component.color = 'blue'` if anchor is like `<a class="foo blue bar">`
+
+    """
+
+    __slots__ = ('xpath', 'name', 'optional', 'tokens')
+
+    def __init__(self, name, tokens='', xpath=None, optional=False):
+        super(AttrAnyChoiceGetter, self).__init__(name, xpath=xpath, optional=optional)
+        if isinstance(tokens, list):
+            self.tokens = tokens
+        else:
+            self.tokens = tokens.split('|')
+
+    def __get__(self, comp, type=None):
+        elem = self._elem(comp)
+        if elem is None:
+            return None
+
+        val = elem.get_attribute(self.name)
+        if not val:
+            return None
+        val = val.split()
+        for t in self.tokens:  # ordered!
+            if t in val:
+                return t
+        return None
+
+    def __set__(self, comp, value):
+        raise CAttributeError("%s is readonly" % self.name, component=comp)
+
+
 class TextAttrGetter(AttrGetter):
     """Descriptor that returns the text of some DOM element
     """
