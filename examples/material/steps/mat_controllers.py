@@ -20,7 +20,13 @@ class MatInputFieldCtrl(DOMScope):
 
         @property
         def error_message(self):
-            return self['error'].message
+            try:
+                return self['error'].message
+            except KeyError:
+                return None
+
+    class ChildComponent(object):
+        pass
 
 
 
@@ -83,6 +89,9 @@ class MatAutocompleteCtrl(DOMScope):
             self._scope.wait_all('short', welem=self._remote)
             assert self['input'].value == val
 
+    class ChildComponent(object):
+        pass
+
 
 class MaterialVersionCtrl(DOMScope):
     _name = 'mat-version-picker'
@@ -101,5 +110,8 @@ class MaterialVersionCtrl(DOMScope):
                 self._scope.wait_all('short')
             self['menu'][value].click()
             self._scope.wait_all('short')
+
+    class ChildComponent(object):
+        pass
 
 #eof
