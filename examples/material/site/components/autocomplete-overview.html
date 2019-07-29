@@ -6,11 +6,13 @@
     <use-template id="layout">
         <!--<div slot="title">Filter autocomplete</div>-->
         <mat-form-field pe-deep slot="body" this="autocomplete"
-                        pe-controller="mat-autocomplete">
+                        pe-controller="mat-autocomplete"
+                        class="[invalid]:+ng-invalid"
+                        class="[pristine]:+ng-pristine">
             <input pe-deep this="input"
                    type="text" matinput role="combobox"
                    aria-owns='[owns]'>
-            <pe-matchid id="root['input'].owns" this="panel">
+            <pe-matchid id="root['input'].owns" this="panel" pe-optional>
                 <mat-option this="[text]" role="option">
                     <span class="mat-option-text">[text]</span>
                 </mat-option>
