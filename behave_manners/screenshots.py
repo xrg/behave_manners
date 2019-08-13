@@ -24,9 +24,9 @@ class Camera(object):
     highlight_js = '''
         var highlight = document.createElement('div');
         highlight.setAttribute('style',
-            'border: 2px solid red; ' +
+            'border: {border}; ' +
             'border-radius: 1px; ' +
-            'background-color: rgba(255, 64, 64, 0.3); ' +
+            'background-color: {color}; ' +
             'z-index: 9999; ' +
             'position: absolute; ' +
             'left: {x}px; top: {y}px; ' +
@@ -81,7 +81,8 @@ class Camera(object):
         return rect
 
     @contextmanager
-    def highlight_element(self, context, component=None, webelem=None):
+    def highlight_element(self, context, component=None, webelem=None,
+                          color=None, border=None):
         """Perform some action with an element visually highlighted
         
             This should place a square rectangle on the DOM, around the
@@ -117,6 +118,8 @@ class Camera(object):
             rect['y'] -= dh // 2
             rect['width'] += dw
             rect['height'] += dh
+            rect['border'] = border or '2px solid red'
+            rect['color'] = color or 'rgba(255, 64, 64, 0.3)'
 
             highlight = webdriver.execute_script(self.highlight_js.format(**rect))
         except AttributeError as e:
