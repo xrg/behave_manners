@@ -24,7 +24,7 @@ class DSiteCollection(DPageElement):
         self._loader = loader
         self.cur_file = None
         self.file_dir = {}  # filename-to-pageelem main mapping
-        self.urls = set()
+        self.urls = []
         self.page_dir = {}  # title-to-filename mapping
         self.url_dir = {}  # title-to-url mapping
         self.pending_load = set()
@@ -61,7 +61,7 @@ class DSiteCollection(DPageElement):
             content = self.file_dir.setdefault(target, None)
             if link.url is not None:
                 link_re = fnmatch.translate(link.pattern or link.url)   # TODO nio-style matching
-                self.urls.add((link.url, re.compile(link_re), target))
+                self.urls.append((link.url, re.compile(link_re), target))
             if link.title:
                 self.page_dir[link.title] = target
                 if link.url is not None:
