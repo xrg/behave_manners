@@ -127,13 +127,14 @@ class Camera(object):
         except Exception as e:
             self._log.info("Could not highlight: %s", e)
 
-        yield
-
-        if highlight is not None:
-            try:
-                webdriver.execute_script('arguments[0].remove()', highlight)
-            except Exception as e:
-                self._log.info("Could not remove highlight: %s", e)
+        try:
+            yield
+        finally:
+            if highlight is not None:
+                try:
+                    webdriver.execute_script('arguments[0].remove()', highlight)
+                except Exception as e:
+                    self._log.info("Could not remove highlight: %s", e)
 
     def snap_failure(self, context, *args):
         from .pagelems.exceptions import ElementNotFound, ComponentException
