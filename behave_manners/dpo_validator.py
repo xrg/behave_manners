@@ -121,6 +121,8 @@ def cmdline_main():
                         help="Count number of selenium commands invoked")
     parser.add_argument('--pollute-data', action='store_true',
                         help="Set component names as data property on remote DOM")
+    parser.add_argument('-M', '--animate', action='store_true',
+                        help="Highlight each element discovered, animate")
     parser.add_argument('path', metavar="component", nargs="*",
                         help="Resolve components only under that path")
 
@@ -164,8 +166,8 @@ def cmdline_main():
     camera = None
     becontext = FakeContext()
     becontext.browser = driver
-    if args.screenshots:
-        camera = screenshots.Camera(args.screenshots)
+    if args.screenshots or args.animate:
+        camera = screenshots.Camera(args.screenshots or '.')
 
     def _get_cur_path(cur_url):
         if sdata.get('base_url'):
@@ -194,11 +196,11 @@ def cmdline_main():
         
         if isinstance(exc, ElementNotFound):
             print("    %s inside %s" % (exc.msg, comp))
-            if camera:
+            if camera and args.screenshots:
                 camera.capture_missing_elem(becontext, exc.parent, exc.selector)
         elif isinstance(exc, CKeyError):
             print("    Missing %s inside component %s" % (exc, comp))
-            if camera:
+            if camera and args.screenshots:
                 camera.capture_missing_elem(becontext, exc.component._remote, exc.args[0])
         elif isinstance(exc, KeyError):
             print("    Missing '%s' inside component %s" % (exc, comp))
@@ -237,6 +239,11 @@ def cmdline_main():
                                 "arguments[0].setAttribute('data-manners-component',"
                                                            "arguments[1]);",
                                 elem._remote, elem.component_name);
+
+                        if args.animate:
+                            with camera.highlight_element(becontext, component=elem,
+                                                          border='none', color='rgba(14, 118, 255, 0.4)'):
+                                time.sleep(0.2)
 
                         for a in dir(elem):
                             try:
