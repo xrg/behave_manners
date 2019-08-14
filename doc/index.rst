@@ -23,6 +23,12 @@ Topics:
 Indices and tables
 ==================
 
+.. toctree::
+    :maxdepth: 1
+
+    pagelems-ref
+
+
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`

@@ -1,4 +1,4 @@
-.. _tutorial1:
+.. _tutorial2:
 
 Tutorial 2: writing page elements
 ==================================

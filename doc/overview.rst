@@ -4,7 +4,9 @@ Manners Overview
 `behave_manners` is designed to be a weapon against complexity of modern
 web sites (rather, applications). Offers utility methods and a powerful
 abstraction layer on top of `Web Elements`, the standard objects of
-[WebDriver] API.
+`WebDriver API`_.
+
+.. _webdriver api: https://seleniumhq.github.io/selenium/docs/api/py/
 
 'manners' offers tools in these areas:
 

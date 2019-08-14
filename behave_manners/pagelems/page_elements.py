@@ -568,7 +568,7 @@ class InputElement(DPageElement):
         the name to be used under the component, but does NOT need to match
         remote attribute(s).
 
-        Example:
+        Example::
 
             <input pe-name="submit" type="submit">
 
@@ -677,11 +677,41 @@ class InputElement(DPageElement):
 
 
 class TextAreaObj(DPageElement):
+    """Textarea is handled just like <input>
+    """
     _name = 'tag.textarea'
     _inherit = 'tag.input'
 
 
 class DeepContainObj(DPageElement):
+    """Match contained elements at any level deep inside the DOM
+
+        Example::
+
+            <body>
+                <pe-deep> <div class="content"></div> </pe-deep>
+            </body>
+
+
+        will match::
+
+            <body>
+                <main>
+                    <div class="section">
+                        <div class="content"> ... </div>
+                    </div>
+                </main>
+            </body>
+
+        Equivalent of using 'pe-deep' as an attribute.
+
+        Example (alt)::
+
+            <body>
+                <div pe-deep class="content"></div>
+            </body>
+
+    """
     _name = 'tag.pe-deep'
     _inherit = '.domContainer'
 
@@ -790,6 +820,11 @@ class RootAgainElem(DPageElement):
 
 
 class RepeatObj(DPageElement):
+    """Locate multiple components, from one template
+
+    """
+    # TBD
+
     _name = 'tag.pe-repeat'
     _inherit = '.domContainer'
 
@@ -848,9 +883,10 @@ class RepeatObj(DPageElement):
 
 
 class PeChoiceElement(DPageElement):
-    """Matches the first child of this element
+    """Matches the first child of this element (at least)
 
     """
+    # TBD
     _name = 'tag.pe-choice'
     _inherit = '.domContainer'
     _attrs_map = {'slot': ('_dom_slot', None, None),
@@ -968,6 +1004,9 @@ class PeGroupElement(DPageElement):
 
 
 class PeMatchIDElement(DPageElement):
+    """Jump to an element that matches by id
+    """
+    # TBD
     _name = 'tag.pe-matchid'
     _inherit = '.domContainer'
     _attrs_map = {'pe-controller': ('_pe_ctrl', None, None),
@@ -1136,6 +1175,10 @@ class ConsumeTmplMixin(object):
 
 
 class DHeadElement(ConsumeTmplMixin, DPageElement):
+    """HTML head only supports parsing-related elements
+
+        Currently, only <link>s and <template>s are allowed in <head>
+    """
     _name = 'tag.head'
 
     def reduce(self, site=None):
@@ -1146,6 +1189,8 @@ class DHeadElement(ConsumeTmplMixin, DPageElement):
 
 
 class DBodyElement(ConsumeTmplMixin, DPageElement):
+    """Defines, matches the HTML <body>
+    """
     _name = 'tag.body'
     _inherit = 'any'
 
@@ -1155,11 +1200,15 @@ class DBodyElement(ConsumeTmplMixin, DPageElement):
 
 
 class ScriptElement(DPageElement):
+    """Scripts are NOT allowed so far
+    """
     _name = 'tag.script'
     _consume_in = ()  # Not allowed anywhere, so far
 
 
 class DLinkObject(DPageElement):
+    """Links are used to include other pagelem templates
+    """
     _name = 'tag.link'
     _inherit = '.base.link'
     _consume_in = (DHeadElement,)
@@ -1286,6 +1335,9 @@ class DSlotContentElement(DPageElement):
 
 
 class DUseTemplateElem(DPageElement):
+    """Calls a <template> in its place
+
+    """
     _name = 'tag.use-template'
     _inherit = '.domContainer'
 

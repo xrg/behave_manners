@@ -351,6 +351,7 @@ class DBaseLinkElement(DPageElement):
     
         Links have mandatory "rel", "href" attributes and
         optional "url", "title".
+
     """
     _name = '.base.link'
     is_empty = True
