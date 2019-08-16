@@ -70,6 +70,9 @@ class AnyElement(DPageElement):
         This would match any element in the remote DOM, but also serves as a
         baseclass for matching particular tags.
 
+        Useful for matching a particular element by attribute, rather than
+        HTML tag.
+
         Offers some standard attributes and rich syntax for matching remote
         DOM element properties.
     """
@@ -421,6 +424,23 @@ class RegexElement(DPageElement):
 
         .. note :: text inside this element can contain '<' and '>', no need
             to escape these.
+
+        Example::
+
+            <div class="header" this="chapter">
+                <pe-regex>Chapter (?P<number>[0-9]+): (?P<title>.*)</pe-regex>
+            </div>
+
+
+        This one would match DOM like this::
+
+            <div class="header">Chapter 4: Getting there</div>
+
+
+        and produce a component like::
+
+            chapter: number="4" title="Getting there"
+
     """
     _name = 'tag.pe-regex'
     _consume_in = (DomContainerElement,)
@@ -775,6 +795,10 @@ class DeepContainObj(DPageElement):
 class RootAgainElem(DPageElement):
     """Reset to root element (of DOM), keep component deep in tree
 
+        Useful for overlays, where the modal part is attached to the <body>
+        instead of that element itself, but logically linked to that inner
+        component.
+
     """
     _name = 'tag.pe-root'
     _inherit = '.domContainer'
@@ -822,8 +846,27 @@ class RootAgainElem(DPageElement):
 class RepeatObj(DPageElement):
     """Locate multiple components, from one template
 
+        In its simpler form, it allows explicit iterations, where
+        the inner component wouldn't.
+
+        Example::
+
+            <pe-repeat>
+                <div class="chapter" this="chapter> ...</div>
+            </pe-repeat>
+
+
+        this would match *all* `<div class="chapter">` , assigning them to
+        components like `chapter1` , `chapter2` etc.
+
+        But also useful for any controlled iteration. Supports ``min`` and
+        ``max`` limits of how many components to match.
+
+        Then, `<pe-repeat>` can have ``this`` attribute, assigning the list
+        of produced components as one component. This is useful even when
+        iteration is `not` desired, rather a component that does not `consume`
+        its corresponding DOM (parent) element.
     """
-    # TBD
 
     _name = 'tag.pe-repeat'
     _inherit = '.domContainer'
@@ -885,6 +928,24 @@ class RepeatObj(DPageElement):
 class PeChoiceElement(DPageElement):
     """Matches the first child of this element (at least)
 
+        Using `pe-choice` means that at least one of its children
+        shall match the remote, any others can fail.
+
+        Example::
+
+            <pe-choice>
+                <div class="chapter" this="chapter">...</div>
+                <div class="footer" this="footer">...</div>
+                <section class="index" this="index"> ... </section>
+            </pe-choice>
+
+        the above would succeed if any of these three patterns match,
+        but could also emit /all/ of them, if these can be found.
+
+        Note that the output of `<pe-choice>` is ordered by the options
+        given inside `pe-choice`, NOT the order that elements are in
+        the remote DOM. This is due to the XPath implementation.
+
     """
     # TBD
     _name = 'tag.pe-choice'
@@ -937,7 +998,15 @@ class PeChoiceElement(DPageElement):
 class PeGroupElement(DPageElement):
     """Trivial group, DOM-less container of many elements
 
+
+        Implements all-or-nothing logic, will never produce
+        partial components* from its childen.
+
+
         Elements within a group are ordered!
+
+        `*` unless the group's children have optional logic with
+        `<pe-choice>` or `<pe-repeat>`.
     """
     _name = 'tag.pe-group'
     _inherit = '.domContainer'
@@ -1005,8 +1074,23 @@ class PeGroupElement(DPageElement):
 
 class PeMatchIDElement(DPageElement):
     """Jump to an element that matches by id
+
+        It is a compact shorthand for taking an element's attribute,
+        resolving it and then searching the root of the DOM for that `id`.
+
+        Example::
+
+            <input this="input" role="combobox"
+                   aria-owns='[owns]'>
+            <pe-matchid id="root['input'].owns" this="panel" pe-optional>
+                ...
+            </pe-matchid>
+
+
+        would resolve the `aria-owns` attribute of the `<input>` , then
+        look for any element with that `id` in the tree, assign it to
+        the dropdown panel.
     """
-    # TBD
     _name = 'tag.pe-matchid'
     _inherit = '.domContainer'
     _attrs_map = {'pe-controller': ('_pe_ctrl', None, None),
@@ -1107,6 +1191,21 @@ class PeDataElement(DPageElement):
         plain string.
         When using inner JSON, it can be any of the simple types
         that JSON supports.
+
+        Example::
+
+            <div class="chapter" this="chapter">
+                <pe-data name="lang" value="en"/>
+                <pe-data name="difficulty">0.8</pe-data>
+                ...
+            </div>
+
+
+        would produce a component like:
+            chapter: lang="en" difficulty=0.8
+
+        Note that `difficulty` is parsed as JSON, and therefore becomes
+        a native float, rather than a string.
     """
     _name = 'tag.pe-data'
     _attrs_map = {'slot': ('_dom_slot', None, None),
@@ -1337,6 +1436,13 @@ class DSlotContentElement(DPageElement):
 class DUseTemplateElem(DPageElement):
     """Calls a <template> in its place
 
+
+        Example::
+
+            <use-template id="chapter">
+                <div slot="extra" class="remark" this="remark"> ... </div>
+            </use-template>
+
     """
     _name = 'tag.use-template'
     _inherit = '.domContainer'
@@ -1413,6 +1519,7 @@ class DBaseHtmlObject(DPageElement):
 class DHtmlObject(DPageElement):
     """Consume the <html> element as top-level site page
 
+        As expected, may only have a `<head>` and a `<body>` .
     """
     _name = 'tag.html'
     _inherit = '.basehtml'
@@ -1488,6 +1595,8 @@ class DHtmlObject(DPageElement):
 class GHtmlObject(DPageElement):
     """Handle the <html> element of a gallery file
 
+        Gallery files can only contain `<template>` elements in
+        their <head> or <body>, no other HTML.
     """
     _name = 'gallery.html'
     _inherit = '.basehtml'

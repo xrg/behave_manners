@@ -41,11 +41,25 @@ but as a means of parsing. See: :ref:`templates-and-slots`
 
 .. autoclass:: DTemplateElement(tag: <template>)
 
-.. autoclass:: DSlotElement(tag: <slot>)
+    .. py:data:: id="name"
 
-.. autoclass:: DSlotContentElement(tag: <pe-slotcontent>)
+        Mandatory attribute, needed to register this template in the local
+        scope.
 
 .. autoclass:: DUseTemplateElem(tag: <use-template>)
+
+    .. py:data:: id="name"
+
+        refers to a `<template>` to use
+
+
+.. autoclass:: DSlotElement(tag: <slot>)
+
+    .. py:data:: name="slot-name"
+
+        Slots must have a name, so that implementations can attach to them.
+
+.. autoclass:: DSlotContentElement(tag: <pe-slotcontent>)
 
 
 
