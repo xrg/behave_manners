@@ -7,6 +7,8 @@ class _StepImplies(object):
         assert callable(step_fn)
         self._step_fn = step_fn
         self._imply_stmt = []
+        self.__name__ = step_fn.__name__
+        self.__doc__ = step_fn.__doc__
         if implies:
             self._imply_stmt.insert(0, implies)
 
