@@ -43,6 +43,7 @@ from __future__ import absolute_import
 import logging
 from selenium.common.exceptions import WebDriverException, StaleElementReferenceException
 from .exceptions import CAttributeError, CKeyError
+from ..bubble_cache import BubbleCache
 
 
 logger = logging.getLogger(__name__)
@@ -65,6 +66,9 @@ class _SomeProxy(object):
         self._pagetmpl = pagetmpl
         self._remote = remote
         self._scope = scope
+
+    def __hash__(self):
+        return hash((id(self._pagetmpl), self._remote.id, id(self._scope)))
 
     @property
     def path(self):
@@ -89,6 +93,7 @@ class _SomeProxy(object):
                     raise
             return
 
+    @BubbleCache.cache
     def __getitem__(self, name):
         for iname, ielem, ptmpl, scp in self.__iteritems(name):
             if name == iname:
@@ -135,6 +140,9 @@ class PageProxy(_SomeProxy):
         super(PageProxy, self).__init__(pagetmpl, webdriver, scope)
         self.__descrs = self._scope._page_descriptors.copy()
 
+    def __hash__(self):
+        return hash(id(self))
+
     @property
     def path(self):
         return ()
@@ -148,6 +156,7 @@ class PageProxy(_SomeProxy):
         except Exception:
             return '<Page >'
 
+    @BubbleCache.cache
     def __getattr__(self, name):
         if name.startswith('_'):
             raise AttributeError(name)
@@ -214,6 +223,9 @@ class ComponentProxy(_SomeProxy):
         self.__descrs.update(self._pagetmpl.iter_attrs(webelem, scope))
         self.css = CSSProxy(self)
 
+    def __hash__(self):
+        return hash((id(self._pagetmpl), self._remote.id, id(self._scope)))
+
     def __repr__(self):
         try:
             return '<%s class="%s">' % (self._remote.tag_name, self._remote.get_attribute('class'))
@@ -243,6 +255,7 @@ class ComponentProxy(_SomeProxy):
         except KeyError:
             raise CAttributeError(name, component=self)
 
+    @BubbleCache.cache
     def __getattr__(self, name):
         if name.startswith('_'):
             raise AttributeError(name)

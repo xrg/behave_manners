@@ -10,6 +10,7 @@ from .actions import Action
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
 from selenium.webdriver.common.keys import Keys
 import six
+from ..bubble_cache import BubbleCache
 
 
 class DomDescriptor(object):
@@ -60,6 +61,7 @@ class AttrGetter(DomDescriptor):
             c.optional = True
             return c
 
+    @BubbleCache.cache
     def _elem(self, comp):
         """Locate the web element from given component
         """
@@ -83,6 +85,7 @@ class AttrGetter(DomDescriptor):
                 raise CAttributeNoElementError(six.text_type(e), component=comp)
         return elem
 
+    @BubbleCache.cache
     def __get__(self, comp, type=None):
         elem = self._elem(comp)
         if elem is None:
@@ -90,6 +93,7 @@ class AttrGetter(DomDescriptor):
 
         return elem.get_attribute(self.name)
 
+    @BubbleCache.pop
     def __set__(self, comp, value):
         if isinstance(value, Action):
             elem = self._elem(comp)
@@ -98,6 +102,7 @@ class AttrGetter(DomDescriptor):
             return value.act_on_descriptor(self, elem)
         raise CAttributeError("%s is readonly" % self.name, component=comp)
 
+    @BubbleCache.pop
     def __delete__(self, comp):
         raise CAttributeError("%s is readonly" % self.name, component=comp)
 
@@ -119,6 +124,7 @@ class AttrEqualsGetter(AttrGetter):
         super(AttrEqualsGetter, self).__init__(name, xpath=xpath, optional=optional)
         self.token = token
 
+    @BubbleCache.cache
     def __get__(self, comp, type=None):
         elem = self._elem(comp)
         if elem is None:
@@ -141,6 +147,7 @@ class AttrContainsGetter(AttrEqualsGetter):
 
     """
 
+    @BubbleCache.cache
     def __get__(self, comp, type=None):
         elem = self._elem(comp)
         if elem is None:
@@ -170,6 +177,7 @@ class AttrAnyChoiceGetter(AttrGetter):
         else:
             self.tokens = tokens.split('|')
 
+    @BubbleCache.cache
     def __get__(self, comp, type=None):
         elem = self._elem(comp)
         if elem is None:
@@ -195,6 +203,7 @@ class TextAttrGetter(AttrGetter):
         super(TextAttrGetter, self).__init__('text', xpath, optional=optional)
         self._do_strip = do_strip
 
+    @BubbleCache.cache
     def __get__(self, comp, type=None):
         elem = self._elem(comp)
         if elem is None:
@@ -216,6 +225,7 @@ class PartialTextAttrGetter(TextAttrGetter):
         self._after_elem = after_elem
         self._before_elem = before_elem
 
+    @BubbleCache.cache
     def __get__(self, comp, type=None):
         elem = self._elem(comp)
         if elem is None:
@@ -277,12 +287,14 @@ class InputCompatDescr(AttrGetter):
     def __init__(self, xpath):
         super(InputCompatDescr, self).__init__('value', xpath)
 
+    @BubbleCache.pop
     def __delete__(self, comp):
         elem = self._elem(comp)
         if elem is None:
             raise CAttributeError("Cannot set value of missing element", component=comp)
         elem.clear()
 
+    @BubbleCache.pop
     def __set__(self, comp, value):
         elem = self._elem(comp)
         if elem is None:
@@ -299,6 +311,7 @@ class InputValueDescr(InputCompatDescr):
         This is way more efficient than `send_keys()`, but known to have issues
         with elements that have JS validators etc.
     """
+    @BubbleCache.pop
     def __set__(self, comp, value):
         elem = self._elem(comp)
         if elem is None:
@@ -310,6 +323,7 @@ class InputValueDescr(InputCompatDescr):
 
 
 class InputCombiDescr(InputCompatDescr):
+    @BubbleCache.pop
     def __set__(self, comp, value):
         elem = self._elem(comp)
         if elem is None:

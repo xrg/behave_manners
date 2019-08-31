@@ -5,6 +5,7 @@ import six
 from f3utils.service_meta import abstractmethod, _ServiceMeta
 from .helpers import textescape, Integer
 from .dom_meta import DOM_Meta
+from ..bubble_cache import BubbleCache
 
 from six.moves.html_parser import HTMLParser
 from six.moves import html_entities
@@ -447,14 +448,14 @@ class DOMScope(object):
             return __fn
 
         # aliases for simple WebElement methods:
-        click = __make_cwrap_simple('click')
-        clear = __make_cwrap_simple('clear')
+        click = BubbleCache.pop(__make_cwrap_simple('click'))
+        clear = BubbleCache.pop(__make_cwrap_simple('clear'))
         get_attribute = __make_cwrap_simple('get_attribute')
         get_property = __make_cwrap_simple('get_property')
         is_displayed = __make_cwrap_simple('is_displayed')
         is_enabled = __make_cwrap_simple('is_enabled')
         is_selected = __make_cwrap_simple('is_selected')
-        send_keys = __make_cwrap_simple('send_keys')
-        submit = __make_cwrap_simple('submit')
+        send_keys = BubbleCache.pop(__make_cwrap_simple('send_keys'))
+        submit = BubbleCache.pop(__make_cwrap_simple('submit'))
 
 #eof
