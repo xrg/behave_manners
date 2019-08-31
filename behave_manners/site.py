@@ -246,7 +246,7 @@ class WebContext(SiteContext):
 
         dwdir = self._setup_downloads(context)
         context.browser = self._launch_browser2(caps, download_dir=dwdir)
-        context.add_cleanup(self._release_browser, context)
+        context.add_cleanup(context.browser.quit)
 
         if browser_opts.get('implicit_wait'):
             m = seconds_re.match(browser_opts['implicit_wait'])
@@ -287,12 +287,6 @@ class WebContext(SiteContext):
 
         # TODO: short-name sizes
         raise ValueError("Cannot parse size=\"%s\"" % size_str)
-
-    def _release_browser(self, context):
-        """Release or destroy the browser after context has finished with it
-        """
-        self._log.debug("cleanup browser")
-        context.browser.quit()
 
     def _event_before_feature(self, context, feature):
         # parent_fn(context, None, feature)  must be __noop_fn
