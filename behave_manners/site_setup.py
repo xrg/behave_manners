@@ -8,6 +8,7 @@ import six
 import os.path
 from behave.runner import Context
 from .site import SiteContext
+from .bubble_cache import BubbleCache
 
 
 def site_setup(context, config=None, extra_conf=None, loader=None):
@@ -59,6 +60,11 @@ def site_setup(context, config=None, extra_conf=None, loader=None):
             raise TypeError("Config 'context' section must be a dict")
         for k, v in config['context'].items():
             setattr(context, k, copy.deepcopy(v))
+
+    if config.get('cache'):
+        BubbleCache.enabled = config['cache'].get('enabled', True)
+        BubbleCache.timeout = config['cache'].get('timeout', 3.0)
+
     return
 
 

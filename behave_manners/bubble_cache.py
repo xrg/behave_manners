@@ -26,6 +26,9 @@ class BubbleCache(object):
         hfn = hash(fn)
         @six.wraps(fn)
         def __fn(*args, **kwargs):
+            if not cls.enabled:
+                # immediate result, no hashing or so
+                return fn(*args, **kwargs)
             cinst = cls._instance()
             key = (hfn, hash(args), repr(kwargs))
             try:
@@ -46,13 +49,14 @@ class BubbleCache(object):
         """
         @six.wraps(fn)
         def __fn(*args, **kwargs):
-            cls._instance().__pop()
+            try:
+                cls._local.cache.__pop()
+            except AttributeError:
+                # no need to pop if there is no instance
+                pass
             return fn(*args, **kwargs)
 
-        if cls.enabled:
-            return __fn
-        else:
-            return fn
+        return __fn
 
     _local = threading.local()
 
