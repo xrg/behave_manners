@@ -3,7 +3,6 @@
 import time
 from behave_manners.pagelems import DOMScope, DPageElement
 from behave_manners.action_chains import ActionChains
-from behave_manners.pagelems.page_elements import InputCompatDescr
 from selenium.webdriver.common.keys import Keys
 
 
