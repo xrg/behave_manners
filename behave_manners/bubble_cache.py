@@ -16,7 +16,7 @@ class BubbleCache(object):
         changing its contents
     """
 
-    enabled = True
+    enabled = False
     timeout = 3.0  # seconds
 
     # Class methods that instantiate thread-local sigleton
