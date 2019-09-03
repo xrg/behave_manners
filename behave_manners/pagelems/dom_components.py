@@ -72,9 +72,27 @@ class _SomeProxy(object):
     def path(self):
         raise NotImplementedError()
 
+    def __iteritems(self, match=None):
+        """Calls pagetmpl.iter_items() with stale support
+
+            If `self` becomes stale during iteration, no recovery
+            will ever be attempted
+        """
+        pr = True
+        while pr:
+            try:
+                for neps in self._pagetmpl.iter_items(self._remote, self._scope, match=match):
+                    pr = False
+                    yield neps
+            except StaleElementReferenceException:
+                if pr and self._recover_stale():
+                    continue
+                else:
+                    raise
+            return
+
     def __getitem__(self, name):
-        for iname, ielem, ptmpl, scp in \
-                self._pagetmpl.iter_items(self._remote, self._scope, match=name):
+        for iname, ielem, ptmpl, scp in self.__iteritems(name):
             if name == iname:
                 comp = scp.component_class(iname, self, ptmpl, ielem, scp)
                 scp.take_component(comp)
@@ -86,7 +104,7 @@ class _SomeProxy(object):
         return self.__iter__()
 
     def __iter__(self):
-        for name, welem, ptmpl, scp in self._pagetmpl.iter_items(self._remote, self._scope):
+        for name, welem, ptmpl, scp in self.__iteritems():
             yield name
 
     def __eq__(self, other):
@@ -97,7 +115,7 @@ class _SomeProxy(object):
         return self._remote == other._remote
 
     def items(self):
-        for iname, ielem, ptmpl, scp in self._pagetmpl.iter_items(self._remote, self._scope):
+        for iname, ielem, ptmpl, scp in self.__iteritems():
             comp = scp.component_class(iname, self, ptmpl, ielem, scp)
             scp.take_component(comp)
             yield iname, comp
@@ -263,7 +281,7 @@ class ComponentProxy(_SomeProxy):
             :return: whether a new element has been located to recover this
         """
         parent = self._parent
-        if not (parent and getattr(parent._scope, 'recover_stale', True)):
+        if not (parent and getattr(parent._scope, 'recover_stale', False)):
             return False
 
         for r in (0, 1):

@@ -7,7 +7,7 @@ import copy
 from .exceptions import CAttributeError, CAttributeNoElementError
 from .actions import Action
 # from selenium.webdriver.remote.webdriver import WebElement
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
 from selenium.webdriver.common.keys import Keys
 import six
 
@@ -64,9 +64,16 @@ class AttrGetter(DomDescriptor):
         """Locate the web element from given component
         """
         try:
-            elem = comp._remote
-            if self.xpath:
-                elem = elem.find_element_by_xpath(self.xpath)
+            try:
+                elem = comp._remote
+                if self.xpath:
+                    elem = elem.find_element_by_xpath(self.xpath)
+            except StaleElementReferenceException:
+                if not comp._recover_stale():
+                    raise
+                elem = comp._remote
+                if self.xpath:
+                    elem = elem.find_element_by_xpath(self.xpath)
         except NoSuchElementException as e:
             if self.optional:
                 self.logger.debug("Attribute %r.%s could not be found, returning None",

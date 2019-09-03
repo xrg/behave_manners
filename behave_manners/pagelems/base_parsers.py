@@ -9,7 +9,7 @@ from .dom_meta import DOM_Meta
 from six.moves.html_parser import HTMLParser
 from six.moves import html_entities
 from selenium.webdriver.remote.webdriver import WebElement
-from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import WebDriverException, StaleElementReferenceException
 
 if six.PY2:
     from HTMLParser import HTMLParseError
@@ -432,7 +432,12 @@ class DOMScope(object):
             @six.wraps(webelem_fn)
             def __fn(self, *args, **kwargs):
                 try:
-                    return getattr(self._remote, name)(*args, **kwargs)
+                    try:
+                        return getattr(self._remote, name)(*args, **kwargs)
+                    except StaleElementReferenceException:
+                        if not self._recover_stale():
+                            raise
+                        return getattr(self._remote, name)(*args, **kwargs)
                 except WebDriverException as e:
                     # Reset traceback to this level, ignore rest of stack
                     e.component = self
