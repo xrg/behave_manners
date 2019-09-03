@@ -6,6 +6,7 @@ from behave_manners.action_chains import ActionChains
 from behave_manners.pagelems.exceptions import CAssertionError
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import StaleElementReferenceException
+from behave_manners.pagelems.scopes import Fresh
 
 
 @when(u'I click to have the dropdown visible')
@@ -16,7 +17,7 @@ def click_dropdown1(context):
 
     print("Owns: %s" % context.cur_element['input'].owns)
 
-    context.cur_overlays = context.cur_element['overlays']
+    context.cur_overlays = context.cur_element['panel']
 
 
 @when(u'I click again to hide the dropdown')
@@ -31,13 +32,14 @@ def click_hide_dropdown(context):
 def click_dropdown2(context):
     context.cur_element['input'].send_keys('o')
     context.cur_element._scope.wait_all('short', welem=context.cur_element._remote)
-    assert context.cur_element['input'].owns, "Did not present overlay"
+    assert context.cur_element['panel'], "Did not present overlay"
 
 
 @then(u'the previous dropdown component resolves')
 def check_resolve_dropdown1(context):
     print("Cur dropdown %s" % context.cur_element['input'].owns)
-    print("Cur overlays %s" % context.cur_overlays.is_displayed())
+    with Fresh(context.cur_element):
+        print("Cur overlays %s" % context.cur_overlays.is_displayed())
 
 
 @when(u'I enter "{value}" in the "{field}" field')
