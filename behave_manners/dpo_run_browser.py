@@ -51,6 +51,7 @@ def cmdline_main():
             json.dump({'url': context.browser.command_executor._url,
                        'session': context.browser.session_id,
                        'capabilities': context.browser.capabilities,
+                       'w3c': context.browser.w3c,
                        # Pass those so that validator doesn't need to load the config
                        'base_url': config.get('site', {}).get('base_url', None),
                        'page_objects': config.get('page_objects', {})

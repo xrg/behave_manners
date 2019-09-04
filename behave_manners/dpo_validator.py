@@ -29,9 +29,10 @@ class ExistingRemote(webdriver.Remote):
     """Remote webdriver that attaches to existing session
     """
     def __init__(self, command_executor, session_id, saved_capabilities,
-                 desired_capabilities={}, **kwargs):
+                 desired_capabilities={}, saved_w3c=None, **kwargs):
         self.__session_id = session_id
         self.__saved_caps = saved_capabilities
+        self.__saved_w3c = saved_w3c
         super(ExistingRemote, self).__init__(command_executor=command_executor,
                                              desired_capabilities=desired_capabilities,
                                              **kwargs)
@@ -44,7 +45,10 @@ class ExistingRemote(webdriver.Remote):
             # so have to trust data from JSON and go directly to that session
             self.session_id = self.__session_id
             self.capabilities = self.__saved_caps
-            self.w3c = "specificationLevel" in self.capabilities
+            if self.__saved_w3c is not None:
+                self.w3c = self.__saved_w3c
+            else:
+                self.w3c = "specificationLevel" in self.capabilities
             return
 
         res = self.execute(Command.GET_ALL_SESSIONS)
@@ -53,7 +57,10 @@ class ExistingRemote(webdriver.Remote):
                 if session['id'] == self.__session_id:
                     self.session_id = self.__session_id
                     self.capabilities = session['capabilities']
-                    self.w3c = "specificationLevel" in self.capabilities
+                    if self.__saved_w3c is not None:
+                        self.w3c = self.__saved_w3c
+                    else:
+                        self.w3c = "specificationLevel" in self.capabilities
                     break
             else:
                 raise RuntimeError("Remote webdriver does not contain saved session")
@@ -138,7 +145,8 @@ def cmdline_main():
     if 'url' in sdata and 'session' in sdata:
         driver = ExistingRemote(command_executor=sdata['url'],
                                 session_id=sdata['session'],
-                                saved_capabilities=sdata.get('capabilities',{}))
+                                saved_capabilities=sdata.get('capabilities',{}),
+                                saved_w3c=sdata.get('w3c', None))
     else:
         raise RuntimeError("Saved session must have 'url' and 'session' set")
 
