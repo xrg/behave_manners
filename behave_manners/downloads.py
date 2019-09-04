@@ -57,6 +57,7 @@ class DownloadManager(object):
                 if fnmatch.fnmatch(path, pattern):
                     fullpath = os.path.join(self._dir, path)
                     if os.path.isfile(fullpath):
+                        self._past_files.add(path)
                         return path, fullpath
                 elif path.endswith('.crdownload'):
                     if path not in pending or (time.time() - last_pending) >= 5.0:
