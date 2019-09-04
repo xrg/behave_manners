@@ -20,8 +20,17 @@ Scenario: Look for file before downloading
      When I wait for 15sec
      Then there is no new data file
 
-@wip
 Scenario: Download, implicit wait
     Given I am at the "Download Page"
      When I click the link to download
+     Then I get a new data file
+
+@wip
+Scenario: Download same file twice
+   Given I am at the "Download Page"
+     When I click the fixed download
+     Then I get a new data file
+     When I click the fixed link again
+     Then I get a new data file
+     When I click the fixed link again
      Then I get a new data file

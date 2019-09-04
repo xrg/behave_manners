@@ -45,26 +45,32 @@ def two_tables():
 def dload_page():
     return render_template('download.html')
 
+def chunks(end_time=20.0, size=32768):
+    logger = logging.getLogger('download')
+    num = int(end_time)
+    logger.info("Generating %d chunks of %.2fkb each", num, size/1024)
+    n = 0
+    ts = end_time / num
+    with open('/dev/urandom', 'rb') as fin:
+        while n < num:
+            yield fin.read(size)
+            n += 1
+            time.sleep(ts)
+    logger.info("Finished streaming, sent %.2fkb of data", (num*size)/1024)
+
 
 @app.route('/the-download')
 def download_target():
-    logger = logging.getLogger('download')
-    
-    def chunks(end_time=20.0, size=32768):
-        num = int(end_time)
-        logger.info("Generating %d chunks of %.2fkb each", num, size/1024)
-        n = 0
-        ts = end_time / num
-        with open('/dev/urandom', 'rb') as fin:
-            while n < num:
-                yield fin.read(size)
-                n += 1
-                time.sleep(ts)
-        logger.info("Finished streaming, sent %.2fkb of data", (num*size)/1024)
-
     ret = Response(chunks(), mimetype='application/data')
     ret.headers['Content-disposition'] = 'attachment; filename="test-%d.data"' % time.time()
     return ret
+
+@app.route('/the-download/fixed')
+def download_target2():
+    ret = Response(chunks(end_time=5.0), mimetype='application/data')
+    ret.headers['Content-disposition'] = 'attachment; filename="test.data"'
+    return ret
+
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_page():
