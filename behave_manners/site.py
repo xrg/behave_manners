@@ -593,6 +593,9 @@ class ChromeWebContext(SiteContext):
         options.add_argument('disable-infobars')
         if browser_opts.get('no_automation', False):
             options.add_experimental_option('useAutomationExtension', False)
+        if 'w3c' in browser_opts:
+            # Force w3c mode on/off
+            options.add_experimental_option('w3c', browser_opts['w3c'])
         if 'window' in browser_opts:
             w, h = self._decode_win_size(browser_opts['window'])
             options.add_argument('window-size=%d,%d' % (w, h))
