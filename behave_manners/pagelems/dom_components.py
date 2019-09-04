@@ -41,8 +41,6 @@
 
 from __future__ import absolute_import
 import logging
-import inspect
-import warnings
 from selenium.common.exceptions import WebDriverException, StaleElementReferenceException
 from .exceptions import CAttributeError, CKeyError
 
@@ -187,7 +185,7 @@ class CSSProxy(object):
         try:
             # non-existing properties will just return None from this call
             return self.__remote.value_of_css_property(name)
-        except WebDriverException as e:   # TODO handling of WebDriverExceptions
+        except WebDriverException:   # TODO handling of WebDriverExceptions
             raise
 
     def __setitem__(self, name, value):

@@ -70,11 +70,11 @@ class Camera(object):
             self.take_shot(context, 'success')
 
     def _get_elem_rect(self, webelem):
-        webdriver = webelem.parent
+        # webdriver = webelem.parent
         if True:
             try:
                 rect = webelem.rect.copy()
-            except WebDriverException as e:
+            except WebDriverException:
                 rect = webelem.location.copy()
                 rect.update(webelem.size)
 
