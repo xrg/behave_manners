@@ -93,6 +93,20 @@ def upload_page():
     return render_template('upload-ok.html', file=ufile, payload=payload)
 
 
+@app.route('/long-table/<sub>')
+def long_tbl1(sub=None):
+    cols = ['id', 'Name', 'Cell', 'Date', 'Amount']
+    lim = int(request.args.get('limit', 10))
+    def source(limit=1000):
+        i = 0
+        d = datetime.datetime.now()
+        while i < limit:
+            yield i, 'Foo %x' % i, 'C%d' % i, d, 0.4 * i
+            d += datetime.timedelta(hours=6)
+            i += 1
+    return render_template('long-table.html', columns=cols, data=source(limit=lim))
+
+
 @app.route('/private')
 def no_login():
     abort(403)

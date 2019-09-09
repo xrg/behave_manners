@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Mini-application</title>
+
+<style>
+    table {
+        border: 1px solid blue;
+        margin-bottom: 10px;
+    }
+    table th {
+        border: 1px solid black;
+        min-width: 60px;
+    }
+    table td {
+        border: 1px solid black;
+        padding: 2px;
+    }
+    div.table {
+        border: 1px solid blue;
+        width: 200px;
+    }
+
+    div.table .head {
+    }
+
+    div.table .head span {
+        border: 1px solid black;
+        display: inline-block;
+        width: 60px;
+        margin-right: 4px;
+        font-weight: bold;
+    }
+
+    div.table .row {
+    }
+    div.table .row .cell {
+        display: inline-block;
+        border: 1px solid black;
+        min-width: 60px;
+    }
+
+</style>
+</head>
+
+<body>
+
+    <div id="table1">
+        <table>
+            <thead><tr>
+                {% for c in columns -%}
+                <th>{{ c }}</th>
+                {%- endfor %}
+            </tr></thead>
+            <tbody>
+                {% for row in data %}
+                <tr>{%for c in row %}<td data-col="{{loop.index}}">{{ c }}</td>{% endfor %}</tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>

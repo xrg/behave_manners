@@ -1,0 +1,32 @@
+<html>
+<body>
+
+    <template id="table-row">
+        <tr this="row_%d">
+            <slot name="id_column"></slot>
+            <slot name="cell">
+                [text]
+            </slot>
+        </tr>
+    </template>
+
+    <div id="table1" this="content">
+        <table this="table">
+            <thead this="head">
+                <tr>
+                    <th this="col_%d">[text]</th>
+                </tr>
+            </thead>
+            <tbody this="rows">
+                <use-template id="table-row">
+                    <td data-col="1" slot="id_column">[id]</td>
+                    <td slot="cell" this="col_%d">
+                        <pe-slotcontent/>
+                    </td>
+                </use-template>
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>
