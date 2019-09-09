@@ -52,6 +52,7 @@ def cmdline_main():
                        'session': context.browser.session_id,
                        'capabilities': context.browser.capabilities,
                        'w3c': context.browser.w3c,
+                       'keep_alive': context.browser.command_executor.keep_alive,
                        # Pass those so that validator doesn't need to load the config
                        'base_url': config.get('site', {}).get('base_url', None),
                        'page_objects': config.get('page_objects', {})
@@ -71,7 +72,7 @@ def cmdline_main():
 
         last_title = None
         while True:
-            time.sleep(0.5)
+            time.sleep(1.0)
             ntitle = context.browser.title
             if ntitle != last_title:
                 log.info("Browser changed to: %s", ntitle)

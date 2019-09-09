@@ -146,7 +146,8 @@ def cmdline_main():
         driver = ExistingRemote(command_executor=sdata['url'],
                                 session_id=sdata['session'],
                                 saved_capabilities=sdata.get('capabilities',{}),
-                                saved_w3c=sdata.get('w3c', None))
+                                saved_w3c=sdata.get('w3c', None),
+                                keep_alive=sdata.get('keep_alive', True))
     else:
         raise RuntimeError("Saved session must have 'url' and 'session' set")
 
