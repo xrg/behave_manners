@@ -17,4 +17,29 @@ def count_table(context):
         raise CAssertionError("Table has %d rows" % len_rows, component=table)
 
 
+@when('I find the line with {key:w}="{val}"')
+def table_lookup(context, key, val):
+    table = context.cur_page['content']['table']
+    header_cols = { comp.text: c for c, comp in table['head'].items()}
+
+    col_id = header_cols[key]
+    for row in table['rows'].values():
+        if row[col_id].text == val:
+            context.cur_row = row
+            break
+    else:
+        raise CAssertionError("No such row", component=table)
+
+
+@then('That line has {key:w}="{val}"')
+def table_row_validate(context, key, val):
+    table = context.cur_page['content']['table']
+    header_cols = { comp.text: c for c, comp in table['head'].items()}
+
+    cell = context.cur_row[header_cols[key]]
+    if cell.text != val:
+        raise CAssertionError("Row has %s=%r" % (key, cell.text),
+                              component=cell)
+
+
 
