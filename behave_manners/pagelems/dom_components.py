@@ -101,6 +101,24 @@ class _SomeProxy(object):
     def keys(self):
         return self.__iter__()
 
+    def values(self):
+        """Iteration of sub-components under this one
+        """
+        for name, welem, ptmpl, scp in self.__iteritems():
+            comp = scp.component_class(name, self, ptmpl, welem, scp)
+            scp.take_component(comp)
+            yield comp
+
+    def __len__(self):
+        """Calculate length of sub-elements
+
+            Warning: this must iterate over the remote elements, is *slow*
+        """
+        n = 0
+        for x in self.__iteritems():
+            n += 1
+        return n
+
     def __iter__(self):
         for name, welem, ptmpl, scp in self.__iteritems():
             yield name
