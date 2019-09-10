@@ -19,7 +19,7 @@ from f3utils.service_meta import abstractmethod, _ServiceMeta
 
 from selenium import webdriver
 from behave.model_core import Status
-# from six.moves.urllib import parse as urlparse
+from six.moves.urllib.parse import urlencode
 from .context import EventContext
 
 
@@ -392,7 +392,8 @@ class WebContext(SiteContext):
         # TODO: up = urlparse.urlparse(driver.current_url)
         self._load_url(context, page, url, **kwargs)
 
-    def _load_url(self, context, page, url, force=False, soft=None, wait='medium'):
+    def _load_url(self, context, page, url, params=None,
+                  force=False, soft=None, wait='medium'):
         """Tell the browser to navigate to some URL
 
             It may not always work: some race conditions with pending scripts
@@ -406,6 +407,13 @@ class WebContext(SiteContext):
             cur_url = False
         else:
             cur_url = context.browser.current_url
+
+        if params is not None:
+            if '?' in url:
+                url += '&'
+            else:
+                url += '?'
+            url += urlencode(params)
 
         def consume_message(rec):
             if rec.name == 'browser.network' and rec.levelno == logging.ERROR:
