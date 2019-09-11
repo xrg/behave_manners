@@ -136,6 +136,9 @@ class _SomeProxy(object):
             scp.take_component(comp)
             yield iname, comp
 
+    def filter(self, *fn, **kwargs):
+        raise NotImplementedError("%s.filter() not available" % self.__class__.__name__)
+
     def _recover_stale(self):
         """Update self after point to stale remote element
 
@@ -243,6 +246,32 @@ class ComponentProxy(_SomeProxy):
             return False
         return self._name == other._name  # has to match, too
         # but parent may differ
+
+    def filter(self, clause):
+        """Iterator over sub-components that satisfy a condition
+
+            Usage::
+
+                for row in table.filter(lambda r: r['col_4'].text == "bingo!"):
+                    print("Found the bingo row:", row)
+
+            equivalent to::
+
+                for row in table.values():
+                    if row['col_4'].text == "bingo!":
+                        print("Found the bingo row:", row)
+
+
+            `clause` must be a function, which evaluates against a component
+            and returns True whenever that component should participate in
+            the result.
+        """
+
+        for name, welem, ptmpl, scp in self._SomeProxy__iteritems():
+            comp = scp.component_class(name, self, ptmpl, welem, scp)
+            if clause(comp):
+                scp.take_component(comp)
+                yield comp
 
     def __getstate__(self):
         """Minimal serialization, just for `repr(self)` to work
