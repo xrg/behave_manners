@@ -23,10 +23,10 @@ def table_lookup(context, key, val):
     header_cols = { comp.text: c for c, comp in table['head'].items()}
 
     col_id = header_cols[key]
-    for row in table['rows'].values():
-        if row[col_id].text == val:
-            context.cur_row = row
-            break
+    for row in table['rows'].filter(lambda r: r[col_id].text == val):
+        assert row[col_id].text == val, "Filter yields row: %s" % row.component_name
+        context.cur_row = row
+        break
     else:
         raise CAssertionError("No such row", component=table)
 
