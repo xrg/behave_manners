@@ -497,8 +497,8 @@ class NamedElement(DPageElement):
             self._this_fn = self.__get_pattern_resolver(pattern)
             self._this_rev = lambda m: True   # TODO
         elif '%s' in pattern or '%d' in pattern:
-            self._this_fn = lambda n, x, c: pattern % n
-            self._this_rev = lambda m: True  # TODO
+            self._this_fn = lambda n, w, s, m: m or (pattern % n)
+            self._this_rev = self.__get_rev_pos(pattern)
         else:
             # plain name, no iteration
             self._this_fn = lambda *a: pattern
@@ -509,7 +509,7 @@ class NamedElement(DPageElement):
 
             :param pattern: name of attribute to resolve
         """
-        def _resolver(n, welem, scope):
+        def _resolver(n, welem, scope, match=None):
             for name, descr in self.iter_attrs(welem, scope):
                 if name == pattern:
                     ret = descr.__get__(self._fakeComp(welem))
@@ -520,6 +520,31 @@ class NamedElement(DPageElement):
             return n
 
         return _resolver
+
+    def __get_rev_pos(self, pattern):
+        """Get reverse-matching expression for position pattern
+
+        Given that `pattern` uses %d or %s to build name based on position,
+        return reverse function that returns XPath to quickly match that.
+        """
+        pre, post = re.split(r'%[ds]', pattern, 1)
+
+        def _rev_fn(match):
+            if not match.startswith(pre):
+                return False
+            match = match[len(pre):]
+            if not post:
+                pass
+            elif not match.endswith(post):
+                return False
+            else:
+                match = match[:-len(post)]
+            try:
+                return '[%d]' % (int(match) + 1)
+            except ValueError:
+                return False
+
+        return _rev_fn
 
     def _split_this(self, value, sub=None):
         if sub:
@@ -547,6 +572,8 @@ class NamedElement(DPageElement):
         xpath = prepend_xpath(xpath_prefix, self.xpath)
         if reverse is not True:
             xpath += reverse
+        else:
+            match = None
 
         n = 0
         enofound = None
@@ -556,7 +583,7 @@ class NamedElement(DPageElement):
                     nscope = self._pe_class(parent=scope)
                 else:
                     nscope = scope
-                yield self._this_fn(n, welem, nscope), welem, self, nscope
+                yield self._this_fn(n, welem, nscope, match), welem, self, nscope
             except CAttributeNoElementError as e:
                 blame = getattr(e.component, '_remote', None) or welem
                 enofound = ElementNotFound(msg=str(e), parent=blame)
