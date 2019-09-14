@@ -1550,17 +1550,21 @@ class DHtmlObject(DPageElement):
 
             Iterator, yielding (path, Component) pairs, traversing depth first
         """
+        from .dom_components import PageProxy, ComponentProxy
         if on_missing is None:
             on_missing = lambda c, e: None
 
-        comp = self.get_root(webdriver, parent_scope)
-        if starting_path:
-            try:
-                for p in starting_path:
-                    comp = comp[p]
-            except (ElementNotFound, KeyError) as e:
-                on_missing(comp, e)
-                return
+        if isinstance(starting_path, (PageProxy, ComponentProxy)):
+            comp = starting_path
+        else:
+            comp = self.get_root(webdriver, parent_scope)
+            if starting_path:
+                try:
+                    for p in starting_path:
+                        comp = comp[p]
+                except (ElementNotFound, KeyError) as e:
+                    on_missing(comp, e)
+                    return
 
         stack = [((), comp)]
         while stack:

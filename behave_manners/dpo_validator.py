@@ -199,22 +199,69 @@ def cmdline_main():
     def path_str(path):
         return '/'.join([str(x) for x in path])
 
-    def print_enoent(comp, exc):
+    def print_enoent(comp, exc, shoot=True):
         e = errors  # transfer from outer to local scope
         e += 1
         
         if isinstance(exc, ElementNotFound):
             print("    %s inside %s" % (exc.msg, comp))
-            if camera and args.screenshots:
+            if camera and shoot and args.screenshots:
                 camera.capture_missing_elem(becontext, exc.parent, exc.selector)
         elif isinstance(exc, CKeyError):
             print("    Missing %s inside component %s" % (exc, comp))
-            if camera and args.screenshots:
+            if camera and shoot and args.screenshots:
                 camera.capture_missing_elem(becontext, exc.component._remote, exc.args[0])
         elif isinstance(exc, KeyError):
             print("    Missing '%s' inside component %s" % (exc, comp))
 
         return True  # want walk() to continue
+
+    def walk_validate(comp):
+        """Walk all elements and print them, mode of operation
+        """
+        errors_l = errors
+        if args.pollute_data:
+            pelems = driver.find_elements_by_xpath('//*[@data-manners-component]')
+            log.debug("Cleaning %d elements from previous pollution", len(pelems))
+            if pelems:
+                driver.execute_script(
+                    "arguments[0].forEach(function(e) { "
+                    "    e.removeAttribute('data-manners-component');"
+                    " });", pelems)
+
+        for path, elem in page.walk(driver, parent_scope=site_scp,
+                                    on_missing=print_enoent,
+                                    starting_path=comp,
+                                    max_depth=args.max_depth or 1000):
+            print('  ' * len(path), path_str(path), elem)
+            if args.pollute_data and isinstance(elem, ComponentProxy):
+                driver.execute_script(
+                    "arguments[0].setAttribute('data-manners-component',"
+                                                "arguments[1]);",
+                    elem._remote, elem.component_name);
+
+            if args.animate:
+                with camera.highlight_element(becontext, component=elem,
+                                                border='none', color='rgba(14, 118, 255, 0.4)'):
+                    time.sleep(0.2)
+
+            for a in dir(elem):
+                try:
+                    val = getattr(elem, a)
+                    if not callable(val):
+                        print('  '* len(path), ' ' * 20, a,
+                                '= %s' % shorten_txt(val, 40))
+                except ElementNotFound as e:
+                    print('  '* len(path), ' ' * 20, a, '= X')
+                    print_enoent(elem, e)
+                except Exception as e:
+                    exc_first_line = str(e).split('\n',1)[0]
+                    print('  '* len(path), ' ' * 20, a, ': ' + exc_first_line)
+                    errors_l += 1
+
+        if args.measure_selenium:
+            log.info("Used %d calls to walk", ExistingRemote.execute.count)
+
 
     if args.measure_selenium:
         ExistingRemote.execute = count_calls(ExistingRemote.execute)
@@ -229,47 +276,20 @@ def cmdline_main():
                     site_scp = site.get_root_scope()
                     page, title, page_args = site.get_by_url(cur_path, fragment=None)
                     log.info("Got page %s %r", title, page_args)
-                    if args.pollute_data:
-                        pelems = driver.find_elements_by_xpath('//*[@data-manners-component]')
-                        log.debug("Cleaning %d elements from previous pollution", len(pelems))
-                        if pelems:
-                            driver.execute_script(
-                                "arguments[0].forEach(function(e) { "
-                                "    e.removeAttribute('data-manners-component');"
-                                " });", pelems)
 
-                    for path, elem in page.walk(driver, parent_scope=site_scp,
-                                                on_missing=print_enoent,
-                                                starting_path=args.path,
-                                                max_depth=args.max_depth or 1000):
-                        print('  ' * len(path), path_str(path), elem)
-                        if args.pollute_data and isinstance(elem, ComponentProxy):
-                            driver.execute_script(
-                                "arguments[0].setAttribute('data-manners-component',"
-                                                           "arguments[1]);",
-                                elem._remote, elem.component_name);
+                    comp = page.get_root(driver, site_scp)
+                    try:
+                        for p in args.path:
+                            comp = comp[p]
+                    except (ElementNotFound, KeyError) as e:
+                        print_enoent(comp, e, shoot=False)
+                        print("Waiting for it to appear")
+                        time.sleep(3.0)
+                        continue
 
-                        if args.animate:
-                            with camera.highlight_element(becontext, component=elem,
-                                                          border='none', color='rgba(14, 118, 255, 0.4)'):
-                                time.sleep(0.2)
-
-                        for a in dir(elem):
-                            try:
-                                val = getattr(elem, a)
-                                if not callable(val):
-                                    print('  '* len(path), ' ' * 20, a,
-                                          '= %s' % shorten_txt(val, 40))
-                            except ElementNotFound as e:
-                                print('  '* len(path), ' ' * 20, a, '= X')
-                                print_enoent(elem, e)
-                            except Exception as e:
-                                exc_first_line = str(e).split('\n',1)[0]
-                                print('  '* len(path), ' ' * 20, a, ': ' + exc_first_line)
-                                errors += 1
-
-                    if args.measure_selenium:
-                        log.info("Used %d calls to walk", ExistingRemote.execute.count)
+                    errors -= errors  # reset, in-place
+                    if True:
+                        walk_validate(comp)
                     break
                 except KeyError as e:
                     log.warning("URL path not templated. %s: '%s'", e, cur_path)
