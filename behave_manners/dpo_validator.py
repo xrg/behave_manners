@@ -332,6 +332,7 @@ def cmdline_main():
             except Exception:
                 traceback.print_exc(limit=-1)
 
+        print()
         if readline is not None:
             try:
                 readline.write_history_file(history_file)
