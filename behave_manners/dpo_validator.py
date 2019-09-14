@@ -275,8 +275,10 @@ def cmdline_main():
         if args.measure_selenium:
             log.info("Used %d calls to walk", ExistingRemote.execute.count)
 
-    def run_interactive(comp):
+    def run_interactive(page, comp, scope):
         ilocals = {
+            'cur_page': page,
+            'root_scope': scope,
             'comp': comp,
             'context': becontext,
             'Fresh': Fresh,
@@ -353,6 +355,7 @@ def cmdline_main():
                     log.info("Got page %s %r", title, page_args)
 
                     comp = page.get_root(driver, site_scp)
+                    page_root = comp
                     try:
                         for p in args.path:
                             comp = comp[p]
@@ -364,7 +367,7 @@ def cmdline_main():
 
                     errors -= errors  # reset, in-place
                     if args.interactive:
-                        run_interactive(comp)
+                        run_interactive(page_root, comp, site_scp)
                     else:
                         walk_validate(comp)
                     break
