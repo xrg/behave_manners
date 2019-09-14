@@ -13,6 +13,9 @@ import time
 import sys
 import os.path
 import six
+import inspect
+import pprint
+import traceback
 from selenium import webdriver
 from selenium.webdriver.remote.command import Command
 from behave.runner_util import exec_file
@@ -21,8 +24,16 @@ from behave_manners.pagelems.main import DSiteCollection, FSLoader
 from behave_manners.pagelems.exceptions import ElementNotFound, CKeyError
 from behave_manners.pagelems.helpers import Integer, count_calls
 from behave_manners.pagelems.dom_components import ComponentProxy
+from behave_manners.pagelems.scopes import Fresh
 from six.moves.urllib import parse as urlparse
 from behave_manners import screenshots
+try:
+    import rlcompleter
+    import readline
+except ImportError:
+    readline = None
+
+HISTORY_FILE = '~/.behave-manners-history'
 
 
 class ExistingRemote(webdriver.Remote):
@@ -114,6 +125,8 @@ def cmdline_main():
     """
     import argparse
     parser = argparse.ArgumentParser(description='Try DPO templates against open page')
+    parser.add_argument('-i', '--interactive', action='store_true', default=False,
+                        help='Interactive mode: python prompt instead of walking')
     parser.add_argument('-f', '--full-site', action='store_true', default=False,
                         help='Check all site, not just index')
     parser.add_argument('-s', '--session-file', default='dbg-browser.session',
@@ -262,6 +275,68 @@ def cmdline_main():
         if args.measure_selenium:
             log.info("Used %d calls to walk", ExistingRemote.execute.count)
 
+    def run_interactive(comp):
+        ilocals = {
+            'comp': comp,
+            'context': becontext,
+            'Fresh': Fresh,
+            '_': None,
+            }
+        if readline is not None:
+            history_file = os.path.expanduser(HISTORY_FILE)
+            readline.parse_and_bind("tab: complete")
+            readline.set_completer(rlcompleter.Completer(ilocals).complete)
+            try:
+                readline.read_history_file(history_file)
+            except IOError as e:
+                if e.errno != 2:
+                    log.info("Cannot read history: %s", e)
+
+        # assignment_re = re.compile('[^=]=[^=]')
+        while True:
+            if isinstance(ilocals.get('comp', None), ComponentProxy):
+                prompt = '%s > ' % ilocals['comp'].component_name
+            else:
+                prompt = '#Page > '
+            try:
+                cmd = six.moves.input(prompt)
+                if not cmd.strip():
+                    continue
+                if cmd.endswith(':'):
+                    while True:
+                        line = six.moves.input(prompt)
+                        if not line.startswith(' '):
+                            break
+                        cmd += '\n' + line
+                    aste = compile(cmd, '<input>', 'exec')
+                else:
+                    try:
+                        aste = compile(cmd, '<input>', 'eval')
+                    except SyntaxError:
+                        aste = compile(cmd, '<input>', 'single')
+
+                res = eval(aste, {}, ilocals)
+                if res is None:
+                    pass
+                elif inspect.isgenerator(res):
+                    pprint.pprint(list(res))
+                else:
+                    pprint.pprint(res)
+                ilocals['_'] = res
+            except EOFError:
+                break
+            except KeyboardInterrupt:
+                break
+            except Exception:
+                traceback.print_exc(limit=-1)
+
+        if readline is not None:
+            try:
+                readline.write_history_file(history_file)
+                log.debug("History saved")
+            except IOError as e:
+                log.warning("Cannot save history: %s", e)
+
 
     if args.measure_selenium:
         ExistingRemote.execute = count_calls(ExistingRemote.execute)
@@ -288,7 +363,9 @@ def cmdline_main():
                         continue
 
                     errors -= errors  # reset, in-place
-                    if True:
+                    if args.interactive:
+                        run_interactive(comp)
+                    else:
                         walk_validate(comp)
                     break
                 except KeyError as e:
