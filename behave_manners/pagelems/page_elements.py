@@ -7,7 +7,7 @@ import json
 from copy import deepcopy
 from collections import defaultdict
 
-from .helpers import textescape, prepend_xpath, word_re, to_bool, Integer
+from .helpers import textescape, prepend_xpath, word_re, to_bool, Integer, XPath
 from .base_parsers import DPageElement, DataElement, BaseDPOParser, \
                           HTMLParseError, DOMScope
 from .site_collection import DSiteCollection
@@ -230,6 +230,9 @@ class AnyElement(DPageElement):
 
     def _locate_in(self, remote, scope, xpath_prefix, match):
         xpath2 = prepend_xpath(xpath_prefix, self.xpath)
+        if isinstance(match, XPath):
+            xpath2 += match.xpath
+            match = None
         enoent = True
         for welem in remote.find_elements_by_xpath(xpath2):
             # Stop at first 'welem' that yields any children results
@@ -530,6 +533,8 @@ class NamedElement(DPageElement):
         pre, post = re.split(r'%[ds]', pattern, 1)
 
         def _rev_fn(match):
+            if isinstance(match, XPath):
+                raise RuntimeError()
             if not match.startswith(pre):
                 return False
             match = match[len(pre):]
@@ -562,6 +567,9 @@ class NamedElement(DPageElement):
     def _locate_in(self, remote, scope, xpath_prefix, match):
         if match is None:
             reverse = True
+        elif isinstance(match, XPath):
+            reverse = match.xpath
+            match = None  # this will mangle numbering for '%d' case!
         else:
             # resolve some boolean or xpath to reverse match name looking for
             reverse = self._this_rev(match)
@@ -926,6 +934,7 @@ class RepeatObj(DPageElement):
         ni = 0
         seen = set()
         enofound = None
+        # TODO: if isinstance(match, XPath) ...
         try:
             for name, welem, ptmpl, scp in self._children[0] \
                     ._locate_in(remote, scope, xpath_prefix, match):
@@ -1166,8 +1175,11 @@ class PeMatchIDElement(DPageElement):
             return None
 
     def _locate_in(self, remote, scope, xpath_prefix, match):
-        if self.this_name and match is not None and match != self.this_name:
-            return
+        if self.this_name and match is not None:
+            if isinstance(match, XPath):
+                raise NotImplementedError() # TODO
+            if match != self.this_name:
+                return
 
         welem = self._locate_remote(remote, scope)
         if welem is None:
@@ -1370,7 +1382,7 @@ class DTemplateElement(DPageElement):
         return ()
 
     def iter_items(self, remote, scope, xpath_prefix='', match=None):
-        return self._iter_items_cont(remote, scope, xpath_prefix)
+        return self._iter_items_cont(remote, scope, xpath_prefix, match=match)
 
 
 class DSlotElement(DPageElement):

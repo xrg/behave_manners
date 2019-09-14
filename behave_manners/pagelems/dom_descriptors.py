@@ -207,6 +207,9 @@ class TextAttrGetter(AttrGetter):
             ret = ret.strip()
         return ret
 
+    def get_rev(self, comp):
+        return self._elem(comp).text
+
 
 class PartialTextAttrGetter(TextAttrGetter):
     """Obtain the text of some DOM element, excluding text of sub-elements

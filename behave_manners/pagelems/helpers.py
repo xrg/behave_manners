@@ -178,6 +178,16 @@ class Integer(object):
         return self
 
 
+class XPath(object):
+    """Dummy class to wrap an xpath string
+    """
+    def __init__(self, xpath):
+        self.xpath = xpath
+
+    def __repr__(self):
+        return '<xpath: %s>' % self.xpath
+
+
 def count_calls(fn):
     """Wrapper for function, keeping a count of fn's calls
     """

@@ -265,11 +265,22 @@ class ComponentProxy(_SomeProxy):
             `clause` must be a function, which evaluates against a component
             and returns True whenever that component should participate in
             the result.
-        """
 
-        for name, welem, ptmpl, scp in self._SomeProxy__iteritems():
+            IFF `clause` is simple enough, `filter()` may optimize it to
+            resolve the iteration in a very efficient search.
+        """
+        from .filter_components import FilterComp
+        try:
+            fc_res = FilterComp._filter_on_clause(self._pagetmpl, self._scope, clause)
+            logger.debug("Got optimizer: %r", fc_res)
+        except (KeyError, AttributeError, NotImplementedError) as e:
+            logger.warning("Cannot optimize <%s '%s'>.filter(): %s",
+                           self._remote.tag_name, self._name, e)
+            fc_res = None
+
+        for name, welem, ptmpl, scp in self._SomeProxy__iteritems(match=fc_res):
             comp = scp.component_class(name, self, ptmpl, welem, scp)
-            if clause(comp):
+            if (clause is None) or clause(comp):
                 scp.take_component(comp)
                 yield comp
 
