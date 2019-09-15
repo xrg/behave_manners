@@ -32,6 +32,25 @@ def _noop_fn(context, *args):
 seconds_re = re.compile(r'([1-9]\d+)(m?)s(?:ec)?$')
 
 
+def current_context():
+    """Discover current behave context from caller stack
+
+        Use this inside an object that has no reference to behave
+        context, but need to use it. Note that the context may be
+        deliberately omitted, but in some exceptional cases would
+        be useful to have.
+    """
+    import inspect
+    from behave.runner import Context
+    frame = inspect.currentframe()
+
+    while frame is not None:
+        if isinstance(frame.f_locals.get('context'), Context):
+            return frame.f_locals['context']
+        frame = frame.f_back
+    raise RuntimeError("No behave context in caller stack")
+
+
 class RemoteSiteError(Exception):
     """Raised on errors detected at remote (browser) side
     """
