@@ -107,6 +107,11 @@ def long_tbl1(sub=None):
     return render_template('long-table.html', columns=cols, data=source(limit=lim))
 
 
+@app.route('/rich-form')
+def rich_form():
+    return render_template('rich-form.html')
+
+
 @app.route('/private')
 def no_login():
     abort(403)

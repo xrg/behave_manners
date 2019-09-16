@@ -1,0 +1,145 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Rich form example </title>
+
+<style>
+    header, footer {
+        background: #005500;
+        color: white;
+        font-weight: bold;
+    }
+    header {
+        margin-bottom: 2em;
+    }
+    footer {
+        margin-top: 2em;
+    }
+
+    div.special {
+        background: #ead0ff;
+    }
+
+    section {
+        border: 1px solid #cbcacc;
+        margin-top: 1em;
+        margin-bottom: 2em;
+    }
+
+
+    div.form {
+        border: 1px solid #cbcacc;
+        margin-right: 2em;
+        margin-left: 2em;
+        padding: 1em;
+    }
+
+    div.form .form-title {
+        font-weight: bold;
+        font-style: underline;
+    }
+    div.form .form-field {
+        border: 1px dotted #cbcacc;
+    }
+    div.form .form-field.inactive {
+        border: #92f088;
+        color: #505155;
+    }
+    .form-field h4 {
+        display: inline-block;
+        margin-left: 1em;
+        margin-right: 1em;
+        margin-top: 6px;
+        margin-bottom: 6px;
+    }
+
+    .form-field div.input {
+        display: inline-block;
+        border: 1px solid black;
+        min-width: 6em;
+        text-align: left;
+        padding-left: 1em;
+        padding-right: 1em;
+        color: #505155;
+    }
+    .form-field.inactive div.input {
+        color: #9c9ea6;
+    }
+</style>
+</head>
+
+<body>
+    <header>
+        <div> The header</div>
+    </header>
+
+    <main>
+        <div class="special">
+            <section id="section1">
+                <h2 class="section-title">Title 1</h2>
+                <div class="content">Lorem ipsum content </div>
+            </section>
+        </div>
+
+        <section id="section2">
+            <h2 class="section-title">Title 2</h2>
+            <div class="content">Lorem ipsum 2 content </div>
+        </section>
+
+        <section id="section3">
+            <h2 class="section-title">Title 3</h2>
+            <div class="content">Lorem ipsum 3 content </div>
+        </section>
+
+        <section id="section4">
+            <h2 class="section-title">Title 4</h2>
+            <div class="content">Lorem ipsum 4 content </div>
+        </section>
+
+        <div class="form spam troll">
+            <div class="form-title">The form</div>
+            <div class="form-body">
+                <div class="form-field">
+                    <h4>Field A</h4>
+                    <div class="input">place a</div>
+                </div>
+                <div class="form-field">
+                    <h4>Field B</h4>
+                    <div class="input">place b</div>
+                </div>
+                <div class="form-field inactive">
+                    <h4>Field C</h4>
+                    <div class="input">place c</div>
+                </div>
+                <div class="field-group">
+                    <div class="form-field">
+                        <h4>Field D</h4>
+                        <div class="input">input 3</div>
+                    </div>
+                    <div class="form-field inactive">
+                        <h4>Field E</h4>
+                        <div class="input">input 4</div>
+                    </div>
+                    <div class="form-field">
+                        <h4>Field F</h4>
+                        <div class="input">input 5</div>
+                    </div>
+                </div>
+                <div class="form-field inactive">
+                    <h4>Field G</h4>
+                    <div class="input">blah</div>
+                </div>
+                <div class="form-field">
+                    <h4>Field H</h4>
+                    <div class="input">kalf</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer>
+        Down below
+    </footer>
+</body>
+</html>

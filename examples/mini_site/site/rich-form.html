@@ -1,0 +1,30 @@
+<html>
+
+<body>
+    <main>
+        <pe-repeat this="sections">
+            <section this="section_%s" pe-deep id="[]">
+                <h2> [title] </h2>
+                <div class="+content">[content]</div>
+            </section>
+        </pe-repeat>
+
+        <div class="+form" this="form">
+            <div class="+form-title">[title]</div>
+
+            <pe-repeat this="fields" min=1>
+                <div class="form-field" pe-deep this="[name]">
+                    <h4>[name]</h4>
+                    <div class="input">[text]</div>
+                </div>
+            </pe-repeat>
+            <pe-repeat this="inactive-fields">
+                <div class="+form-field inactive" pe-deep this="[name]">
+                    <h4>[name]</h4>
+                </div>
+            </pe-repeat>
+        </div>
+    </main>
+
+</body>
+</html>
