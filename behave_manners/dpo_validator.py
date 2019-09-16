@@ -275,6 +275,9 @@ def cmdline_main():
         if args.measure_selenium:
             log.info("Used %d calls to walk", ExistingRemote.execute.count)
 
+    def _exit_this():
+        raise EOFError()
+
     def run_interactive(page, comp, scope):
         ilocals = {
             'cur_page': page,
@@ -282,6 +285,7 @@ def cmdline_main():
             'comp': comp,
             'context': becontext,
             'Fresh': Fresh,
+            'exit': _exit_this,
             '_': None,
             }
         if readline is not None:
