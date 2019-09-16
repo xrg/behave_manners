@@ -118,8 +118,12 @@ class AnyElement(DPageElement):
                             + ')')
                 elif v.startswith('+'):
                     v = v[1:]
-                    clauses = ['contains(@%s,%s)' % (k, textescape(w))
-                                for w in v.split(' ')]
+                    clauses = []
+                    for w in v.split(' '):
+                        if w.startswith('!'):
+                            clauses.append('not(contains(@%s,%s))' % (k, textescape(w[1:])))
+                        else:
+                            clauses.append('contains(@%s,%s)' % (k, textescape(w)))
                     if len(clauses) > 1:
                         ors.append('boolean(' + ' and '.join(clauses) + ')')
                     elif clauses:
