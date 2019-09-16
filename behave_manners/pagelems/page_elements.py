@@ -579,7 +579,7 @@ class NamedElement(DPageElement):
 
         xpath = prepend_xpath(xpath_prefix, self.xpath)
         if reverse is not True:
-            xpath += reverse
+            xpath = '(' + xpath + ')' + reverse
         else:
             match = None
 
