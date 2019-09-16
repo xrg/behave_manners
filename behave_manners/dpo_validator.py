@@ -288,6 +288,13 @@ def cmdline_main():
             'exit': _exit_this,
             '_': None,
             }
+
+        def _recover_stale(comp):
+            with Fresh(scope):
+                comp._recover_stale()
+
+        ilocals['recover_stale'] = _recover_stale
+
         if readline is not None:
             history_file = os.path.expanduser(HISTORY_FILE)
             readline.parse_and_bind("tab: complete")
