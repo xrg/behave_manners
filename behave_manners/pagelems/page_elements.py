@@ -42,7 +42,7 @@ class DomContainerElement(DPageElement):
         repls = []
         for n, c in enumerate(self._children):
             if isinstance(c, DataElement) and prev is not None:
-                c.set_full(False)
+                c.set_full(2)
             elif isinstance(prev, DataElement):
                 prev.set_full(False)
             elif isinstance(c, Text2AttrElement) and prev is not None:

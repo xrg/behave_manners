@@ -317,8 +317,9 @@ class DataElement(DPageElement):
             self.full = True
 
     def set_full(self, full):
-        self.full = full
-        self._xpath = None
+        if self.full is not 2:
+            self.full = full
+            self._xpath = None
 
     def consume(self, element):
         if isinstance(element, DataElement):
@@ -333,7 +334,9 @@ class DataElement(DPageElement):
     def xpath_locator(self, score, top=False):
         locator = ''
         if self._xpath is None:
-            if self.full:
+            if self.full is 2:
+                self._xpath = 'contains(., %s)' % textescape(self.data.strip())
+            elif self.full:
                 self._xpath = 'text()=%s' % textescape(self.data)
             else:
                 self._xpath = 'contains(text(), %s)' % textescape(self.data.strip())
