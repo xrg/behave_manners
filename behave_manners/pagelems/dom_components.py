@@ -119,6 +119,15 @@ class _SomeProxy(object):
             n += 1
         return n
 
+    def __bool__(self):
+        """All components should be truthy
+
+            This avoids calling expensive `len(self)`
+        """
+        return True
+
+    __nonzero__ = __bool__   # py2.7 compatibility
+
     def __iter__(self):
         for name, welem, ptmpl, scp in self.__iteritems():
             yield name
