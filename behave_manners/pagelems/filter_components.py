@@ -32,16 +32,20 @@ class _HypoElem(object):
 
     @property
     def text(self):
-        return self._attrCondition(self, 'text()')
+        return self._attrCondition(self, '.')
+
+    def get_attribute(self, name):
+        return self._attrCondition(self, '@%s' % name)
+
 
     class _attrCondition(object):
-        def __init__(self, parent, name, strip=False):
+        def __init__(self, parent, attr, strip=False):
             self._parent = parent
-            self._name = name
+            self._attr = attr
             self._strip = strip
 
         def strip(self):
-            return self.__class__(self._parent, self._name, True)
+            return self.__class__(self._parent, self._attr, True)
 
         def __hash__(self):
             return hash(id(self))
@@ -52,10 +56,10 @@ class _HypoElem(object):
 
             if self.strip:
                 return self._parent._append_xpath('[contains(%s, %s)]' %
-                                                  (self._name, textescape(other)))
+                                                  (self._attr, textescape(other)))
             else:
-                return self._parent._append_xpath('[@%s=%s]' %
-                                                  (self._name, textescape(other)))
+                return self._parent._append_xpath('[%s=%s]' %
+                                                  (self._attr, textescape(other)))
 
 
 class FilterComp(object):

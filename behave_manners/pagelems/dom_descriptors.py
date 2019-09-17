@@ -101,6 +101,9 @@ class AttrGetter(DomDescriptor):
     def __delete__(self, comp):
         raise CAttributeError("%s is readonly" % self.name, component=comp)
 
+    def get_rev(self, comp):
+        return self._elem(comp).get_attribute(self.name)
+
 
 class AttrEqualsGetter(AttrGetter):
     """Finds a word inside remote attribute, as boolean local
@@ -129,6 +132,9 @@ class AttrEqualsGetter(AttrGetter):
     def __set__(self, comp, value):
         raise CAttributeError("%s is readonly" % self.name, component=comp)
 
+    def get_rev(self, comp):
+        return self._elem(comp).get_attribute(self.name).equals(self.token)
+
 
 class AttrContainsGetter(AttrEqualsGetter):
     """Finds a word inside remote attribute, as boolean local
@@ -148,6 +154,10 @@ class AttrContainsGetter(AttrEqualsGetter):
 
         value = elem.get_attribute(self.name)
         return value and (self.token in value.split(' '))
+
+    def get_rev(self, comp):
+        raise NotImplementedError
+        # return self._elem(comp).get_attribute(self.name).contains(self.token)
 
 
 class AttrAnyChoiceGetter(AttrGetter):
@@ -186,6 +196,10 @@ class AttrAnyChoiceGetter(AttrGetter):
 
     def __set__(self, comp, value):
         raise CAttributeError("%s is readonly" % self.name, component=comp)
+
+    def get_rev(self, comp):
+        raise NotImplementedError
+        # return self._elem(comp).get_attribute(self.name)
 
 
 class TextAttrGetter(AttrGetter):
@@ -273,6 +287,10 @@ class RegexAttrGetter(AttrGetter):
         else:
             return m.group()
 
+    def get_rev(self, comp):
+        raise NotImplementedError
+        # return self._elem(comp).get_attribute(self.name)
+
 
 class InputCompatDescr(AttrGetter):
     """Get/set the value of `<input>` element. Use 'send_keys()' for the setter
@@ -352,5 +370,9 @@ class InputFileDescr(InputCompatDescr):
             return None
 
         return [InputFileDescr.File(**f) for f in elem.get_property('files')]
+
+    def get_rev(self, comp):
+        return self._elem(comp).get_property('files')
+
 
 #eof
