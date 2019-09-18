@@ -55,7 +55,7 @@
             </tr></thead>
             <tbody>
                 {% for row in data %}
-                <tr>{%for c in row %}<td data-col="{{loop.index}}">{{ c }}</td>{% endfor %}</tr>
+                <tr data-row="{{loop.index}}" class="row">{%for c in row %}<td data-col="{{loop.index}}">{{ c }}</td>{% endfor %}</tr>
                 {% endfor %}
             </tbody>
         </table>
