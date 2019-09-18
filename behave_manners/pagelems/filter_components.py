@@ -54,12 +54,30 @@ class _HypoElem(object):
             if not isinstance(other, six.string_types):
                 raise TypeError("Can not compare properties to %s" % type(other))
 
-            if self.strip:
+            if self._strip:
                 return self._parent._append_xpath('[contains(%s, %s)]' %
                                                   (self._attr, textescape(other)))
             else:
                 return self._parent._append_xpath('[%s=%s]' %
                                                   (self._attr, textescape(other)))
+
+class _RootHypoElem(_HypoElem):
+    """Variant of _HypoElem for the top-most matcher
+
+        This has to be skipped, since the initial XPath is going to be
+        located by the template in real mode
+    """
+    def __init__(self):
+        super(_RootHypoElem, self).__init__(None)
+
+    def find_elements_by_xpath(self, xpath):
+        return [ _HypoElem('')]
+
+    def find_element_by_id(self, id_val):
+        return _HypoElem('')
+
+    def find_element_by_xpath(self, xpath):
+        return _HypoElem('')
 
 
 class FilterComp(object):
@@ -68,7 +86,7 @@ class FilterComp(object):
 
     @classmethod
     def _filter_on_clause(cls, pagetmpl, scope, clause):
-        rem_root = _HypoElem('')
+        rem_root = _RootHypoElem()
         ret = []
         for iname, welem, ptmpl, nscope in pagetmpl.iter_items(rem_root, scope):
             fcomp = cls(iname, welem, ptmpl, None, nscope)
@@ -84,7 +102,21 @@ class FilterComp(object):
             except (KeyError, AttributeError):
                 # TODO
                 raise
+
+        if not ret:
+            # FIXME
+            return False
+        if ret[0].startswith('['):
+            if len(ret) > 1:
+                raise NotImplementedError("combine more than a simple matcher")
+            return XPath(ret[0])
+
         return XPath('[%s]' % (' or ' .join(ret)))
+
+    def __bool__(self):
+        return True
+
+    __nonzero__ = __bool__
 
     def __init__(self, cname, remote, pagetmpl, parent, scope):
         self._cname = cname
@@ -96,9 +128,8 @@ class FilterComp(object):
     def __getitem__(self, name):
         """return a matcher against sub-component
         """
-        welem = _HypoElem('')
         for iname, welem, ptmpl, scope \
-                in self._pagetmpl.iter_items(welem, self._scope, match=name):
+                in self._pagetmpl.iter_items(self._remote, self._scope, match=name):
             clause = (iname == name)
             if not clause:
                 continue
@@ -129,7 +160,7 @@ class FilterComp(object):
         r = ''
         while x:
             if x._remote._xpath:
-                if r:
+                if r and not r.startswith('['):
                     r = '[' + r + ']'
                 r = x._remote._xpath + r
             x = x._parent
