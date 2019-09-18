@@ -343,7 +343,7 @@ def cmdline_main():
             except KeyboardInterrupt:
                 break
             except Exception:
-                traceback.print_exc(limit=-1)
+                traceback.print_exc()
 
         print()
         if readline is not None:
