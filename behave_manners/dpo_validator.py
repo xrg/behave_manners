@@ -125,6 +125,8 @@ def cmdline_main():
     """
     import argparse
     parser = argparse.ArgumentParser(description='Try DPO templates against open page')
+    parser.add_argument('-v', '--verbose', action='store_true', default=False,
+                        help="Print debugging messages")
     parser.add_argument('-i', '--interactive', action='store_true', default=False,
                         help='Interactive mode: python prompt instead of walking')
     parser.add_argument('-f', '--full-site', action='store_true', default=False,
@@ -149,7 +151,7 @@ def cmdline_main():
     args = parser.parse_args()
     errors = Integer(0)
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=args.verbose and logging.DEBUG or logging.INFO)
     site = DSiteCollection(FSLoader('.'))
     log = logging.getLogger('main')
 
