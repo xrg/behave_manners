@@ -38,28 +38,106 @@ class _HypoElem(object):
         return self._attrCondition(self, '@%s' % name)
 
 
-    class _attrCondition(object):
-        def __init__(self, parent, attr, strip=False):
+    class _attrConditionBase(object):
+        def __init__(self, parent=None, attr=None):
             self._parent = parent
             self._attr = attr
-            self._strip = strip
 
-        def strip(self):
-            return self.__class__(self._parent, self._attr, True)
+    class _attrCondition(_attrConditionBase):
+        def __init__(self, parent, attr, strip=False):
+            super(_HypoElem._attrCondition, self).__init__(parent, attr)
+            self._strip = strip
 
         def __hash__(self):
             return hash(id(self))
 
+        def strip(self):
+            return self.__class__(self._parent, self._attr, True)
+
         def __eq__(self, other):
-            if not isinstance(other, six.string_types):
+            if isinstance(other, six.string_types):
+                if self._strip:
+                    exp = '[contains(%s, %s)]'
+                else:
+                    exp = '[%s=%s]'
+
+                return self._parent._append_xpath( exp % (self._attr, textescape(other)))
+            elif other is True:
+                return self._parent._append_xpath('[%s]' % self._attr)
+            elif other is False:
+                return self._parent._append_xpath('[not(%s)]' % self._attr)
+            else:
                 raise TypeError("Can not compare properties to %s" % type(other))
 
-            if self._strip:
-                return self._parent._append_xpath('[contains(%s, %s)]' %
-                                                  (self._attr, textescape(other)))
+        def __ne__(self, other):
+            if isinstance(other, six.string_types):
+                if self._strip:
+                    exp = '[not(contains(%s, %s))]'
+                else:
+                    exp = '[%s!=%s]'
+
+                return self._parent._append_xpath( exp % (self._attr, textescape(other)))
+            elif other is False:
+                return self._parent._append_xpath('[%s]' % self._attr)
+            elif other is True:
+                return self._parent._append_xpath('[not(%s)]' % self._attr)
             else:
-                return self._parent._append_xpath('[%s=%s]' %
-                                                  (self._attr, textescape(other)))
+                raise TypeError("Can not compare properties to %s" % type(other))
+
+        def __contains__(self, item):
+            if isinstance(item, six.string_types):
+                return self._parent._append_xpath('[contains(%s, %s)]',
+                                                  (self._attr, textescape(item)))
+            else:
+                raise TypeError("Can not compare properties to %s" % type(item))
+
+        def bool(self):
+            """Return boolean representation.
+
+                Note that this is not `__bool__` ; rather needs to be called
+                explicitly
+            """
+            return self._parent._append_xpath( '[%s]' % self._attr)
+
+        def __int__(self):
+            raise NotImplementedError("Must use toInt(attr) instead")
+
+        def toNumber(self):
+            return _HypoElem._intAttrCondition(self._parent, self._attr)
+
+    class _intAttrCondition(_attrConditionBase):
+
+        def __hash__(self):
+            return hash(id(self))
+
+        def __get_cmp_op(self, op, other):
+            if isinstance(other, six.integer_types):
+                return self._parent._append_xpath('[number(%s)%s%d]' %
+                                                  (self._attr, op, other))
+            elif isinstance(other, float):
+                return self._parent._append_xpath('[number(%s)%s%f]' %
+                                                  (self._attr, op, other))
+            else:
+                raise TypeError("Can not compare properties to %s" % type(other))
+
+        def __eq__(self, other):
+            return self.__get_cmp_op('=', other)
+
+        def __ne__(self, other):
+            return self.__get_cmp_op('!=', other)
+
+        def __lt__(self, other):
+            return self.__get_cmp_op('<', other)
+
+        def __le__(self, other):
+            return self.__get_cmp_op('<=', other)
+
+        def __gt__(self, other):
+            return self.__get_cmp_op('>', other)
+
+        def __ge__(self, other):
+            return self.__get_cmp_op('>=', other)
+
 
 class _RootHypoElem(_HypoElem):
     """Variant of _HypoElem for the top-most matcher
@@ -98,6 +176,9 @@ class FilterComp(object):
                     fcomp._remote = cr
                 elif isinstance(cr, FilterComp):
                     fcomp = cr
+                elif isinstance(cr, _HypoElem._attrConditionBase):
+                    cr = cr.bool()
+                    fcomp._remote = cr
                 ret.append(fcomp._get_matcher())
             except (KeyError, AttributeError):
                 # TODO
@@ -166,5 +247,20 @@ class FilterComp(object):
             x = x._parent
 
         return r
+
+
+def toInt(sth):
+    if isinstance(sth, _HypoElem._attrConditionBase):
+        return sth.toNumber()
+    else:
+        return int(sth)
+
+
+def toFloat(sth):
+    if isinstance(sth, _HypoElem._attrConditionBase):
+        return sth.toNumber()
+    else:
+        return int(sth)
+
 
 #eof

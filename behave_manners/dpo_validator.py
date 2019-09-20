@@ -281,6 +281,12 @@ def cmdline_main():
         raise EOFError()
 
     def run_interactive(page, comp, scope):
+        from behave_manners.pagelems.filter_components import toInt, toFloat
+        iglobals = {
+            '__builtins__': __builtins__,
+            'toInt': toInt,
+            'toFloat': toFloat,
+        }
         ilocals = {
             'cur_page': page,
             'root_scope': scope,
@@ -330,7 +336,7 @@ def cmdline_main():
                     except SyntaxError:
                         aste = compile(cmd, '<input>', 'single')
 
-                res = eval(aste, {}, ilocals)
+                res = eval(aste, iglobals, ilocals)
                 if res is None:
                     pass
                 elif inspect.isgenerator(res):
