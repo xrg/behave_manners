@@ -1,0 +1,48 @@
+<html>
+<body>
+
+    <template id="table-row">
+        <tr this="row_%d">
+            <pe-group>
+                <td>[id]</td>
+                <td this="col_name">
+                    [text]
+                </td>
+                <td this="col_cell">
+                    [text]
+                </td>
+                <td this="col_date">
+                    [text]
+                </td>
+                <td this="col_amount">
+                    [text]
+                </td>
+            </pe-group>
+        </tr>
+    </template>
+
+    <div id="table1" this="content">
+        <table this="table">
+            <thead this="head">
+                <tr>
+                    <!-- try removing this pe-group:
+                        then all <th>s will take the first one's value
+                    -->
+                    <pe-group>
+                        <th this="col_id">[text]</th>
+                        <th this="col_name">[text]</th>
+                        <th this="col_cell">[text]</th>
+                        <th this="col_date">[text]</th>
+                        <th this="col_amount">[text]</th>
+                    </pe-group>
+                </tr>
+            </thead>
+            <tbody this="rows">
+                <use-template id="table-row">
+                </use-template>
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>
