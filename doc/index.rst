@@ -14,6 +14,7 @@ Topics:
    overview
    pagelems
    scopes
+   magic-filters
    modules
    tutorial1
    tutorial2
