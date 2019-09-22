@@ -41,7 +41,7 @@ def prepend_xpath(pre, xpath, glue=False):
             return pre[:-2] + xpath
         elif xpath.startswith('/'):  # including '//'
             return pre[:-1] + xpath
-    elif pre.endswith('//'):
+    elif pre.endswith('//') or pre.endswith(':'):
         return pre + xpath.lstrip('/')
     elif pre.endswith('/') and xpath.startswith('/'):
         return pre[:-1] + xpath

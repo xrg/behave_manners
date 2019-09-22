@@ -1083,12 +1083,17 @@ class PeGroupElement(DPageElement):
         if self._pe_class is not None:
             nscope = self._pe_class(parent=scope)
         try:
+            xpr = xpath_prefix
             for ch in self._children:
-                for y4 in ch._locate_in(remote, nscope, xpath_prefix, match):
+                for y4 in ch._locate_in(remote, nscope, xpr, match):
                     if y4[0] in seen:
                         continue
                     ret.append(y4)
                     seen.add(y4[0])
+                xloc = ch.xpath_locator(Integer(100), top=False)
+                if xloc:
+                    # offset the next element to be discovered
+                    xpr = prepend_xpath(xpr, xloc, glue='/') + '/following-sibling::'
         except ElementNotFound:
             if self._pe_optional:
                 return  # ignore 'ret'
@@ -1112,6 +1117,17 @@ class PeGroupElement(DPageElement):
                 locs.append(xloc)
 
         return ''.join(locs)
+
+    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
+        xpr = xpath_prefix
+        nx = 0
+        for ch in self._children:
+            for y2 in ch._locate_attrs(webelem, scope, xpr):
+                yield y2
+            xloc = ch.xpath_locator(Integer(100), top=False)
+            if xloc:
+                # offset the next element to be discovered
+                xpr = prepend_xpath(xpr, xloc, glue='/') + '/following-sibling::'
 
 
 class PeMatchIDElement(DPageElement):
