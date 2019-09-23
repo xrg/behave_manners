@@ -41,12 +41,19 @@ def prepend_xpath(pre, xpath, glue=False):
             return pre[:-2] + xpath
         elif xpath.startswith('/'):  # including '//'
             return pre[:-1] + xpath
-    elif pre.endswith('//') or pre.endswith(':'):
+    elif pre.endswith('//'):
         return pre + xpath.lstrip('/')
     elif pre.endswith('/') and xpath.startswith('/'):
         return pre[:-1] + xpath
     elif pre.endswith('/') and xpath.startswith('./'):
         return pre + xpath[2:]
+    elif pre.endswith('::'):
+        if xpath.startswith('.//'):
+            return pre + '*/descendant-or-self::' + xpath[3:]
+        elif xpath.startswith('./'):
+            return pre + xpath[2:]
+        else:
+            return pre + xpath.lstrip('/')
     elif xpath.startswith('./'):
         return pre + xpath[1:]
     elif glue and not pre.endswith('/') and xpath[0].isalpha():
