@@ -1,0 +1,45 @@
+<html>
+
+<body>
+    <main>
+        <pe-repeat this="sections">
+            <section this="section_%s" pe-deep id="[]">
+                <h2> [title] </h2>
+                <div class="+content">[content]</div>
+            </section>
+        </pe-repeat>
+
+        <div class="+form" this="form">
+            <div class="+form-title">[title]</div>
+
+            <div class=form-body>
+            <pe-group ordered>
+                <div class="+form-field !inactive">
+                    <h4 this="first-name">[name]</h4>
+                    <div this="first-input" class="input">[text]</div>
+                </div>
+                <div class="+form-field !inactive" pe-deep this="second">
+                    <h4>[name]</h4>
+                    <div class="input">[text]</div>
+                </div>
+                <div class="+form-field !inactive" pe-deep this="field_3">
+                    <h4>[name]</h4>
+                    <div class="input">[text]</div>
+                </div>
+                <div class="+form-field !inactive" pe-deep this="field_4">
+                    <h4>[name]</h4>
+                    <div class="input">[text]</div>
+                </div>
+                <!--<div class="+form-field !inactive" pe-deep this="field_5">
+                    <h4>[name]</h4>
+                    <div class="input">[text]</div>
+                </div>-->
+            </pe-group>
+            </div>
+        </div>
+    </main>
+
+    <div class="for-spam">
+        <span this="spam" id="[]">Click <a href="[]">here</a>to get spammed forever</span>
+</body>
+</html>

@@ -108,6 +108,7 @@ def long_tbl1(sub=None):
 
 
 @app.route('/rich-form')
+@app.route('/rich-form2')
 def rich_form():
     return render_template('rich-form.html')
 
