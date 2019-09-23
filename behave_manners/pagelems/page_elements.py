@@ -1045,7 +1045,9 @@ class PeGroupElement(DPageElement):
         partial components* from its childen.
 
 
-        Elements within a group are ordered!
+        By default, unordered behaviour. Can specify 'ordered'
+        to enforce that children sub-elements are matched in
+        strict order.
 
         `*` unless the group's children have optional logic with
         `<pe-choice>` or `<pe-repeat>`.
@@ -1056,6 +1058,7 @@ class PeGroupElement(DPageElement):
                   'pe-controller': ('_pe_ctrl', None, None),
                   'pe-ctrl': ('_pe_ctrl', None, None),
                   'pe-optional': ('_pe_optional', to_bool, None),
+                  'ordered': ('_pe_ordered', to_bool, None),
                   }
 
     def __init__(self, tag, attrs):
@@ -1090,6 +1093,8 @@ class PeGroupElement(DPageElement):
                         continue
                     ret.append(y4)
                     seen.add(y4[0])
+                if not self._pe_ordered:
+                    continue
                 xloc = ch.xpath_locator(Integer(100), top=False)
                 if xloc:
                     # offset the next element to be discovered
@@ -1112,18 +1117,23 @@ class PeGroupElement(DPageElement):
         for ch in self._children:
             xloc = ch.xpath_locator(score, top=True)  # want the first DOM child
             if xloc:
-                if locs:
-                    locs += '/following-sibling::'
+                if self._pe_ordered:
+                    if locs:
+                        xloc = prepend_xpath('/following-sibling::', xloc)
                 locs.append(xloc)
+                if not self._pe_ordered:
+                    # cannot specify more than one child like this
+                    break
 
         return ''.join(locs)
 
     def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
         xpr = xpath_prefix
-        nx = 0
         for ch in self._children:
             for y2 in ch._locate_attrs(webelem, scope, xpr):
                 yield y2
+            if not self._pe_ordered:
+                continue
             xloc = ch.xpath_locator(Integer(100), top=False)
             if xloc:
                 # offset the next element to be discovered
