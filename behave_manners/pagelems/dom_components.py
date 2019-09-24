@@ -256,7 +256,7 @@ class ComponentProxy(_SomeProxy):
         return self._name == other._name  # has to match, too
         # but parent may differ
 
-    def filter(self, clause):
+    def filter(self, clause, safe=True):
         """Iterator over sub-components that satisfy a condition
 
             Usage::
@@ -282,6 +282,8 @@ class ComponentProxy(_SomeProxy):
         try:
             fc_res = FilterComp._filter_on_clause(self._pagetmpl, self._scope, clause)
             logger.debug("Got optimizer: %r", fc_res)
+            if fc_res.complete and not safe:
+                clause = None
         except (KeyError, AttributeError, NotImplementedError) as e:
             logger.warning("Cannot optimize <%s '%s'>.filter(): %s",
                            self._remote.tag_name, self._name, e)
@@ -292,7 +294,7 @@ class ComponentProxy(_SomeProxy):
             if (clause is None) or clause(comp):
                 scp.take_component(comp)
                 yield comp
-    def filter_gen(self, clause):
+    def filter_gen(self, clause, safe=True):
         """Generator of `.filter()` functions
 
             Just because the optimization in `.filter()` may be expensive
@@ -303,6 +305,8 @@ class ComponentProxy(_SomeProxy):
         try:
             fc_res = FilterComp._filter_on_clause(self._pagetmpl, self._scope, clause)
             logger.debug("Got optimizer: %r", fc_res)
+            if fc_res.complete and not safe:
+                clause = None
         except (KeyError, AttributeError, NotImplementedError) as e:
             logger.warning("Cannot optimize <%s '%s'>.filter(): %s",
                            self._remote.tag_name, self._name, e)

@@ -187,9 +187,13 @@ class Integer(object):
 
 class XPath(object):
     """Dummy class to wrap an xpath string
+
+        :attribute complete: mark if this XPath should reliably locate elements
+                            or have less reliable results.
     """
-    def __init__(self, xpath):
+    def __init__(self, xpath, complete=True):
         self.xpath = xpath
+        self.complete = complete
 
     def __repr__(self):
         return '<xpath: %s>' % self.xpath
