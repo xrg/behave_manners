@@ -294,6 +294,7 @@ class ComponentProxy(_SomeProxy):
             if (clause is None) or clause(comp):
                 scp.take_component(comp)
                 yield comp
+
     def filter_gen(self, clause, safe=True):
         """Generator of `.filter()` functions
 

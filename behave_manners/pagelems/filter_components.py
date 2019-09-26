@@ -10,13 +10,13 @@ class _HypoElem(object):
     """Hypothetical remote element, used to build locator for a real one
     """
 
-    def __init__(self, xpath= ''):
+    def __init__(self, xpath= '', complete=True):
         self._xpath = xpath
 
     def __repr__(self):
         return '<hypo %s>' % self._xpath
 
-    def _append_xpath(self, xpath, glue=False):
+    def _append_xpath(self, xpath, glue=False, complete=True):
         return _HypoElem(prepend_xpath(self._xpath, xpath, glue=glue))
 
     def find_elements_by_xpath(self, xpath):
@@ -86,8 +86,25 @@ class _HypoElem(object):
 
         def __contains__(self, item):
             if isinstance(item, six.string_types):
-                return self._parent._append_xpath('[contains(%s, %s)]',
+                return self._parent._append_xpath('[contains(%s, %s)]' %
                                                   (self._attr, textescape(item)))
+            else:
+                raise TypeError("Can not compare properties to %s" % type(item))
+
+        def startswith(self, item):
+            if isinstance(item, six.string_types):
+                return self._parent._append_xpath('[starts-with(%s, %s)]' %
+                                                  (self._attr, textescape(item)))
+            else:
+                raise TypeError("Can not compare properties to %s" % type(item))
+
+        def endswith(self, item):
+            if isinstance(item, six.string_types):
+                # there is no "ends-with()" function in XPath,
+                # so narrow down results with 'contains()'
+                return self._parent._append_xpath('[contains(%s, %s)]' %
+                                                  (self._attr, textescape(item)),
+                                                  complete=False)
             else:
                 raise TypeError("Can not compare properties to %s" % type(item))
 
