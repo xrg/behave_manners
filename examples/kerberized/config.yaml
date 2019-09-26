@@ -1,0 +1,29 @@
+---
+# Site configuration
+
+site:
+    # global parameters on the site (assuming single main site)
+    base_url: http://xrg3-st1.pefnos.com:7788
+
+
+output:
+    dir: out/run_{pid}
+    tempdir: out/run_{pid}/tmp
+
+browser:        # Technical conf about the browser
+    engine: chrome
+    launch_on: feature  # or 'scenario' or 'demand'
+    window: 1200x700
+    # more capabilities...
+    # headless: true
+    headless: false
+    # implicit_wait: 500ms
+    auth_server_whitelist: "*.pefnos.com"
+
+    screenshots:
+        dir: screenshots
+        on_failure: true
+
+
+page_objects:
+    index: site/index.html
