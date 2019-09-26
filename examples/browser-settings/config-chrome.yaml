@@ -1,0 +1,23 @@
+---
+# Site configuration
+
+site:
+    # global parameters on the site (assuming single main site)
+    base_url: chrome://
+
+output:
+    dir: out/run_{pid}
+    tempdir: out/run_{pid}/tmp
+
+browser:        # Technical conf about the browser
+    engine: chrome
+    launch_on: feature
+    headless: true
+    auth_server_whitelist: '*.example.com'
+
+    screenshots:
+        dir: screenshots
+        on_failure: true
+
+page_objects:
+    index: site/index-chrome.html

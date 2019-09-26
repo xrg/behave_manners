@@ -1,0 +1,47 @@
+<html lang="[lang]">
+<body>
+    <div id="filter-overlay">
+
+    </div>
+    <div class="page">
+        <header/>
+        <section class="reload-show-unset-section">
+            <button pe-deep id="reload-policies" this="reload"/>
+            <button pe-deep id="export-policies" this="export"/>
+            <input pe-deep id="show-unset" type="checkbox" this="show-unset">
+        </section>
+
+        <section id="main-section">
+            <section class="policy-table-section">
+            <table this="policies" pe-optional=0>
+                <tr this="[name]" pe-deep>
+                    <td class="scope-column">
+                        <div class="+scope">[scope]</div>
+                    </td>
+                    <td class="level-column">
+                        <div class="+level">[level]</div>
+                    </td>
+                    <td class="source-column">
+                        <div class="+source">[source]</div>
+                    </td>
+                    <td class="name-column">
+                        <div class="+name">
+                            <a class="name-link" href="[name_link]">[name]</a>
+                        </div>
+                    </td>
+                    <td class="value-column">
+                        <div class="value-container">
+                        <span class="value">[value]</span>
+                        <a is="action-link" role="link" this="show-value" pe-optional></a>
+                        </div>
+                    </td>
+                    <td class="status-column">
+                        <div class="+status" title="[status_title]">[status]</div>
+                    </td>
+                </tr>
+            </table>
+            </section>
+        </section>
+    </div>
+</body>
+</html>
