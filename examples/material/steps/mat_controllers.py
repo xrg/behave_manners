@@ -4,6 +4,7 @@ import time
 from behave_manners.pagelems import DOMScope, DPageElement
 from behave_manners.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
+from behave_manners.pagelems.exceptions import CKeyError
 
 
 class MatInputFieldCtrl(DOMScope):
@@ -126,6 +127,37 @@ class MatInputCtrl(DOMScope):
         def value(self, val):
             self['input'].value = val
 
+
+class MatSelectFieldCtrl(DOMScope):
+    _name = "mat-select-field"
+
+    class Component(object):
+        @property
+        def value(self):
+            return self['select'].value_text
+
+        @value.setter
+        def value(self, val):
+            select_elem = self['select']
+            if not select_elem.owns:
+                select_elem.click()
+            for d in select_elem['dropdown'].values():
+                if d.text == val:
+                    d.click()
+                    break
+            else:
+                raise CKeyError("Option '%s' not found in dropdown" % val,
+                                component=select_elem)
+
+        @property
+        def error_message(self):
+            try:
+                return self['error'].message
+            except KeyError:
+                return None
+
+    class ChildComponent(object):
+        pass
 
 
 #eof

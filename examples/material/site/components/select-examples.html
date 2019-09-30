@@ -1,0 +1,37 @@
+<html>
+<head>
+    <link rel="import" href="layout.html">
+</head>
+<body>
+    <use-template id="example-layout">
+        <mat-form-field pe-deep slot="body" this="[label]" pe-ctrl="mat-select-field">
+            <div pe-deep class="+mat-form-field-infix">
+                <mat-select this="select" aria-owns="[owns]">
+                    <div>
+                        <div class="+mat-select-value">
+                            <span class="+mat-select-value-text" pe-optional>
+                                <span>[value_text]</span>
+                            </span>
+                        </div>
+                    </div>
+                    <pe-repeat this="dropdown">
+                        <pe-matchid pe-multi pe-optional id="root['select'].owns" this="option">
+                            <span class="mat-option-text"> [text] </span>
+                        </pe-matchid>
+                    </pe-repeat>
+                </mat-select>
+                <span>
+                    <label class="+mat-form-field-label">[label]
+                    </label>
+                </span>
+            </div>
+            <div pe-deep class="+mat-form-field-subscript-wrapper">
+                <mat-error pe-deep pe-optional this="error" role="[role]">
+                    [message]
+                </mat-error>
+            </div>
+        </mat-form-field>
+    </use-template>
+
+</body>
+</html>
