@@ -945,6 +945,7 @@ class RepeatObj(DPageElement):
                 elif name in seen:
                     name += str(ni)
                 yield name, welem, ptmpl, scp
+                seen.add(name)
                 ni += 1
                 if ni > self.max_elems:
                     break
