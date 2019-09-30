@@ -1141,6 +1141,13 @@ class PeGroupElement(DPageElement):
                 xpr = prepend_xpath(xpr, xloc, glue='/') + '/following-sibling::'
 
 
+def bool_or_delim(val, default=' '):
+    if val is None:
+        return default
+    else:
+        return val or False
+
+
 class PeMatchIDElement(DPageElement):
     """Jump to an element that matches by id
 
@@ -1165,6 +1172,7 @@ class PeMatchIDElement(DPageElement):
     _attrs_map = {'pe-controller': ('_pe_ctrl', None, None),
                   'pe-ctrl': ('_pe_ctrl', None, None),
                   'pe-optional': ('_pe_optional', to_bool, None),
+                  'pe-multi': ('_pe_multi', bool_or_delim , None),
                   'id': ('attr_id', None, AttributeError),
                   'this': ('this_name', None, None),
                   }
@@ -1180,15 +1188,24 @@ class PeMatchIDElement(DPageElement):
         self._idc = compile(self.attr_id, 'html:pe-matchid', mode='eval')
 
     def _locate_remote(self, remote, scope):
+        """Return list of matching elements
+        """
         try:
             id_val = eval(self._idc, {}, {'root': scope.root_component})
         except (KeyError, AttributeError) as e:
             if self._pe_optional:
-                return None
+                return
             raise e
         if not id_val:
+            ivals = False
+        elif self._pe_multi:
+            ivals = id_val.split(self._pe_multi)
+        else:
+            ivals = [id_val]
+
+        if not ivals:
             if self._pe_optional:
-                return None
+                return
             else:
                 raise ElementNotFound(msg='Attribute \'%s\' has no value' % self.attr_id,
                                         parent=scope.root_component)
@@ -1196,12 +1213,16 @@ class PeMatchIDElement(DPageElement):
         if isinstance(remote, WebElement):
             remote = remote.parent   # operate at root of DOM, the page
 
-        try:
-            return remote.find_element_by_id(id_val)
-        except NoSuchElementException as e:
-            if not self._pe_optional:
-                raise ElementNotFound(msg=str(e), selector='@id=%s' % id_val)
-            return None
+        found = False
+        for id_val in ivals:
+            try:
+                yield remote.find_element_by_id(id_val)
+                found = True
+            except NoSuchElementException as e:
+                pass
+
+        if not (found or self._pe_optional):
+            raise ElementNotFound(msg=str(e), selector='@id=%s' % id_val)
 
     def _locate_in(self, remote, scope, xpath_prefix, match):
         if self.this_name and match is not None:
@@ -1210,21 +1231,17 @@ class PeMatchIDElement(DPageElement):
             if match != self.this_name:
                 return
 
-        welem = self._locate_remote(remote, scope)
-        if welem is None:
-            return
+        for welem in self._locate_remote(remote, scope):
+            if self._pe_class is not None:
+                nscope = self._pe_class(parent=scope)
+            else:
+                nscope = scope
 
-        if self._pe_class is not None:
-            nscope = self._pe_class(parent=scope)
-        else:
-            nscope = scope
-
-        # only expect a single element (by id) ever
-        if self.this_name:
-            yield self.this_name, welem, self, nscope
-        else:
-            for y4 in self.iter_items(welem, nscope, match):
-                yield y4
+            if self.this_name:
+                yield self.this_name, welem, self, nscope
+            else:
+                for y4 in self.iter_items(welem, nscope, match):
+                    yield y4
 
 
     def iter_items(self, remote, scope, xpath_prefix='', match=None):
@@ -1243,8 +1260,7 @@ class PeMatchIDElement(DPageElement):
         """Only expose attributes if this is not a named element
         """
         if not self.this_name:
-            welem = self._locate_remote(webelem, scope)
-            if welem is not None:
+            for welem in self._locate_remote(webelem, scope):
                 if self._pe_class is not None:
                     nscope = self._pe_class(parent=scope)
                 else:
