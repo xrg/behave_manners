@@ -12,12 +12,15 @@ class _HypoElem(object):
 
     def __init__(self, xpath= '', complete=True):
         self._xpath = xpath
+        self._complete = complete
 
     def __repr__(self):
-        return '<hypo %s>' % self._xpath
+        return '<hypo %s%s>' % ('' if self._complete else '~',
+                                self._xpath)
 
     def _append_xpath(self, xpath, glue=False, complete=True):
-        return _HypoElem(prepend_xpath(self._xpath, xpath, glue=glue))
+        return _HypoElem(prepend_xpath(self._xpath, xpath, glue=glue),
+                         complete=complete)
 
     def find_elements_by_xpath(self, xpath):
         if not xpath:
@@ -116,6 +119,8 @@ class _HypoElem(object):
             """
             return self._parent._append_xpath( '[%s]' % self._attr)
 
+        # __bool__ = bool
+
         def __int__(self):
             raise NotImplementedError("Must use toInt(attr) instead")
 
@@ -196,6 +201,8 @@ class FilterComp(object):
                 elif isinstance(cr, _HypoElem._attrConditionBase):
                     cr = cr.bool()
                     fcomp._remote = cr
+                else:
+                    raise NotImplementedError("Clause resolves to %s" % type(cr))
                 ret.append(fcomp._get_matcher())
             except (KeyError, AttributeError):
                 # TODO
