@@ -10,8 +10,11 @@
         <app-component-nav pe-deep this="nav-menu">
             <div>
             <div class="docs-component-viewer-nav-content">
-                <nav this="nav_%d">
-                    <button class="docs-nav-content-btn">[title]</button>
+                <nav this="[title]">
+                    <button class="docs-nav-content-btn">
+                        [title]
+                        <mat-icon pe-optional>[icon]</mat-icon>
+                    </button>
                     <ul>
                         <li this="[title]"><a href="[href]">[title]</a></li>
                     </ul>
@@ -19,6 +22,7 @@
             </div>
             </div>
         </app-component-nav>
+        <slot name="content">
         <doc-viewer pe-deep>
             <pe-repeat this="examples">
                 <div pe-deep this="[example]" material-docs-example="[example]">
@@ -36,6 +40,7 @@
                 </div>
             </pe-repeat>
         </doc-viewer>
+        </slot>
     </material-docs-app>
 </template>
 

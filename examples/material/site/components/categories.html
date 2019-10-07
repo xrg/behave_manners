@@ -1,0 +1,23 @@
+<html>
+<head>
+    <link rel="import" href="layout.html">
+</head>
+<body>
+    <use-template id="layout">
+
+        <app-component-category-list this="categories" slot="content" pe-deep>
+
+            <div>
+                <a class="+docs-component-category-list-item" this="[title]" href="[]">
+                    <mat-card>
+                        <mat-card-title> [title] </mat-card-title>
+                        <mat-card-content>[content]</mat-card-content>
+                    </mat-card>
+                </a>
+            </div>
+        </app-component-category-list>
+
+    </use-template>
+
+</body>
+</html>
