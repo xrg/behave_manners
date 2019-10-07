@@ -184,7 +184,7 @@ class SiteContext(object):
         if extra_conf and callable(extra_conf):
             extra_conf(config)
         elif extra_conf:
-            merge_dict(config, extra_conf, copy=False)
+            merge_dict(result, extra_conf, copy=False)
 
         return result
 
