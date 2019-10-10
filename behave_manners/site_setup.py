@@ -9,6 +9,8 @@ import os.path
 from behave.runner import Context
 from .site import SiteContext
 
+from . import alt_parser  # just import, to install extended parser
+
 
 def site_setup(context, config=None, extra_conf=None, loader=None):
     """Load a config file and prepare site for operation
