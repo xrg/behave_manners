@@ -949,6 +949,23 @@ class RepeatObj(DPageElement):
                 ni += 1
                 if ni > self.max_elems:
                     break
+
+            # No element found because match = 'name' + str(N)
+            # then, try again
+            if ni == 0 and match \
+                    and isinstance(match, six.string_types) \
+                    and match[-1].isdigit():
+                match2 = match.rstrip('0123456789')
+                for name, welem, ptmpl, scp in self._children[0] \
+                        ._locate_in(remote, scope, xpath_prefix, match2):
+                    if not name:
+                        name = ni   # integer type, not a string!
+                    elif name in seen:
+                        name += str(ni)
+                    if name == match:
+                        yield name, welem, ptmpl, scp
+                    seen.add(name)
+                    ni += 1
         except ElementNotFound as e:
             enofound = e
         if match is None and ni < self.min_elems:
