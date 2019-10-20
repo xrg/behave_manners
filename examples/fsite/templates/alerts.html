@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Mini-application</title>
+</head>
+
+<body>
+
+    <div>
+        Some content
+        <form>
+
+            <button class="notify-btn" id="notify0">Notify!</button>
+            <button class="alert-btn" id="alert0">OK alert</button>
+            <button class="alert-btn" id="alert1">Confirm?</button>
+            <button class="alert-btn" id="alert2">Value</button>
+        </form>
+    </div>
+
+<script type="text/javascript">
+    window.addEventListener('load', function () {
+        if (window.Notification && Notification.permission !== "granted") {
+            Notification.requestPermission(function (status) {
+                if (Notification.permission !== status) {
+                    Notification.permission = status;
+                }
+            });
+        }
+
+        var notify_btn = document.getElementById('notify0');
+
+        notify_btn.addEventListener('click', function () {
+            if (window.Notification && Notification.permission === "granted") {
+                var n = new Notification("Test notification ", {tag: 'testNotification'});
+            }
+            else {
+                console.log("Notifications not allowed");
+            }
+        });
+
+        var alert_btn0 = document.getElementById('alert0');
+
+        alert_btn0.addEventListener('click', function() {
+            alert("Alert test!");
+        });
+
+        var alert_btn1 = document.getElementById('alert1');
+
+        alert_btn1.addEventListener('click', function() {
+            if (window.confirm("Are you sure?")){
+                console.log("confirmed");
+            }
+            else {
+                console.log("denied");
+            }
+        });
+
+        var alert_btn2 = document.getElementById('alert2');
+
+        alert_btn2.addEventListener('click', function() {
+            var r = window.prompt("Enter a value", '');
+            if (r === null) {
+                console.log("Cancel pressed");
+            }
+            else {
+                console.log("User entered: " + r);
+            }
+        });
+
+  });
+
+</script>
+</body>
+
+</html>
