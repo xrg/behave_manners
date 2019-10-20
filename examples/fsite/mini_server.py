@@ -133,6 +133,11 @@ def run_tmpl3():
     return render_template('bad-js.html')
 
 
+@app.route('/alerts')
+def do_alerts():
+    return render_template('alerts.html')
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     app.run(host='0.0.0.0')
