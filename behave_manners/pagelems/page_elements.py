@@ -1033,9 +1033,9 @@ class PeChoiceElement(DPageElement):
             # Stop at first 'welem' that yields any children results
             try:
                 for n, welem, p, scp in ch._locate_in(remote, scope, xpath_prefix, match):
-                    if welem in seen:
+                    if welem.id in seen:
                         continue
-                    seen.add(welem)
+                    seen.add(welem.id)
                     yield n, welem, p, scp
                     nfound += 1
             except UnwantedElement:
