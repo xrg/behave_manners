@@ -272,7 +272,7 @@ class DPageElement(object):
             for n, w, p, scp in ch._locate_in(remote, scope, xpath_prefix, match):
                 # Suppress duplicate names, only return first match
                 if n in seen_names:
-                    break
+                    continue
                 yield n, w, p, scp
                 seen_names.add(n)
 
