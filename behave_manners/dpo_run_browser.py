@@ -12,7 +12,7 @@ import json
 import time
 from behave_manners.site import SiteContext, FakeContext
 from behave_manners.pagelems import FSLoader
-from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import WebDriverException, UnexpectedAlertPresentException
 
 
 
@@ -36,6 +36,7 @@ def cmdline_main():
     log = logging.getLogger('main')
 
     context = FakeContext()
+    alert_shown = False
     try:
         config = SiteContext._load_config(args.config, loader=FSLoader('.'))
         if not config.get('browser'):
@@ -73,11 +74,18 @@ def cmdline_main():
         last_title = None
         while True:
             time.sleep(1.0)
-            ntitle = context.browser.title
-            if ntitle != last_title:
-                log.info("Browser changed to: %s", ntitle)
-                last_title = ntitle
-            context.site.process_logs(context)
+            try:
+                ntitle = context.browser.title
+                if ntitle != last_title:
+                    log.info("Browser changed to: %s", ntitle)
+                    last_title = ntitle
+                context.site.process_logs(context)
+            except UnexpectedAlertPresentException as e:
+                # other side (eg. validator) or user must dismiss the alert
+                if not alert_shown:
+                    log.warning("Alert is present: %s", e)
+                    log.info("Please dismiss alert to continue")
+                    alert_shown = True
     except KeyboardInterrupt:
         log.warning("Closing by interrupt")
         # Don't need to do anything, just let this step finish
