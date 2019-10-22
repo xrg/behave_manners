@@ -627,13 +627,26 @@ class ChromeWebContext(SiteContext):
             w, h = self._decode_win_size(browser_opts['window'])
             options.add_argument('window-size=%d,%d' % (w, h))
 
+        prefs = {}
         if download_dir is not None:
-            options.add_experimental_option("prefs", {
+            prefs.update({
                 "download.default_directory": download_dir,
                 "download.prompt_for_download": False,
                 "download.directory_upgrade": True,
                 "safebrowsing.enabled": True
                 })
+        if 'notifications' in browser_opts:
+            prefs["profile.default_content_settings.popups"] = 0  # TODO
+            for k, v in ('allow', 1), ('block', 2):   # ('ask', 0) is pointless
+                if browser_opts['notifications'] == k:
+                    prefs['profile.default_content_setting_values.notifications'] = v
+                    break
+            else:
+                self._log.warning("Ignoring unknown notifications setting: %s",
+                                  browser_opts['notifications'])
+
+        if prefs:
+            options.add_experimental_option("prefs", prefs)
 
         for opt in ('auth-server-whitelist',):
             val = browser_opts.get(opt.replace('-', '_'), None)
