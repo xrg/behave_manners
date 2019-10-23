@@ -323,6 +323,23 @@ class WebContext(SiteContext):
             context.downloads.reset()
 
     def _event_after_step(self, context, step):
+        from selenium.webdriver.common.alert import Alert
+        from selenium.common.exceptions import UnexpectedAlertPresentException, \
+                                                NoAlertPresentException
+
+        # any alert must close now, or else the browser will be stuck
+        # in an unusable state for further actions
+        try:
+            if isinstance(step.exception, UnexpectedAlertPresentException):
+                alert = Alert(context.browser)
+                self._log.warning("Browser had alert: %s", step.exception.alert_text or alert.text)
+                alert.dismiss()
+        except NoAlertPresentException:
+            # A bit weird. May happen if alert was not on current `context.browser`
+            pass
+        except Exception:
+            self._log.debug("could not post-process browser alert:", exc_info=True)
+
         if step.status == Status.failed:
             try:
                 msg_url = "Browser currently at: %s\n" % context.browser.current_url
