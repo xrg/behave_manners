@@ -2,11 +2,18 @@
 
 from __future__ import division, absolute_import, print_function
 import time
+import logging
+import six
 
 from .base_parsers import DOMScope
 from .dom_components import ComponentProxy
 from .exceptions import PageNotReady, Timeout
 from selenium.webdriver.remote.webdriver import WebElement
+from selenium.common.exceptions import UnexpectedAlertPresentException, NoAlertPresentException
+from selenium.webdriver.common.alert import Alert
+
+
+logger = logging.getLogger('behave.scopes')
 
 
 class WaitScope(DOMScope):
@@ -72,6 +79,11 @@ class WaitScope(DOMScope):
                 break
             except PageNotReady as e:
                 lastmsg = e.args[0]
+            except UnexpectedAlertPresentException as e:
+                logger.debug("Alert during wait: %s", e.alert_text)
+                ual = Alert(webdriver)
+                if not self.handle_alert(ual):
+                    raise e
 
             time.sleep(pause)
             if pause < 0.8:
@@ -112,6 +124,9 @@ class RootDOMScope(DOMScope):
             assert isinstance(templates, dict)
         super(RootDOMScope, self).__init__(parent=None, templates=templates)
         self.site_config = site_config or {}
+
+    def handle_alert(self, alert):
+        return
 
 
 class GenericPageScope(DOMScope):
@@ -176,5 +191,76 @@ class Fresh(object):
         else:
             self._scope.__dict__['recover_stale'] = self._old_resolve
         self._old_resolve = NotImplemented
+
+
+class CatchAlert(object):
+    """Context manager for handling browser pop-up alerts
+
+        Use like::
+
+            with CatchAlert(context.cur_page, dismiss="Are you sure?"):
+                context.cur_page.wait_all('short')
+
+
+        :param page: the component to be acted upon
+            Must be on the same (or any parent) scope that will be acted.
+            Best works with current `Page` , that is top scope.
+    """
+    def __init__(self, page, dismiss=True, accept=None, fn=None):
+        self._scope = page._scope
+        self._dismiss = dismiss
+        self._accept = accept
+        self._handle_fn = fn
+        self._orig_fn = None
+        self.seen = []
+
+    def __enter__(self):
+        if self._orig_fn is not None:
+            raise RuntimeError('Dirty context manager')
+        # not using 'getattr()' because scope would ascend into parents
+        self._orig_fn = self._scope.__dict__.get('handle_alert', None)
+        self._scope.__dict__['handle_alert'] = self._handle_alert
+        return self
+
+    def _handle_alert(self, alert, *args):
+        try:
+            atext = alert.text
+        except NoAlertPresentException:
+            atext = None
+
+        if self._handle_fn is not None and self._handle_fn(alert):
+            self.seen.append(atext)
+            return True
+
+        if atext is None:
+            pass
+        elif self._accept is True \
+                or (hasattr(self._accept, 'match') and self._accept.match(atext)) \
+                or (isinstance(self._accept, six.string_types) and self._accept == atext):
+            alert.accept()
+            self.seen.append(atext)
+            return True
+        elif self._dismiss is True \
+                or (hasattr(self._dismiss, 'match') and self._dismiss.match(alert.text)) \
+                or (isinstance(self._dismiss, six.string_types) and self._dismiss == atext):
+            alert.dismiss()
+            self.seen.append(atext)
+            return True
+
+        if self._orig_fn is not None:
+            return self._orig_fn(alert)
+
+        try:
+            parent_fn = self._scope._parent.handle_alert
+        except AttributeError:
+            return
+
+        return parent_fn(alert)
+
+    def __exit__(self, *args):
+        if self._orig_fn is None:
+            self._scope.__dict__.pop('handle_alert')
+        else:
+            self._scope.__dict__['handle_alert'] = self._orig_fn
 
 # eof
