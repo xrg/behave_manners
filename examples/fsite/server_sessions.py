@@ -1,5 +1,5 @@
 import os
-import cPickle as pickle
+import pickle
 
 import base64
 import hmac
@@ -218,7 +218,7 @@ class ManagedSessionInterface(SessionInterface):
             logger.info('No cookie provided')
             try:
                 return self.manager.new_session()
-            except Exception, e:
+            except Exception:
                 logger.warning("New session:", exc_info=True)
                 return None
 
