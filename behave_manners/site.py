@@ -619,6 +619,7 @@ class ChromeWebContext(SiteContext):
             options.add_argument('headless')
         options.add_argument('disable-infobars')
         if browser_opts.get('no_automation', False):
+            options.add_experimental_option("excludeSwitches", ["enable-automation"])
             options.add_experimental_option('useAutomationExtension', False)
         if 'w3c' in browser_opts:
             # Force w3c mode on/off
@@ -651,7 +652,8 @@ class ChromeWebContext(SiteContext):
                         service_args=service_args
                         )
         try:
-            self._browser_log_types = browser.log_types
+            if not browser.w3c:
+                self._browser_log_types = browser.log_types
         except Exception as e:
             self._log.warning("Could not retrieve browser log types: %s", e)
 
