@@ -1362,6 +1362,13 @@ class PEScopeDataElement(DPageElement):
         setattr(scope, self._attr_name, data)
         return ()
 
+    def _locate_in(self, remote, scope, xpath_prefix, match):
+        if scope is None:
+            return ()
+        data = deepcopy(self._attr_value)
+        setattr(scope, self._attr_name, data)
+        return ()
+
 
 class PeSwitchElement(DPageElement):
     """Match depending on variable condition
