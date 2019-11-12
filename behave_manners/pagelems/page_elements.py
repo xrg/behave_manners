@@ -1363,6 +1363,109 @@ class PEScopeDataElement(DPageElement):
         return ()
 
 
+class PeSwitchElement(DPageElement):
+    """Match depending on variable condition
+
+
+        Much like a 'switch' statement, will only use one of the `pe-case`
+        contained elements, based on some expression evaluated against the
+        current **scope**.
+
+        Usage::
+
+            <pe-switch expr="color">
+                <pe-case value="blue">
+                    color is blue
+                </pe-case>
+                <pe-case value="orange">
+                    color looks orange
+                </pe-case>
+                <pe-case default>
+                    no color
+                </pe-case>
+            </pe-switch>
+    """
+    _name = 'tag.pe-switch'
+
+    _attrs_map = {'slot': ('_dom_slot', None, None),
+                'expr': ('_expr', None, AttributeError),
+                }
+    _consume_in = (DomContainerElement, )
+
+    def __init__(self, tag, attrs):
+        super(PeSwitchElement, self).__init__(tag, attrs)
+        self._parse_attrs(attrs)
+        self._exprs = self._expr.split('.')
+        for e in self._exprs:
+            if not word_re.match(e):
+                raise ValueError("Unsupported expression for switch: '%s'" % self._expr)
+
+    def _locate_case(self, scope, remote):
+        """Return list of matching elements
+        """
+
+        scp = scope
+        for e in self._exprs:
+            scp = getattr(scp, e, None)
+
+        for t in self._children:
+            if t.match_value(scp):
+                return t
+        raise ElementNotFound("No case can match %s=%r" % (self._expr, scp),
+                              selector=self._expr, parent=remote)
+
+    def iter_items(self, remote, xpath_prefix='', match=None):
+        raise RuntimeError('should not be referenced by DOM component')
+
+    def iter_attrs(self, webelem=None, scope=None, xpath_prefix=''):
+        raise RuntimeError('should not be referenced by DOM component')
+
+    def _locate_in(self, remote, scope, xpath_prefix, match):
+        # Proxy to actual template. Locate that one and iterate that
+        tmpl = self._locate_case(scope, remote)
+        return tmpl.iter_items(remote, scope, xpath_prefix, match)
+
+    def _locate_attrs(self, webelem=None, scope=None, xpath_prefix=''):
+        tmpl = self._locate_case(scope, webelem)
+        return tmpl.iter_attrs(webelem, scope, xpath_prefix)
+
+
+class PeSwitchCase(DPageElement):
+    _name = 'tag.pe-case'
+    _inherit = '.domContainer'
+
+    _attrs_map = {
+                'default': ('_default', to_bool, None),
+                'value': ('_value', None, NotImplemented),
+                'json': ('_value', json.loads, NotImplemented),
+                }
+    _consume_in = (PeSwitchElement, )
+
+    def __init__(self, tag, attrs):
+        super(PeSwitchCase, self).__init__(tag, attrs)
+        self._parse_attrs(attrs)
+        if self._value is NotImplemented and not self._default:
+            raise ValueError("Must set either value or 'default'")
+        elif self._default and self._value is not NotImplemented:
+            raise ValueError("Cannot set both value and 'default' in pe-case")
+
+    def match_value(self, value):
+        if self._value is NotImplemented:
+            if self._default:
+                return True
+        elif self._value == value:
+            return True
+        return False
+
+    def iter_items(self, remote, scope, xpath_prefix='', match=None):
+        return self._iter_items_cont(remote, scope, xpath_prefix, match)
+
+    def iter_attrs(self, webelem=None, scope=None, xpath_prefix=''):
+        for ch in self._children:
+            for n, attr in ch._locate_attrs(webelem, scope, xpath_prefix):
+                yield n, attr
+
+
 class ConsumeTmplMixin(object):
     """Common between Head and Body elements, temporarily hold templates
     """
