@@ -5,7 +5,7 @@ import posixpath as pp
 import fnmatch
 import logging
 import re
-from .base_parsers import DPageElement, DOMScope, DBaseLinkElement
+from .base_parsers import DPageElement, DOMScope, DBaseLinkElement, HTMLParseError
 from .loaders import BaseLoader
 
 
@@ -101,6 +101,9 @@ class DSiteCollection(DPageElement):
             self.logger.debug("Trying to read index: %s", pname)
             self._feed_parser(IndexHTMLParser(self), pname, 'index')
             # TODO: reduce
+        except HTMLParseError as e:
+            e.msg = '%s: %s' % (pname, e.msg)
+            raise e
         finally:
             self.cur_file = old_file
 
@@ -140,6 +143,9 @@ class DSiteCollection(DPageElement):
             self.logger.debug("Trying to read page: %s", pname)
             self._feed_parser(PageParser(self), pname, 'page')
             # TODO: reduce
+        except HTMLParseError as e:
+            e.msg = '%s: %s' % (pname, e.msg)
+            raise e
         finally:
             self.cur_file = old_file
 
@@ -157,6 +163,9 @@ class DSiteCollection(DPageElement):
             self.logger.debug("Trying to read page: %s", pname)
             self._feed_parser(GalleryParser(self), pname, 'gallery')
             self._loaded_gallery.add(pname)
+        except HTMLParseError as e:
+            e.msg = '%s: %s' % (pname, e.msg)
+            raise e
         finally:
             self.cur_file = old_file
 
