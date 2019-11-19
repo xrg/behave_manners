@@ -150,9 +150,11 @@ class AnyElement(DPageElement):
             elif k == 'pe-optional':
                 self._pe_optional = to_bool(v)
             elif k == 'pe-controller' or k == 'pe-ctrl':
-                if self._pe_class:
+                if '_pe_ctrl' in self.__dict__:
                     raise ValueError("Attribute 'pe-controller' defined more than once")
-                self._pe_class = DOMScope.get_class(v)  # is it defined?
+                if v is True:
+                    v = self.tag
+                self._pe_ctrl = v
             elif v is None:
                 assert '.' not in k, k
                 match_attrs[k].append(True)
@@ -188,6 +190,9 @@ class AnyElement(DPageElement):
             # set all attributes to optional
             for ra in self.read_attrs.values():
                 ra.optional = True
+
+        if getattr(self, '_pe_ctrl', None):
+            self._pe_class = DOMScope.get_class(self._pe_ctrl)  # is it defined?
 
     def reduce(self, site=None):
         if len(self._children) == 1 \
@@ -554,6 +559,8 @@ class NamedElement(DPageElement):
     def _split_this(self, value, sub=None):
         if sub:
             raise NotImplementedError()
+        if value is True:
+            self.this_name = self.tag
         self.this_name = value
 
     def pretty_dom(self):
@@ -656,6 +663,8 @@ class InputElement(DPageElement):
     def _split_this(self, value, sub=None):
         if sub:
             raise NotImplementedError()
+        if value is True:
+            value = self.tag
         self.this_name = value
 
     def _set_match_attrs(self, match_attrs):
@@ -1085,6 +1094,8 @@ class PeGroupElement(DPageElement):
         if self._pe_ctrl is None:
             self._pe_class = None
         else:
+            if self._pe_ctrl is True:
+                self._pe_ctrl = tag
             self._pe_class = DOMScope.get_class(self._pe_ctrl)
 
     def reduce(self, site=None):
@@ -1200,6 +1211,8 @@ class PeMatchIDElement(DPageElement):
         if self._pe_ctrl is None:
             self._pe_class = None
         else:
+            if self._pe_ctrl is True:
+                self._pe_ctrl = tag
             self._pe_class = DOMScope.get_class(self._pe_ctrl)
 
         self._idc = compile(self.attr_id, 'html:pe-matchid', mode='eval')
