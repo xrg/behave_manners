@@ -132,7 +132,11 @@ class Camera(object):
         finally:
             if highlight is not None:
                 try:
-                    webdriver.execute_script('arguments[0].remove()', highlight)
+                    if webdriver.name == 'internet explorer':
+                        js = 'arguments[0].parentNode.removeChild(arguments[0])'
+                    else:
+                        js = 'arguments[0].remove()'
+                    webdriver.execute_script(js, highlight)
                 except Exception as e:
                     self._log.info("Could not remove highlight: %s", e)
 

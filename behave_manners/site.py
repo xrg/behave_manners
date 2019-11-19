@@ -792,7 +792,7 @@ class IExploderWebContext(SiteContext):
             browser.set_window_size(w,h)
         return browser
 
-    def _launch_browser_ie(self, context, options, dcaps, **kwargs):
+    def _launch_browser_ie(self, options, dcaps, **kwargs):
         return webdriver.Ie(ie_options=options,
                             desired_capabilities=dcaps,
                             **kwargs)
