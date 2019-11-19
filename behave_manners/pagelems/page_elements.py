@@ -21,6 +21,15 @@ import six
 
 method_re = re.compile(r'\w+\(')
 
+
+def val_default(val, default=True):
+    """Value or default (for attributes)
+    """
+    if val is None:
+        return default
+    return val
+
+
 class DomContainerElement(DPageElement):
     """Base class for 'regular' DOM elements that can contain others
     """
@@ -150,9 +159,11 @@ class AnyElement(DPageElement):
             elif k == 'pe-optional':
                 self._pe_optional = to_bool(v)
             elif k == 'pe-controller' or k == 'pe-ctrl':
-                if self._pe_class:
+                if '_pe_ctrl' in self.__dict__:
                     raise ValueError("Attribute 'pe-controller' defined more than once")
-                self._pe_class = DOMScope.get_class(v)  # is it defined?
+                if v is None:
+                    v = self.tag
+                self._pe_ctrl = v
             elif v is None:
                 assert '.' not in k, k
                 match_attrs[k].append(True)
@@ -188,6 +199,9 @@ class AnyElement(DPageElement):
             # set all attributes to optional
             for ra in self.read_attrs.values():
                 ra.optional = True
+
+        if getattr(self, '_pe_ctrl', None):
+            self._pe_class = DOMScope.get_class(self._pe_ctrl)  # is it defined?
 
     def reduce(self, site=None):
         if len(self._children) == 1 \
@@ -554,6 +568,8 @@ class NamedElement(DPageElement):
     def _split_this(self, value, sub=None):
         if sub:
             raise NotImplementedError()
+        if value is None:
+            self.this_name = self.tag
         self.this_name = value
 
     def pretty_dom(self):
@@ -656,6 +672,8 @@ class InputElement(DPageElement):
     def _split_this(self, value, sub=None):
         if sub:
             raise NotImplementedError()
+        if value is None:
+            value = self.tag
         self.this_name = value
 
     def _set_match_attrs(self, match_attrs):
@@ -1073,8 +1091,8 @@ class PeGroupElement(DPageElement):
     _name = 'tag.pe-group'
     _inherit = '.domContainer'
     _attrs_map = {'slot': ('_dom_slot', None, None),
-                  'pe-controller': ('_pe_ctrl', None, None),
-                  'pe-ctrl': ('_pe_ctrl', None, None),
+                  'pe-controller': ('_pe_ctrl', val_default, None),
+                  'pe-ctrl': ('_pe_ctrl', val_default, None),
                   'pe-optional': ('_pe_optional', to_bool, None),
                   'ordered': ('_pe_ordered', to_bool, None),
                   }
@@ -1085,6 +1103,8 @@ class PeGroupElement(DPageElement):
         if self._pe_ctrl is None:
             self._pe_class = None
         else:
+            if self._pe_ctrl is True:
+                self._pe_ctrl = tag
             self._pe_class = DOMScope.get_class(self._pe_ctrl)
 
     def reduce(self, site=None):
@@ -1186,12 +1206,12 @@ class PeMatchIDElement(DPageElement):
     """
     _name = 'tag.pe-matchid'
     _inherit = '.domContainer'
-    _attrs_map = {'pe-controller': ('_pe_ctrl', None, None),
-                  'pe-ctrl': ('_pe_ctrl', None, None),
+    _attrs_map = {'pe-controller': ('_pe_ctrl', val_default, None),
+                  'pe-ctrl': ('_pe_ctrl', val_default, None),
                   'pe-optional': ('_pe_optional', to_bool, None),
                   'pe-multi': ('_pe_multi', bool_or_delim , None),
                   'id': ('attr_id', None, AttributeError),
-                  'this': ('this_name', None, None),
+                  'this': ('this_name', val_default, None),
                   }
 
     def __init__(self, tag, attrs):
@@ -1200,6 +1220,8 @@ class PeMatchIDElement(DPageElement):
         if self._pe_ctrl is None:
             self._pe_class = None
         else:
+            if self._pe_ctrl is True:
+                self._pe_ctrl = tag
             self._pe_class = DOMScope.get_class(self._pe_ctrl)
 
         self._idc = compile(self.attr_id, 'html:pe-matchid', mode='eval')
@@ -1769,6 +1791,8 @@ class PageParser(BaseDPOParser):
         attr_this = None
         for k, v in attrs:
             if k == 'this':
+                if v is None:
+                    v = tag
                 attr_this = v
                 break
 
