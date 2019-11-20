@@ -30,6 +30,10 @@ class MatInputFieldCtrl(DOMScope):
         pass
 
 
+class MatInputFieldCtrl2(DOMScope):
+    _name = 'mat-form-field'
+    _inherit = 'mat-input-field'
+
 
 class MatRadioCtrl(DOMScope):
     _name = 'mat-radio'

@@ -4,10 +4,10 @@
 </head>
 <body>
     <use-template id="example-layout">
-        <mat-form-field pe-deep slot="body" this="[label]" pe-ctrl="mat-input-field">
+        <mat-form-field pe-deep slot="body" this="[label]" pe-ctrl>
             <div pe-deep class="+mat-form-field-infix">
                 <pe-choice>
-                    <input this="input" matinput placeholder="[placeholder]">
+                    <input this matinput placeholder="[placeholder]">
                     <textarea this="input" matinput placeholder="[placeholder]">
                 </pe-choice>
                 <span>
