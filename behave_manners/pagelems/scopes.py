@@ -171,21 +171,27 @@ class Angular5App(DOMScope):
 class Fresh(object):
     """Keep a component fresh, recovering any stale children under it
     """
-    def __init__(self, comp):
+    def __init__(self, comp, graceful=False):
         if isinstance(comp, ComponentProxy):
             self._scope = comp._scope
         elif isinstance(comp, DOMScope):
             self._scope = comp
+        elif graceful:
+            self._scope = None
         else:
             raise TypeError("fresh() needs a ComponentProxy or DOMScope")
         self._old_resolve = NotImplemented
 
     def __enter__(self):
+        if self._scope is None:
+            return
         self._old_resolve = self._scope.__dict__.get('recover_stale', NotImplemented)
         self._scope.recover_stale = True
         return self._scope
 
     def __exit__(self, *args):
+        if self._scope is None:
+            return
         if self._old_resolve is NotImplemented:
             del self._scope.__dict__['recover_stale']
         else:
