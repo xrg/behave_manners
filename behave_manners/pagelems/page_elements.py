@@ -236,9 +236,13 @@ class AnyElement(DPageElement):
 
             if top or (len(child_locs) > 1) \
                     or (child_locs and method_re.match(child_locs[0])):
+                if not locator:
+                    locator = self._xpath
                 for cloc in child_locs:
                     locator += '[%s]' % cloc
             elif child_locs:
+                if not locator:
+                    locator = self._xpath
                 locator += prepend_xpath('/', child_locs[0])
         return locator
 
