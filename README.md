@@ -30,3 +30,14 @@ Documentation
 --------------
 
 See: https://behave-manners.readthedocs.io/
+
+
+Authors
+--------
+
+Panos Christeas <xrg@pefnos.com>
+
+This repository is provided under a BSD license, and consists of personal work
+by the Author(s) as above. Unless explicitly noted and clearly marked, no other
+parties, no current or former employers of the Author(s) should be associated
+with this project nor its license.
